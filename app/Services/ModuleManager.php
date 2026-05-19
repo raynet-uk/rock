@@ -281,6 +281,22 @@ class ModuleManager
         foreach ($enabled as $module) {
             if ($module['alias'] === 'core') continue;
             foreach ($module['providers'] as $providerClass) {
+                // Derive the file path directly from the class name so modules
+                // work immediately after upload without needing composer dump-autoload.
+                // e.g. Modules\AfterActionReport\Providers\AfterActionReportServiceProvider
+                //   -> Modules/AfterActionReport/Providers/AfterActionReportServiceProvider.php
+                $relative = str_replace(
+                    ['Modules\\', '\\'],
+                    ['',          '/'],
+                    $providerClass
+                ) . '.php';
+
+                $full = base_path('Modules/' . $relative);
+
+                if (file_exists($full)) {
+                    require_once $full;
+                }
+
                 if (class_exists($providerClass)) {
                     app()->register($providerClass);
                 }

@@ -25,7 +25,7 @@ class RegisteredUserController extends Controller
         $request->validate([
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
-            'callsign' => ['required', 'string', 'max:12', 'unique:' . User::class . ',callsign'],
+            'callsign' => ['nullable', 'string', 'max:12', 'unique:' . User::class . ',callsign'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
@@ -57,7 +57,7 @@ $isRaynetEmail   = in_array($emailDomain, $trustedDomains);
             'name'                 => $request->name,
             'email'                => $request->email,
             'password'             => Hash::make($request->password),
-            'callsign'             => strtoupper($request->callsign),
+            'callsign'             => $request->callsign ? strtoupper($request->callsign) : null,
             'status'               => $approvalRequired ? null    : 'Active',
             'registration_pending' => $approvalRequired ? true    : false,
         ]);

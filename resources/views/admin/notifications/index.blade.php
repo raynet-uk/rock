@@ -617,7 +617,7 @@ body { font-family: var(--sans); background: var(--grey); color: var(--text); fo
                         {{-- Email warning --}}
                         <div class="email-warning" id="emailWarning">
                             <span style="font-size:15px;">📧</span>
-                            <span>Priority 3+ — email sent automatically to all recipients</span>
+                            <span>Priority 1-3 — email sent automatically to all recipients</span>
                         </div>
 
                         {{-- Title --}}
@@ -717,15 +717,15 @@ body { font-family: var(--sans); background: var(--grey); color: var(--text); fo
                         <div class="pref-name">{{ $level }}. {{ $cfg['label'] }}</div>
                         <div class="pref-desc">
                             @switch($level)
-                                @case(1) General information, no action required @break
-                                @case(2) Members should be aware of this @break
+                                @case(1) Immediate action required — all members respond @break
+                                @case(2) Prompt attention required @break
                                 @case(3) Operational update — check for actions @break
-                                @case(4) Prompt attention required @break
-                                @case(5) Emergency — immediate action required @break
+                                @case(4) Members should be aware of this @break
+                                @case(5) General information, no action required @break
                             @endswitch
                         </div>
                     </div>
-                    @if ($level >= 3)
+                    @if ($level <= 3)
                         <span class="pref-email-badge">📧 Email</span>
                     @endif
                 </div>
@@ -758,7 +758,7 @@ body { font-family: var(--sans); background: var(--grey); color: var(--text); fo
                     $readCount    = $activeR->whereNotNull('read_at')->count();
                     $totalActive  = $activeR->count();
                     $removedCount = $allR->whereNotNull('removed_at')->count();
-                    $emailOpened  = $notif->priority >= 3
+                    $emailOpened  = $notif->priority <= 3
                         ? $activeR->whereNotNull('email_opened_at')->count()
                         : null;
                 @endphp
@@ -769,7 +769,10 @@ body { font-family: var(--sans); background: var(--grey); color: var(--text); fo
                                 <span style="font-size:22px;">{{ $pm['icon'] }}</span>
                             </div>
                             <div class="nch-text">
-                                <div class="nch-title">{{ $notif->title }}</div>
+                                @if(!$notif->sent_by)
+                                <span style="display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:1px 6px;background:rgba(200,16,46,.1);border:1px solid rgba(200,16,46,.3);color:#C8102E;margin-bottom:4px;">📡 HQ Broadcast</span>
+                            @endif
+                            <div class="nch-title">{{ $notif->title }}</div>
                                 @if ($notif->body)
                                     <div class="nch-body" title="{{ $notif->body }}">{{ $notif->body }}</div>
                                 @endif
@@ -931,16 +934,16 @@ function selectPriority(level) {
             btn.style.boxShadow   = `0 0 14px ${cfg.colour}66`;
         } else {
             btn.classList.remove('selected');
-            btn.style.background  = 'rgba(255,255,255,.04)';
-            btn.style.borderColor = 'rgba(255,255,255,.12)';
-            btn.style.color       = 'rgba(255,255,255,.45)';
-            btn.style.boxShadow   = 'none';
+            btn.style.background  = '';
+            btn.style.borderColor = '';
+            btn.style.color       = '';
+            btn.style.boxShadow   = '';
         }
     });
 
     const warning = document.getElementById('emailWarning');
     if (warning) {
-        const show = level >= 3;
+        const show = level <= 3;
         warning.classList.toggle('show', show);
         if (level === 5) {
             warning.style.cssText = 'display:flex;background:#fef2f2;border-color:#C8102E;color:#7f1d1d;';

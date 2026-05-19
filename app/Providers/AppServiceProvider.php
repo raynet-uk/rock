@@ -27,6 +27,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Share temp admin status with all views
+        \Illuminate\Support\Facades\View::composer('*', function ($view) {
+            if (auth()->check()) {
+                $view->with('_isTempAdmin', auth()->user()->isTemporaryAdmin());
+            } else {
+                $view->with('_isTempAdmin', false);
+            }
+        });
+
         // Super-admin bypasses all Gate checks automatically
         Gate::before(function ($user, $ability) {
             if ($user->hasRole('super-admin')) {

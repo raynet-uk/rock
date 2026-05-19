@@ -69,7 +69,7 @@
         Priority {{ $notif->priority }} — {{ $cfg['label'] }}
       </div>
       <div style="font-size:11px;color:{{ in_array($notif->priority, [1,2]) ? 'rgba(0,31,64,.65)' : 'rgba(255,255,255,.75)' }};margin-top:2px;">
-        Sent by {{ $notif->sender->name ?? '{{ \App\Helpers\RaynetSetting::groupName() }} Admin' }} · {{ $notif->created_at->format('d M Y · H:i') }}
+        Sent by {{ $notif->sender->name ?? \App\Helpers\RaynetSetting::groupName() . ' Admin' }} · {{ $notif->created_at->format('d M Y · H:i') }}
       </div>
     </div>
   </div>
@@ -85,13 +85,13 @@
       @endif
 
       {{-- Action box for priority 4 & 5 --}}
-      @if ($notif->priority >= 4)
+      @if ($notif->priority <= 2)
       <div class="action-box" style="background:{{ $cfg['bg'] }};border-color:{{ $cfg['colour'] }};">
         <div class="action-box-title" style="color:{{ $cfg['text'] }};">
-          {{ $notif->priority === 5 ? '🚨 Immediate action required' : '⚡ Prompt attention required' }}
+          {{ $notif->priority === 1 ? '🚨 Immediate action required' : '⚡ Prompt attention required' }}
         </div>
         <div class="action-box-text" style="color:{{ $cfg['text'] }};">
-          {{ $notif->priority === 5
+          {{ $notif->priority === 1
             ? 'This is an emergency notification. Please log in to the members portal immediately and follow any further instructions.'
             : 'This notification requires your prompt attention. Please log in to the members portal to review the details.' }}
         </div>
@@ -124,7 +124,7 @@
       <div class="footer-text">
         This notification was sent to you by {{ \App\Helpers\RaynetSetting::groupName() }} administration.
         You are receiving this because you are a registered member.
-        @if ($notif->priority >= 3)
+        @if ($notif->priority <= 3)
           <strong>Due to the priority level of this message, an email copy has been sent automatically.</strong>
         @endif
       </div>

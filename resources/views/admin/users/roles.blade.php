@@ -335,7 +335,7 @@
                  data-role="{{ $rk }}"
                  onclick="filterByRole('{{ $rk }}')">
                 <div class="rmc-label">
-                    {{ $roleIcons[$rk] }} {{ $rk === 'all' ? 'All Roles' : ucfirst($rk) }}
+                    {{ $roleIcons[$rk] }} {{ $rk === 'all' ? 'All Roles' : ucwords(str_replace(['-','_'],' ',$rk)) }}
                 </div>
                 <div class="rmc-count">{{ $roleMap[$rk] }}</div>
                 <div class="rmc-bar">
@@ -400,7 +400,7 @@
     <div class="rm-active-filters" style="background:#fff;border-bottom:1px solid var(--grey-mid);padding-top:.5rem;">
         @if($roleFilter)
         <div class="rm-filter-chip">
-            Role: {{ ucfirst($roleFilter) }}
+            Role: {{ ucwords(str_replace(['-','_'],' ',$roleFilter)) }}
             <a href="{{ route('admin.users.roles', array_merge(request()->except('role'), ['search' => $search])) }}"
                class="rm-filter-chip-remove">×</a>
         </div>
@@ -424,7 +424,7 @@
         <span style="font-size:11px;color:rgba(255,255,255,.4);font-family:var(--font);">→ change to</span>
         <select name="role" class="rm-bulk-select">
             @foreach($roles as $role)
-                <option value="{{ $role->name }}">{{ ucfirst($role->name) }}</option>
+                <option value="{{ $role->name }}">{{ ucwords(str_replace(['-','_'],' ',$role->name)) }}</option>
             @endforeach
         </select>
         <button type="submit" class="rm-bulk-apply"
@@ -477,7 +477,7 @@
                         data-user-id="{{ $user->id }}"
                         data-role="{{ $currentRole }}"
                         data-name="{{ strtolower($user->name) }}"
-                        data-search="{{ strtolower($user->name.' '.$user->email.' '.($user->callsign ?? '')) }}">
+                        data-search="{{ auth()->user()->isTemporaryAdmin() ? strtolower($user->name) : strtolower($user->name.' '.$user->email.' '.($user->callsign ?? '')) }}">
 
                         {{-- Checkbox --}}
                         <td style="text-align:center;">
@@ -505,7 +505,7 @@
                                     <div class="rm-email">{{ $user->email }}</div>
                                     <div class="rm-meta">
                                         @if($user->callsign)
-                                            <span class="rm-callsign">{{ $user->callsign }}</span>
+                                            <span @if(auth()->user()->isTemporaryAdmin() && !$user->piiVisible()) style="filter:blur(3px);user-select:none;" @endif class="rm-callsign">{{ $user->callsign }}</span>
                                         @endif
                                     </div>
                                 </div>
@@ -538,7 +538,7 @@
                                             @endif
                                             <option value="{{ $role->name }}"
                                                     @selected($currentRole === $role->name)>
-                                                {{ $roleIcons2[$role->name] ?? '' }} {{ ucfirst($role->name) }}
+                                                {{ $roleIcons2[$role->name] ?? '' }} {{ ucwords(str_replace(['-','_'],' ',$role->name)) }}
                                             </option>
                                         @endforeach
                                     </select>

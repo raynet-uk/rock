@@ -147,47 +147,81 @@ class QrzService
         }
     }
 
-    private function extractData(\SimpleXMLElement $node): array
-    {
-        $get = fn(string $field) => trim((string) ($node->$field ?? '')) ?: null;
+private function extractData(\SimpleXMLElement $node): array
+{
+    $get = fn(string $field) => trim((string) ($node->$field ?? '')) ?: null;
 
-        $location = collect([$get('addr2'), $get('state'), $get('country')])->filter()->implode(', ');
+    $location = collect([$get('addr2'), $get('state'), $get('country')])->filter()->implode(', ');
 
-        $classMap = [
-            'T' => 'Technician', 'G' => 'General',      'E' => 'Extra',
-            'N' => 'Novice',     'A' => 'Advanced',      'P' => 'Foundation',
-            'I' => 'Intermediate', 'F' => 'Full',
-        ];
-        $rawClass     = $get('class');
-        $licenceClass = $rawClass ? ($classMap[$rawClass] ?? $rawClass) : null;
+    $classMap = [
+        'T' => 'Technician', 'G' => 'General',    'E' => 'Extra',
+        'N' => 'Novice',     'A' => 'Advanced',    'P' => 'Foundation',
+        'I' => 'Intermediate', 'F' => 'Full',
+    ];
+    $rawClass     = $get('class');
+    $licenceClass = $rawClass ? ($classMap[$rawClass] ?? $rawClass) : null;
 
-        $name = collect([$get('fname'), $get('name')])->filter()->implode(' ') ?: null;
+    $name = collect([$get('fname'), $get('name')])->filter()->implode(' ') ?: null;
 
-        return [
-            'callsign'      => $get('call'),
-            'name'          => $name,
-            'fname'         => $get('fname'),
-            'lname'         => $get('name'),
-            'email'         => $get('email'),
-            'address'       => $get('addr1'),
-            'city'          => $get('addr2'),
-            'state'         => $get('state'),
-            'country'       => $get('country'),
-            'location'      => $location ?: null,
-            'licence_class' => $licenceClass,
-            'efdate'        => $get('efdate'),
-            'expdate'       => $get('expdate'),
-            'image_url'     => $get('image'),
-            'grid'          => $get('grid'),
-            'county'        => $get('county'),
-            'lat'           => $get('lat'),
-            'lon'           => $get('lon'),
-            'aliases'       => $get('aliases'),
-            'p_call'        => $get('p_call'),
-            'bio'           => $get('bio'),
-            'qsl_mgr'       => $get('qslmgr'),
-        ];
-    }
+    $nickname = $get('nickname');
+    $nameFmt  = $get('name_fmt');
+
+return [
+        'callsign'      => $get('call'),
+        'name'          => $name,
+        'name_fmt'      => $nameFmt,
+        'nickname'      => $nickname,
+        'fname'         => $get('fname'),
+        'lname'         => $get('name'),
+        'email'         => $get('email'),
+        'address'       => $get('addr1'),
+        'city'          => $get('addr2'),
+        'state'         => $get('state'),
+        'zip'           => $get('zip'),
+        'county'        => $get('county'),
+        'fips'          => $get('fips'),
+        'country'       => $get('country'),
+        'ccode'         => $get('ccode'),
+        'location'      => $location ?: null,
+        'licence_class' => $licenceClass,
+        'licence_code'  => $rawClass,
+        'efdate'        => $get('efdate'),
+        'expdate'       => $get('expdate'),
+        'image_url'     => $get('image'),
+        'imageinfo'     => $get('imageinfo'),
+        'grid'          => $get('grid'),
+        'lat'           => $get('lat'),
+        'lon'           => $get('lon'),
+        'geoloc'        => $get('geoloc'),
+        'aliases'       => $get('aliases'),
+        'xref'          => $get('xref'),
+        'p_call'        => $get('p_call'),
+        'attn'          => $get('attn'),
+        'bio'           => $get('bio'),
+        'biodate'       => $get('biodate'),
+        'u_views'       => $get('u_views'),
+        'serial'        => $get('serial'),
+        'moddate'       => $get('moddate'),
+        'qrz_user'      => $get('user'),
+        'qsl_mgr'       => $get('qslmgr'),
+        'born'          => $get('born'),
+        'cq_zone'       => $get('cqzone'),
+        'itu_zone'      => $get('ituzone'),
+        'timezone'      => $get('TimeZone'),
+        'gmt_offset'    => $get('GMTOffset'),
+        'dst'           => $get('DST'),
+        'msa'           => $get('MSA'),
+        'area_code'     => $get('AreaCode'),
+        'eqsl'          => $get('eqsl'),
+        'mqsl'          => $get('mqsl'),
+        'lotw'          => $get('lotw'),
+        'iota'          => $get('iota'),
+        'dxcc'          => $get('dxcc'),
+        'land'          => $get('land'),
+        'codes'         => $get('codes'),
+        'url'           => $get('url') ?? ('https://www.qrz.com/db/' . $get('call')),
+    ];
+}
 
     private function parseXml(string $body): ?\SimpleXMLElement
     {

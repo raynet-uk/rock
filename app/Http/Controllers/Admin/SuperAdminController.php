@@ -331,4 +331,39 @@ class SuperAdminController extends Controller
 
         return redirect()->back()->with('status', '✓ Super Admin access revoked from ' . $user->name . '. They retain regular admin access.');
     }
+    // ── LOGIN HISTORY DELETE ──────────────────────────────────────────────
+
+    public function deleteLoginHistory(int $id): RedirectResponse
+    {
+        LoginHistory::findOrFail($id)->delete();
+        AuditLogger::log('login_history.deleted', null, "Deleted login history record #{$id}");
+        return redirect()->back()->with('status', 'Login record deleted.');
+    }
+
+    public function deleteLoginHistoryBulk(Request $request): RedirectResponse
+    {
+        $ids = array_filter((array) $request->input('ids', []));
+        if (empty($ids)) {
+            return redirect()->back()->with('error', 'No records selected.');
+        }
+        $count = LoginHistory::whereIn('id', $ids)->delete();
+        AuditLogger::log('login_history.bulk_deleted', null, "Bulk deleted {$count} login history records");
+        return redirect()->back()->with('status', "{$count} login record(s) deleted.");
+    }
+
+    public function deleteFailedLogins(): RedirectResponse
+    {
+        $count = LoginHistory::where('successful', false)->delete();
+        AuditLogger::log('login_history.failed_cleared', null, "Cleared {$count} failed login records");
+        return redirect()->back()->with('status', "{$count} failed login records cleared.");
+    }
+
+    public function deleteAllLoginHistory(): RedirectResponse
+    {
+        $count = LoginHistory::count();
+        LoginHistory::truncate();
+        AuditLogger::log('login_history.all_cleared', null, "Cleared entire login history ({$count} records)");
+        return redirect()->back()->with('status', "All {$count} login history records deleted.");
+    }
+
 }

@@ -383,6 +383,56 @@ body { background: var(--grey); color: var(--text); font-family: var(--font); fo
 .modal-foot { padding: .8rem 1.1rem; border-top: 1px solid var(--grey-mid); background: var(--grey); display: flex; align-items: center; justify-content: flex-end; gap: .5rem; }
 
 @keyframes fadeUp { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:none; } }
+/* ── Temporary Admin PII Protection ── */
+.pii-protected {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
+.pii-protected input,
+.pii-protected select,
+.pii-protected textarea {
+    filter: blur(4px);
+    user-select: none;
+    pointer-events: none;
+    color: transparent !important;
+    text-shadow: 0 0 8px rgba(0,0,0,.5);
+}
+.pii-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(248,249,250,.6);
+    cursor: not-allowed;
+    z-index: 10;
+    font-size: 11px;
+    font-weight: bold;
+    color: #6b7f96;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    gap: 5px;
+}
+.pii-blur-text {
+    filter: blur(4px);
+    user-select: none;
+    pointer-events: none;
+    display: inline-block;
+}
+.pii-section-banner {
+    background: rgba(180,83,9,.06);
+    border: 1px solid rgba(180,83,9,.2);
+    border-left: 3px solid #b45309;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #92400e;
+    font-weight: bold;
+    margin: 0 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
 .fade-in { animation: fadeUp .3s ease both; }
 
 @media(max-width:600px) {
@@ -419,6 +469,7 @@ body { background: var(--grey); color: var(--text); font-family: var(--font); fo
     $userModes = is_array($user->modes) ? $user->modes : (json_decode($user->modes ?? '[]', true) ?? []);
 
     $isSuspended = ! is_null($user->suspended_at);
+    $isTemporaryGuest = $user->hasRole("temporary_guest") || ($user->guest_expires_at !== null);
     $isVerified  = ! is_null($user->email_verified_at);
 
     $currentSessionId = session()->getId();
@@ -487,7 +538,11 @@ body { background: var(--grey); color: var(--text); font-family: var(--font); fo
 
 <div class="page-band fade-in">
     <div class="page-band-inner">
-        @if($user->avatar)
+        @if($isTemporaryGuest)
+        <img src="{{ Storage::url('avatars/TempAvatar.png') }}"
+             style="width:46px;height:46px;object-fit:cover;flex-shrink:0;border:2px solid rgba(180,83,9,.4);"
+             alt="Temporary Guest" title="Temporary Guest">
+    @elseif($user->avatar)
         <img src="{{ Storage::url($user->avatar) }}" style="width:46px;height:46px;border-radius:0;object-fit:cover;flex-shrink:0;" alt="">
     @else
         <div class="user-avatar">{{ $initials }}</div>
@@ -497,13 +552,13 @@ body { background: var(--grey); color: var(--text); font-family: var(--font); fo
             <div class="page-band-name">{{ $user->name }}</div>
             <div class="page-band-chips">
                 @if ($user->callsign)
-                    <span class="chip chip-navy">{{ strtoupper($user->callsign) }}</span>
+                    <span class="chip chip-navy">@if($user->piiVisible()){{ strtoupper($user->callsign) }}@else<span style="filter:blur(3px);user-select:none;">●●●●●</span>@endif</span>
                 @endif
                 @if ($user->dmr_id)
-                    <span class="chip chip-navy">DMR {{ $user->dmr_id }}</span>
+                    <span class="chip chip-navy">DMR @if($user->piiVisible()){{ $user->dmr_id }}@else<span style="filter:blur(3px);user-select:none;">●●●●●●●</span>@endif</span>
                 @endif
                 @if ($user->licence_class)
-                    <span class="chip chip-navy">{{ $user->licence_class }}</span>
+                    <span class="chip chip-navy">@if($user->piiVisible()){{ $user->licence_class }}@else<span style="filter:blur(3px);user-select:none;">●●●</span>@endif</span>
                 @endif
                 @if ($user->role)
                     <span class="chip chip-navy">{{ $user->role }}</span>
@@ -560,6 +615,31 @@ body { background: var(--grey); color: var(--text); font-family: var(--font); fo
 </div>
 
 <div class="wrap">
+@if($isTemporaryGuest)
+<div class="fade-in" style="background:#fffbf0;border:1px solid #f0c040;border-left:4px solid #b45309;padding:14px 18px;margin-bottom:1rem;display:flex;align-items:flex-start;gap:14px;">
+    <div style="font-size:24px;flex-shrink:0;">⏱</div>
+    <div style="flex:1;">
+        <div style="font-size:13px;font-weight:bold;color:#b45309;margin-bottom:4px;">Temporary Guest Account</div>
+        <div style="font-size:12px;color:#92400e;line-height:1.6;">
+            This is a temporary guest account with read-only member access. Many profile fields are not applicable.
+            @if($user->guest_expires_at)
+                <br><strong>Expiry:</strong>
+                @if($user->guest_expires_at->isPast())
+                    <span style="color:#C8102E;font-weight:bold;">Expired {{ $user->guest_expires_at->diffForHumans() }} ({{ $user->guest_expires_at->format('d M Y H:i') }})</span>
+                @else
+                    <span style="color:#b45309;font-weight:bold;">{{ $user->guest_expires_at->format('d M Y H:i') }} ({{ $user->guest_expires_at->diffForHumans() }})</span>
+                @endif
+            @else
+                <br><strong>Expiry:</strong> No expiry set — access is indefinite.
+            @endif
+        </div>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+            <a href="{{ route('admin.temporary-guests.edit', $user) }}" style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;background:#b45309;color:#fff;font-size:11px;font-weight:bold;text-decoration:none;text-transform:uppercase;letter-spacing:.05em;">⚙ Manage Guest Settings</a>
+            <a href="{{ route('admin.temporary-guests.index') }}" style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;background:#fff;border:1px solid #f0c040;color:#b45309;font-size:11px;font-weight:bold;text-decoration:none;text-transform:uppercase;letter-spacing:.05em;">← All Guests</a>
+        </div>
+    </div>
+</div>
+@endif
 @if ($user->is_super_admin && ! auth()->user()->is_super_admin)
 <div class="alert fade-in" style="background:#1e0040;color:#c4b5fd;border:1px solid rgba(91,33,182,.4);border-left:3px solid #7c3aed;">
     ★ This is a Super Administrator account. You can view their profile but cannot make changes.
@@ -577,8 +657,8 @@ body { background: var(--grey); color: var(--text); font-family: var(--font); fo
 
     <div class="tab-bar fade-in">
         <button class="tab-btn" data-tab="profile">👤 Profile</button>
-        <button class="tab-btn" data-tab="radio">📻 Radio</button>
-        <button class="tab-btn" data-tab="activity">
+        <button class="tab-btn" data-tab="radio" @if($isTemporaryGuest) style="display:none" @endif>📻 Radio</button>
+        <button class="tab-btn" data-tab="activity" @if($isTemporaryGuest) style="display:none" @endif>
             📊 Activity
             <span class="tab-count">{{ $activityLogs->count() }}</span>
         </button>
@@ -590,7 +670,7 @@ body { background: var(--grey); color: var(--text); font-family: var(--font); fo
         </button>
         <button class="tab-btn" data-tab="access">🔑 Access</button>
         <button class="tab-btn" data-tab="control">⚙ Account Control</button>
-        <button class="tab-btn" data-tab="training">🏅 Training</button>
+        <button class="tab-btn" data-tab="training" @if($isTemporaryGuest) style="display:none" @endif>🏅 Training</button>
     </div>
 
 
@@ -695,8 +775,12 @@ body { background: var(--grey); color: var(--text); font-family: var(--font); fo
                     </div>
                     <div class="form-field">
                         <label>Callsign <small>(admin override — bypasses approval)</small></label>
+                        @if($user->piiVisible())
                         <input type="text" name="callsign" value="{{ old('callsign', $user->callsign) }}"
                                placeholder="e.g. M0XYZ" oninput="this.value=this.value.toUpperCase()">
+                        @else
+                        <div class="pii-protected"><div class="pii-overlay">🔒 Protected</div><input type="text" value="●●●●●" readonly disabled></div>
+                        @endif
                         @error('callsign')<div class="field-error">{{ $message }}</div>@enderror
                     </div>
                     <div class="form-field">
@@ -718,6 +802,7 @@ body { background: var(--grey); color: var(--text); font-family: var(--font); fo
                     </div>
                 </div>
                 <div class="form-grid">
+                    @if($isTemporaryGuest || !auth()->user()->isTemporaryAdmin())
                     <div class="form-field">
                         <label>Email</label>
                         <input type="email" name="email" value="{{ old('email', $user->email) }}" required>
@@ -728,12 +813,45 @@ body { background: var(--grey); color: var(--text); font-family: var(--font); fo
                         <input type="text" name="phone" value="{{ old('phone', $user->phone) }}" placeholder="07700 900000">
                         @error('phone')<div class="field-error">{{ $message }}</div>@enderror
                     </div>
+                    <div class="form-field">
+                        <label>Telegram Chat ID <small>(optional)</small></label>
+                        <input type="text" name="telegram_chat_id"
+                               value="{{ old('telegram_chat_id', $user->telegram_chat_id) }}"
+                               placeholder="e.g. 123456789">
+                        @error('telegram_chat_id')<div class="field-error">{{ $message }}</div>@enderror
+                    </div>
+                    @else
+                    <div class="form-field full" style="grid-column:1/-1;">
+                        <div class="pii-section-banner">🔒 Contact details are hidden to protect member privacy (GDPR)</div>
+                    </div>
+                    <div class="form-field">
+                        <label>Email</label>
+                        <div class="pii-protected">
+                            <div class="pii-overlay">🔒 Protected</div>
+                            <input type="text" value="●●●●●●●●●●●●●●" readonly disabled>
+                        </div>
+                    </div>
+                    <div class="form-field">
+                        <label>Phone</label>
+                        <div class="pii-protected">
+                            <div class="pii-overlay">🔒 Protected</div>
+                            <input type="text" value="●●●●●●●●●●" readonly disabled>
+                        </div>
+                    </div>
+                    <div class="form-field">
+                        <label>Telegram Chat ID</label>
+                        <div class="pii-protected">
+                            <div class="pii-overlay">🔒 Protected</div>
+                            <input type="text" value="●●●●●●●" readonly disabled>
+                        </div>
+                    </div>
+                    @endif
                 </div>
                 <div class="meta-row">
                     <div class="meta-item">
                         <div class="meta-label">Email verified</div>
                         <div class="meta-val {{ $isVerified ? 'meta-green' : 'meta-red' }}">
-                            {{ $isVerified ? $user->email_verified_at->format('d M Y') : 'Not verified' }}
+                            @if($user->piiVisible()){{ $isVerified ? $user->email_verified_at->format('d M Y') : 'Not verified' }}@else<span style="filter:blur(3px);user-select:none;">●● ●●● ●●●●</span>@endif
                         </div>
                         {{-- Buttons trigger hidden forms outside this form to avoid nesting --}}
                         @if (! $isVerified)
@@ -752,16 +870,28 @@ body { background: var(--grey); color: var(--text); font-family: var(--font); fo
                     </div>
                     <div class="meta-item">
                         <div class="meta-label">Member since</div>
-                        <div class="meta-val">{{ $user->created_at->format('d M Y') }}</div>
+                        @if(auth()->user()->is_super_admin)
+                            <input type="date" name="created_at_override"
+                                   value="{{ old('created_at_override', $user->created_at->format('Y-m-d')) }}"
+                                   style="border:1px solid var(--grey-mid);padding:4px 8px;font-size:12px;font-family:var(--font);color:var(--text);outline:none;width:100%;"
+                                   title="Super admin: edit account creation date">
+                            <div style="font-size:10px;color:var(--text-muted);margin-top:3px;">⭐ Super admin edit</div>
+                        @else
+                            <div class="meta-val">{{ $user->created_at->format('d M Y') }}</div>
+                        @endif
                     </div>
                     <div class="meta-item">
                         <div class="meta-label">Last updated</div>
                         <div class="meta-val">{{ $user->updated_at->format('d M Y H:i') }}</div>
                     </div>
-                </div>
+</div>
+            <div class="info-note">
+                ℹ To get a member's Telegram Chat ID — they must message <strong>@raynet_liverpool_bot</strong> and send <strong>/start</strong>. Their personal chat ID will then appear in the bot's <code>getUpdates</code> feed. Once saved, priority 1–3 notifications will also be sent to them via Telegram DM.
             </div>
+        </div>
 
            {{-- Operator Profile --}}
+@if(!$isTemporaryGuest)
             <div class="card fade-in">
                 <div class="card-head">
                     <div class="card-icon">📡</div>
@@ -815,7 +945,9 @@ body { background: var(--grey); color: var(--text); font-family: var(--font); fo
                 </div>
             </div>
 
-            {{-- Deployment Availability --}}
+            @endif
+{{-- Deployment Availability --}}
+@if(!$isTemporaryGuest)
             <div class="card fade-in">
                 <div class="card-head">
                     <div class="card-icon">🚗</div>
@@ -863,7 +995,9 @@ body { background: var(--grey); color: var(--text); font-family: var(--font); fo
                 </div>
             </div>
 
-            {{-- Emergency Contact --}}
+            @endif
+{{-- Emergency Contact --}}
+@if(!$isTemporaryGuest)
             <div class="card fade-in">
                 <div class="card-head">
                     <div class="card-icon">🆘</div>
@@ -872,6 +1006,25 @@ body { background: var(--grey); color: var(--text); font-family: var(--font); fo
                         <div class="card-sub">Next of kin — not shared with member</div>
                     </div>
                 </div>
+                @if(auth()->user()->isTemporaryAdmin() && !$isTemporaryGuest)
+                <div class="form-grid">
+                    <div class="form-field full" style="grid-column:1/-1;">
+                        <div class="pii-section-banner">🔒 Emergency contact details are hidden to protect member privacy (GDPR)</div>
+                    </div>
+                    <div class="form-field">
+                        <label>Full name</label>
+                        <div class="pii-protected"><div class="pii-overlay">🔒 Protected</div><input type="text" value="●●●●●●●●●●●" readonly disabled></div>
+                    </div>
+                    <div class="form-field">
+                        <label>Relationship</label>
+                        <div class="pii-protected"><div class="pii-overlay">🔒 Protected</div><input type="text" value="●●●●●●●" readonly disabled></div>
+                    </div>
+                    <div class="form-field">
+                        <label>Phone number</label>
+                        <div class="pii-protected"><div class="pii-overlay">🔒 Protected</div><input type="text" value="●●●●●●●●●●" readonly disabled></div>
+                    </div>
+                </div>
+                @else
                 <div class="form-grid">
                     <div class="form-field">
                         <label>Full name</label>
@@ -898,9 +1051,11 @@ body { background: var(--grey); color: var(--text); font-family: var(--font); fo
                 <div class="info-note">
                     ℹ This information is visible to admins only and is never shown to the member or other users.
                 </div>
+                @endif
             </div>
 
-            {{-- Password + Save --}}
+            @endif
+{{-- Password + Save --}}
             <div class="card fade-in">
                 <div class="card-head">
                     <div class="card-icon">🔒</div>
@@ -923,8 +1078,8 @@ body { background: var(--grey); color: var(--text); font-family: var(--font); fo
     <div class="card-footer">
                 <div class="footer-meta">
                     ID #{{ $user->id }}
-                    @if($user->callsign) · {{ strtoupper($user->callsign) }} @endif
-                    @if($user->role) · {{ $user->role }} @endif
+                    @if($user->callsign) · @if($user->piiVisible()){{ strtoupper($user->callsign) }}@else<span style="filter:blur(3px);user-select:none;">●●●●●</span>@endif @endif
+                    @if($user->role) · {{ ucwords(str_replace(['-','_'],' ',$user->role)) }} @endif
                 </div>
                 @if ($user->is_super_admin && ! auth()->user()->is_super_admin)
                     <button type="button" class="btn btn-ghost" disabled title="Super Admin — protected">🔒 Protected</button>
@@ -980,10 +1135,14 @@ body { background: var(--grey); color: var(--text); font-family: var(--font); fo
                     </div>
                     <div class="form-field">
                         <label>Ofcom licence number <small>(optional)</small></label>
+                        @if($user->piiVisible())
                         <input type="text" name="licence_number"
                                value="{{ old('licence_number', $user->licence_number) }}"
                                placeholder="e.g. AB1234567"
                                oninput="this.value=this.value.toUpperCase()">
+                        @else
+                        <div class="pii-protected"><div class="pii-overlay">🔒 Protected</div><input type="text" value="●●●●●●●●●" readonly disabled></div>
+                        @endif
                         @error('licence_number')<div class="field-error">{{ $message }}</div>@enderror
                     </div>
                 </div>
@@ -993,41 +1152,60 @@ body { background: var(--grey); color: var(--text); font-family: var(--font); fo
             </div>
 
             <div class="card fade-in">
-                <div class="card-head">
-                    <div class="card-icon">🌐</div>
-                    <div>
-                        <div class="card-title">Digital Network IDs</div>
-                        <div class="card-sub">DMR, Echolink, D-STAR, C4FM &amp; APRS</div>
-                    </div>
-                </div>
-                <div class="form-grid">
-                    <div class="form-field">
-                        <label>DMR ID <small>(RadioID.net)</small></label>
-                        <input type="text" name="dmr_id" value="{{ old('dmr_id', $user->dmr_id) }}" placeholder="e.g. 2346001" inputmode="numeric">
-                        @error('dmr_id')<div class="field-error">{{ $message }}</div>@enderror
-                    </div>
-                    <div class="form-field">
-                        <label>Echolink number <small>(optional)</small></label>
-                        <input type="text" name="echolink_number" value="{{ old('echolink_number', $user->echolink_number) }}" placeholder="e.g. 123456" inputmode="numeric">
-                        @error('echolink_number')<div class="field-error">{{ $message }}</div>@enderror
-                    </div>
-                    <div class="form-field">
-                        <label>D-STAR callsign <small>(optional)</small></label>
-                        <input type="text" name="dstar_callsign" value="{{ old('dstar_callsign', $user->dstar_callsign) }}" placeholder="e.g. M0XYZ   E" oninput="this.value=this.value.toUpperCase()">
-                        @error('dstar_callsign')<div class="field-error">{{ $message }}</div>@enderror
-                    </div>
-                    <div class="form-field">
-                        <label>C4FM / Wires-X callsign <small>(optional)</small></label>
-                        <input type="text" name="c4fm_callsign" value="{{ old('c4fm_callsign', $user->c4fm_callsign) }}" placeholder="e.g. M0XYZ" oninput="this.value=this.value.toUpperCase()">
-                        @error('c4fm_callsign')<div class="field-error">{{ $message }}</div>@enderror
-                    </div>
-                    <div class="form-field">
-                        <label>APRS SSID <small>(optional)</small></label>
-                        <input type="text" name="aprs_ssid" value="{{ old('aprs_ssid', $user->aprs_ssid) }}" placeholder="e.g. M0XYZ-9" oninput="this.value=this.value.toUpperCase()">
-                        @error('aprs_ssid')<div class="field-error">{{ $message }}</div>@enderror
-                    </div>
-                </div>
-            </div>
+    <div class="card-head">
+        <div class="card-icon">🌐</div>
+        <div>
+            <div class="card-title">Network Node &amp; VoIP IDs</div>
+            <div class="card-sub">DMR, Echolink, D-STAR, C4FM, APRS, AllStar, SVXLink &amp; RAYNET VoIP</div>
+        </div>
+    </div>
+    <div class="form-grid">
+        <div class="form-field">
+            <label>DMR ID <small>(RadioID.net)</small></label>
+            @if($user->piiVisible())
+        <input type="text" name="dmr_id" value="{{ old('dmr_id', $user->dmr_id) }}" placeholder="e.g. 2346001" inputmode="numeric">
+        @else
+        <div class="pii-protected"><div class="pii-overlay">🔒 Protected</div><input type="text" value="●●●●●●●" readonly disabled></div>
+        @endif
+            @error('dmr_id')<div class="field-error">{{ $message }}</div>@enderror
+        </div>
+        <div class="form-field">
+            <label>Echolink number <small>(optional)</small></label>
+            <input type="text" name="echolink_number" value="{{ old('echolink_number', $user->echolink_number) }}" placeholder="e.g. 123456" inputmode="numeric">
+            @error('echolink_number')<div class="field-error">{{ $message }}</div>@enderror
+        </div>
+        <div class="form-field">
+            <label>D-STAR callsign <small>(optional)</small></label>
+            <input type="text" name="dstar_callsign" value="{{ old('dstar_callsign', $user->dstar_callsign) }}" placeholder="e.g. M0XYZ   E" oninput="this.value=this.value.toUpperCase()">
+            @error('dstar_callsign')<div class="field-error">{{ $message }}</div>@enderror
+        </div>
+        <div class="form-field">
+            <label>C4FM / Wires-X callsign <small>(optional)</small></label>
+            <input type="text" name="c4fm_callsign" value="{{ old('c4fm_callsign', $user->c4fm_callsign) }}" placeholder="e.g. M0XYZ" oninput="this.value=this.value.toUpperCase()">
+            @error('c4fm_callsign')<div class="field-error">{{ $message }}</div>@enderror
+        </div>
+        <div class="form-field">
+            <label>APRS SSID <small>(optional)</small></label>
+            <input type="text" name="aprs_ssid" value="{{ old('aprs_ssid', $user->aprs_ssid) }}" placeholder="e.g. M0XYZ-9" oninput="this.value=this.value.toUpperCase()">
+            @error('aprs_ssid')<div class="field-error">{{ $message }}</div>@enderror
+        </div>
+        <div class="form-field">
+            <label>AllStar node number <small>(optional)</small></label>
+            <input type="text" name="allstar_node" value="{{ old('allstar_node', $user->allstar_node) }}" placeholder="e.g. 54321" inputmode="numeric">
+            @error('allstar_node')<div class="field-error">{{ $message }}</div>@enderror
+        </div>
+        <div class="form-field">
+            <label>SVXLink network <small>(optional — type which network)</small></label>
+            <input type="text" name="svxlink_network" value="{{ old('svxlink_network', $user->svxlink_network) }}" placeholder="e.g. EchoLink, SK6BA, local node name">
+            @error('svxlink_network')<div class="field-error">{{ $message }}</div>@enderror
+        </div>
+        <div class="form-field">
+            <label>RAYNET VoIP number <small>(optional)</small></label>
+            <input type="text" name="raynet_voip" value="{{ old('raynet_voip', $user->raynet_voip) }}" placeholder="e.g. 5000" inputmode="numeric">
+            @error('raynet_voip')<div class="field-error">{{ $message }}</div>@enderror
+        </div>
+    </div>
+</div>
 
             <div class="card fade-in">
                 <div class="card-head">
@@ -1438,7 +1616,7 @@ $pct             = $totalCourses > 0 ? round(($completedCount / $totalCourses) *
                                 <div class="session-meta-grid">
                                     <div class="session-meta-item">
                                         <div class="session-meta-label">IP Address</div>
-                                        <div class="session-meta-val">{{ $sess->ip }}</div>
+                                        <div class="session-meta-val">@if(auth()->user()->isTemporaryAdmin() && !$isTemporaryGuest)<span class="pii-blur-text">●●●.●●●.●●●.●●●</span>@else{{ $sess->ip }}@endif</div>
                                     </div>
                                     <div class="session-meta-item">
                                         <div class="session-meta-label">Last Activity</div>
@@ -1711,6 +1889,106 @@ $pct             = $totalCourses > 0 ? round(($completedCount / $totalCourses) *
         </form>
 
         {{-- Danger zone --}}
+
+
+        {{-- Convert to Full Member --}}
+        @if($isTemporaryGuest)
+        <div class="card fade-in" style="border:1px solid rgba(26,107,60,.3);border-left:4px solid #1a6b3c;">
+            <div class="card-head" style="background:#eef7f2;border-bottom-color:rgba(26,107,60,.2);">
+                <div class="card-icon" style="background:#d6ede3;border-color:rgba(26,107,60,.2);">👤</div>
+                <div>
+                    <div class="card-title" style="color:#1a6b3c;">Convert to Full Member</div>
+                    <div class="card-sub">Upgrade this temporary guest to a permanent member account</div>
+                </div>
+            </div>
+            <form method="POST" action="{{ route('admin.users.convert-to-member', $user->id) }}">
+                @csrf
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label>Notes (internal)</label>
+                        <textarea name="notes" rows="3" placeholder="Reason for converting to full member…"
+                                  style="width:100%;border:1px solid var(--grey-mid);padding:.5rem .75rem;font-family:var(--font);font-size:13px;resize:vertical;">{{ $user->notes }}</textarea>
+                    </div>
+                </div>
+                <div class="form-field" style="padding:0 1.1rem .75rem;">
+                    <label class="toggle-row" style="cursor:pointer;">
+                        <input type="checkbox" name="send_notification" value="1" checked
+                               style="width:16px;height:16px;accent-color:var(--navy);flex-shrink:0;">
+                        <div>
+                            <div class="toggle-label">Send email notification to {{ $user->name }}</div>
+                            <div class="toggle-sub">Informs them they now have full member access with no time limit</div>
+                        </div>
+                    </label>
+                </div>
+                <div class="card-footer" style="background:#eef7f2;border-top-color:rgba(26,107,60,.15);">
+                    <div class="footer-meta" style="color:#1a6b3c;">
+                        This will assign the <strong>member</strong> role, remove the temporary_guest role,
+                        and clear the expiry date permanently.
+                    </div>
+                    <button type="submit" class="btn" style="background:#1a6b3c;border-color:#1a6b3c;color:#fff;"
+                            onclick="return confirm('Convert {{ addslashes($user->name) }} to a full member?\n\nThis will remove their guest restrictions and expiry date.')">
+                        👤 Convert to Member
+                    </button>
+                </div>
+            </form>
+        </div>
+        @endif
+        {{-- Convert to Temporary Guest --}}
+        @if(!$isTemporaryGuest)
+        <div class="card fade-in" style="border:1px solid rgba(180,83,9,.3);border-left:4px solid #b45309;">
+            <div class="card-head" style="background:#fffbf0;border-bottom-color:rgba(180,83,9,.2);">
+                <div class="card-icon" style="background:#fff3d6;border-color:rgba(180,83,9,.2);">⏱</div>
+                <div>
+                    <div class="card-title" style="color:#b45309;">Convert to Temporary Guest</div>
+                    <div class="card-sub">Give this account time-limited read-only member access</div>
+                </div>
+            </div>
+            <form method="POST" action="{{ route('admin.users.convert-to-guest', $user->id) }}">
+                @csrf
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label style="margin-bottom:.5rem;">Set Expiry Date &amp; Time</label>
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
+                            <button type="button" class="btn btn-ghost btn-sm" onclick="setConvertExpiry(1,'day')">1 Day</button>
+                            <button type="button" class="btn btn-ghost btn-sm" onclick="setConvertExpiry(3,'day')">3 Days</button>
+                            <button type="button" class="btn btn-ghost btn-sm" onclick="setConvertExpiry(1,'week')">1 Week</button>
+                            <button type="button" class="btn btn-ghost btn-sm" onclick="setConvertExpiry(2,'week')">2 Weeks</button>
+                            <button type="button" class="btn btn-ghost btn-sm" onclick="setConvertExpiry(1,'month')">1 Month</button>
+                            <button type="button" class="btn btn-ghost btn-sm" onclick="setConvertExpiry(3,'month')">3 Months</button>
+                        </div>
+                        <input type="datetime-local" name="expires_at" id="convertExpiryInput"
+                               style="width:100%;border:1px solid var(--grey-mid);padding:.5rem .75rem;font-family:var(--font);font-size:13px;outline:none;">
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Leave blank for no expiry.</div>
+                    </div>
+                    <div class="form-field">
+                        <label>Notes (internal)</label>
+                        <textarea name="notes" rows="3" placeholder="Reason for temporary guest conversion…"
+                                  style="width:100%;border:1px solid var(--grey-mid);padding:.5rem .75rem;font-family:var(--font);font-size:13px;resize:vertical;">{{ $user->notes }}</textarea>
+                    </div>
+                </div>
+                <div class="form-field" style="padding:0 1.1rem .75rem;">
+                    <label class="toggle-row" style="cursor:pointer;">
+                        <input type="checkbox" name="send_notification" value="1" checked
+                               style="width:16px;height:16px;accent-color:var(--navy);flex-shrink:0;">
+                        <div>
+                            <div class="toggle-label">Send email notification to {{ $user->name }}</div>
+                            <div class="toggle-sub">Informs them their account has been converted to temporary guest access</div>
+                        </div>
+                    </label>
+                </div>
+                <div class="card-footer" style="background:#fffbf0;border-top-color:rgba(180,83,9,.15);">
+                    <div class="footer-meta" style="color:#92400e;">
+                        This will assign the <strong>temporary_guest</strong> role and remove all other roles.
+                        The member will lose committee/admin access if they have it.
+                    </div>
+                    <button type="submit" class="btn" style="background:#b45309;border-color:#b45309;color:#fff;"
+                            onclick="return confirm('Convert {{ addslashes($user->name) }} to a temporary guest?\n\nThis will remove their current role and assign temporary_guest access.')">
+                        ⏱ Convert to Guest
+                    </button>
+                </div>
+            </form>
+        </div>
+        @endif
         <div class="card danger-card fade-in">
             <div class="card-head">
                 <div class="card-icon">⚠️</div>
@@ -1751,12 +2029,12 @@ $pct             = $totalCourses > 0 ? round(($completedCount / $totalCourses) *
             </div>
             @if ($isVerified)
                 <div class="verify-verified">
-                    ✓ Verified on {{ $user->email_verified_at->format('d M Y \a\t H:i') }}
+                    ✓ Verified on @if($user->piiVisible()){{ $user->email_verified_at->format('d M Y \a\t H:i') }}@else<span style="filter:blur(3px);user-select:none;">●● ●●● ●●●● ●●:●●</span>@endif
                 </div>
                 <div class="control-row">
                     <div class="control-row-info">
                         <div class="control-row-title">Resend verification email</div>
-                        <div class="control-row-sub">Sends a fresh signed link to <strong>{{ $user->email }}</strong>.</div>
+                        <div class="control-row-sub">Sends a fresh signed link to <strong>@if(auth()->user()->isTemporaryAdmin() && !$isTemporaryGuest)<span class="pii-blur-text">●●●●●●●●●@●●●●●●.●●●</span>@else{{ $user->email }}@endif</strong>.</div>
                     </div>
                     <form method="POST" action="{{ route('admin.users.send-verification', $user->id) }}">
                         @csrf
@@ -1780,7 +2058,7 @@ $pct             = $totalCourses > 0 ? round(($completedCount / $totalCourses) *
                 <div class="control-row">
                     <div class="control-row-info">
                         <div class="control-row-title">Send verification email</div>
-                        <div class="control-row-sub">Sends a signed link to <strong>{{ $user->email }}</strong>.</div>
+                        <div class="control-row-sub">Sends a signed link to <strong>@if(auth()->user()->isTemporaryAdmin() && !$isTemporaryGuest)<span class="pii-blur-text">●●●●●●●●●@●●●●●●.●●●</span>@else{{ $user->email }}@endif</strong>.</div>
                     </div>
                     <form method="POST" action="{{ route('admin.users.send-verification', $user->id) }}">
                         @csrf
@@ -2003,6 +2281,16 @@ function closeModal() {
     document.getElementById('editModal').classList.remove('open');
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+function setConvertExpiry(amount, unit) {
+    var d = new Date();
+    if (unit === 'day')   d.setDate(d.getDate() + amount);
+    if (unit === 'week')  d.setDate(d.getDate() + amount * 7);
+    if (unit === 'month') d.setMonth(d.getMonth() + amount);
+    var pad = n => String(n).padStart(2, '0');
+    document.getElementById('convertExpiryInput').value =
+        d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) +
+        'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
 </script>
 
 @endsection

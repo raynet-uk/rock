@@ -76,6 +76,18 @@ class InstallController extends Controller
         Setting::set('site_name', $request->input('group_name'));
         Setting::set('cms_licence_key', $licenceKey);
 
+        // Insert into CmsLicence table so Command Centre API auth works
+        App\Models\CmsLicence::firstOrCreate(
+            ['key' => $licenceKey],
+            [
+                'group_name'   => $request->input('group_name'),
+                'group_number' => $request->input('group_number', ''),
+                'gc_name'      => $request->input('gc_name', ''),
+                'gc_email'     => $request->input('gc_email', ''),
+                'is_active'    => true,
+            ]
+        );
+
         return redirect()->route('install.step2');
     }
 
@@ -132,6 +144,16 @@ class InstallController extends Controller
     public function complete(Request $request)
     {
         Setting::set('installed', '1');
+
+        // Register queue worker cron
+        $cronLine = '* * * * * cd ' . base_path() . ' && php artisan queue:work --stop-when-empty --quiet';
+        $existing = shell_exec('crontab -l 2>/dev/null') ?? '';
+        if (!str_contains($existing, 'queue:work')) {
+            $new = trim($existing) . "\n" . $cronLine . "\n";
+            file_put_contents('/tmp/raynet_cron', $new);
+            shell_exec('crontab /tmp/raynet_cron');
+            @unlink('/tmp/raynet_cron');
+        }
 
         Artisan::call('route:clear');
         Artisan::call('view:clear');

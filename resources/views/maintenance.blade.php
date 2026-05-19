@@ -344,7 +344,7 @@
             @endif
 
             <p class="message-text">
-                {{ $message ?: 'The {{ \App\Helpers\RaynetSetting::groupName() }} Members Portal is currently undergoing scheduled maintenance. All services will be restored as soon as possible. We apologise for any inconvenience caused.' }}
+                {{ $message ?: 'The ' . AppHelpersRaynetSetting::groupName() . ' Members Portal is currently undergoing scheduled maintenance. All services will be restored as soon as possible. We apologise for any inconvenience caused.' }}
             </p>
 
             <div class="chips">
@@ -354,7 +354,7 @@
                 <div class="chip c-amber"><span class="chip-dot"></span>Support Available</div>
                 @endif
                 <div class="chip c-grey"><span class="chip-dot"></span>Group {{ \App\Helpers\RaynetSetting::groupNumber() }}</div>
-                <div class="chip c-grey"><span class="chip-dot"></span>{{ AppHelpersRaynetSetting::groupRegion() }}</div>
+                <div class="chip c-grey"><span class="chip-dot"></span>{{ \App\Helpers\RaynetSetting::groupRegion() }}</div>
             </div>
 
             <div class="admin-sep">
@@ -481,7 +481,7 @@
         <div class="footer-stats">
             <div class="f-stat"><div class="f-val">{{ \App\Helpers\RaynetSetting::groupNumber() }}</div><div class="f-lbl">Group Ref</div></div>
             <div class="footer-vsep"></div>
-            <div class="f-stat"><div class="f-val">{{ AppHelpersRaynetSetting::groupRegion() }}</div><div class="f-lbl">Area</div></div>
+            <div class="f-stat"><div class="f-val">{{ \App\Helpers\RaynetSetting::groupRegion() }}</div><div class="f-lbl">Area</div></div>
             <div class="footer-vsep"></div>
             <div class="f-stat"><div class="f-val" id="footerTimer">—</div><div class="f-lbl">Offline Duration</div></div>
         </div>

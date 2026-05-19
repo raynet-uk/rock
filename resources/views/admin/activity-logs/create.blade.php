@@ -220,7 +220,14 @@ body { background: var(--grey); color: var(--text); font-family: var(--font); fo
             <h2>Activity Log Details</h2>
         </div>
 
-        <form method="POST" action="{{ route('admin.activity-logs.store') }}">
+        {{-- Mode toggle --}}
+        <div style="display:flex;gap:.5rem;padding:.75rem 1.25rem;background:var(--grey);border-bottom:1px solid var(--grey-mid);align-items:center">
+            <span style="font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted)">Mode:</span>
+            <button type="button" id="btn-single" onclick="setMode('single')" style="font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.05em;padding:.35rem .9rem;border:1px solid var(--navy);background:var(--navy);color:#fff;cursor:pointer;font-family:var(--font)">👤 Single Member</button>
+            <button type="button" id="btn-bulk" onclick="setMode('bulk')" style="font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.05em;padding:.35rem .9rem;border:1px solid var(--grey-mid);background:var(--white);color:var(--text-muted);cursor:pointer;font-family:var(--font)">👥 Multiple Members</button>
+        </div>
+
+        <form method="POST" id="log-form" action="{{ route('admin.activity-logs.store') }}">
             @csrf
 
             {{--
@@ -294,12 +301,12 @@ body { background: var(--grey); color: var(--text); font-family: var(--font); fo
                     <input type="hidden" name="is_custom_event" id="is-custom-event"
                            value="{{ $isCustom ? '1' : '0' }}">
 
-                    {{-- Member --}}
-                    <div class="field">
+                    {{-- Member selector (single / bulk) --}}
+                    <div class="field" id="field-single-member">
                         <label for="user_id">Member <span class="req">*</span></label>
                         <div class="input-wrap">
                             <span class="input-icon">👤</span>
-                            <select id="user_id" name="user_id" required>
+                            <select id="user_id" name="user_id">
                                 <option value="">— Select member —</option>
                                 @foreach ($users as $u)
                                     <option value="{{ $u->id }}" {{ old('user_id') == $u->id ? 'selected' : '' }}>
@@ -309,6 +316,27 @@ body { background: var(--grey); color: var(--text); font-family: var(--font); fo
                             </select>
                         </div>
                         @error('user_id')<div class="field-error">{{ $message }}</div>@enderror
+                    </div>
+
+                    <div id="field-bulk-members" style="display:none;grid-column:span 2">
+                        <div class="field">
+                            <label>Members <span class="req">*</span> <span class="opt">— hold Ctrl/Cmd to select multiple</span></label>
+                            <div style="display:flex;gap:.5rem;align-items:flex-start">
+                                <div style="flex:1">
+                                    <select id="user_ids" name="user_ids[]" multiple size="8"
+                                        style="width:100%;padding:.5rem;border:1px solid var(--grey-mid);font-family:var(--font);font-size:13px;color:var(--text)">
+                                        @foreach ($users as $u)
+                                            <option value="{{ $u->id }}">{{ $u->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div style="display:flex;flex-direction:column;gap:.35rem;flex-shrink:0">
+                                    <button type="button" onclick="selectAllMembers()" style="font-size:11px;font-weight:bold;padding:.35rem .75rem;border:1px solid var(--navy);background:var(--navy-faint);color:var(--navy);cursor:pointer;font-family:var(--font);white-space:nowrap">✓ Select All</button>
+                                    <button type="button" onclick="clearAllMembers()" style="font-size:11px;font-weight:bold;padding:.35rem .75rem;border:1px solid var(--grey-mid);background:var(--white);color:var(--text-muted);cursor:pointer;font-family:var(--font);white-space:nowrap">✕ Clear All</button>
+                                </div>
+                            </div>
+                            <div id="bulk-count" style="font-size:11px;color:var(--text-muted);margin-top:.25rem">0 members selected</div>
+                        </div>
                     </div>
 
                     {{-- Hours --}}
@@ -369,7 +397,7 @@ body { background: var(--grey); color: var(--text); font-family: var(--font); fo
             </div>
 
             <div class="form-footer">
-                <div class="form-footer-note">🔐 Entry will be attributed to the logged-in admin</div>
+                <div class="form-footer-note">🔐 Entry will be attributed to the logged-in admin — <span id="bulk-footer-note" style="display:none;color:var(--navy);font-weight:bold">one entry per selected member</span></div>
                 <div class="form-footer-btns">
                     <a href="{{ route('admin.activity-logs.index') }}" class="btn-cancel">Cancel</a>
                     <button type="submit" class="btn-submit">✓ Save Entry</button>
@@ -455,6 +483,72 @@ body { background: var(--grey); color: var(--text); font-family: var(--font); fo
         setPrefilledNotice(true);
     }
 }());
+</script>
+
+<script>
+var currentMode = 'single';
+
+function setMode(mode) {
+    currentMode = mode;
+    var form = document.getElementById('log-form');
+    var singleField = document.getElementById('field-single-member');
+    var bulkField   = document.getElementById('field-bulk-members');
+    var singleUser  = document.getElementById('user_id');
+    var bulkUsers   = document.getElementById('user_ids');
+    var btnSingle   = document.getElementById('btn-single');
+    var btnBulk     = document.getElementById('btn-bulk');
+    var bulkNote    = document.getElementById('bulk-footer-note');
+
+    if (mode === 'bulk') {
+        form.action = '{{ route("admin.activity-logs.store-bulk") }}';
+        singleField.style.display = 'none';
+        bulkField.style.display   = '';
+        singleUser.required = false;
+        singleUser.name     = '';
+        bulkUsers.required  = true;
+        bulkNote.style.display = '';
+        btnSingle.style.background = 'var(--white)';
+        btnSingle.style.color      = 'var(--text-muted)';
+        btnSingle.style.borderColor= 'var(--grey-mid)';
+        btnBulk.style.background   = 'var(--navy)';
+        btnBulk.style.color        = '#fff';
+        btnBulk.style.borderColor  = 'var(--navy)';
+    } else {
+        form.action = '{{ route("admin.activity-logs.store") }}';
+        singleField.style.display = '';
+        bulkField.style.display   = 'none';
+        singleUser.required = true;
+        singleUser.name     = 'user_id';
+        bulkUsers.required  = false;
+        bulkNote.style.display = 'none';
+        btnSingle.style.background = 'var(--navy)';
+        btnSingle.style.color      = '#fff';
+        btnSingle.style.borderColor= 'var(--navy)';
+        btnBulk.style.background   = 'var(--white)';
+        btnBulk.style.color        = 'var(--text-muted)';
+        btnBulk.style.borderColor  = 'var(--grey-mid)';
+    }
+}
+
+function selectAllMembers() {
+    var sel = document.getElementById('user_ids');
+    for (var i = 0; i < sel.options.length; i++) sel.options[i].selected = true;
+    updateBulkCount();
+}
+
+function clearAllMembers() {
+    var sel = document.getElementById('user_ids');
+    for (var i = 0; i < sel.options.length; i++) sel.options[i].selected = false;
+    updateBulkCount();
+}
+
+function updateBulkCount() {
+    var sel = document.getElementById('user_ids');
+    var count = Array.from(sel.options).filter(o => o.selected).length;
+    document.getElementById('bulk-count').textContent = count + ' member' + (count !== 1 ? 's' : '') + ' selected';
+}
+
+document.getElementById('user_ids').addEventListener('change', updateBulkCount);
 </script>
 
 @endsection

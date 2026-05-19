@@ -76,3 +76,129 @@
 [16-Apr-2026 22:08:42 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes) in /home/raynetliverpool/public_html/app/Http/Controllers/OpsMapController.php on line 341
 [16-Apr-2026 22:08:49 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes) in /home/raynetliverpool/public_html/app/Http/Controllers/OpsMapController.php on line 341
 [16-Apr-2026 22:09:12 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes) in /home/raynetliverpool/public_html/app/Http/Controllers/OpsMapController.php on line 341
+[21-Apr-2026 21:18:31 Europe/London] PHP Fatal error:  Cannot redeclare App\Http\Controllers\Admin\MemberApplicationAdminController::downloadPdf() in /home/raynetliverpool/public_html/app/Http/Controllers/Admin/MemberApplicationAdminController.php on line 122
+[21-Apr-2026 21:18:38 Europe/London] PHP Fatal error:  Cannot redeclare App\Http\Controllers\Admin\MemberApplicationAdminController::downloadPdf() in /home/raynetliverpool/public_html/app/Http/Controllers/Admin/MemberApplicationAdminController.php on line 122
+[21-Apr-2026 21:18:57 Europe/London] PHP Fatal error:  Cannot redeclare App\Http\Controllers\Admin\MemberApplicationAdminController::downloadPdf() in /home/raynetliverpool/public_html/app/Http/Controllers/Admin/MemberApplicationAdminController.php on line 122
+[25-Apr-2026 16:13:45 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes) in /home/raynetliverpool/public_html/app/Http/Controllers/OpsMapController.php on line 341
+[25-Apr-2026 16:14:08 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes) in /home/raynetliverpool/public_html/app/Http/Controllers/OpsMapController.php on line 341
+[25-Apr-2026 16:14:11 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes) in /home/raynetliverpool/public_html/app/Http/Controllers/OpsMapController.php on line 341
+[01-May-2026 00:38:50 Europe/London] PHP Fatal error:  Cannot redeclare App\Http\Controllers\TelegramWebhookController::parseUKDate() in /home/raynetliverpool/public_html/app/Http/Controllers/TelegramWebhookController.php on line 450
+[01-May-2026 00:38:53 Europe/London] PHP Fatal error:  Cannot redeclare App\Http\Controllers\TelegramWebhookController::parseUKDate() in /home/raynetliverpool/public_html/app/Http/Controllers/TelegramWebhookController.php on line 450
+[01-May-2026 00:38:57 Europe/London] PHP Fatal error:  Cannot redeclare App\Http\Controllers\TelegramWebhookController::parseUKDate() in /home/raynetliverpool/public_html/app/Http/Controllers/TelegramWebhookController.php on line 450
+[01-May-2026 00:39:04 Europe/London] PHP Fatal error:  Cannot redeclare App\Http\Controllers\TelegramWebhookController::parseUKDate() in /home/raynetliverpool/public_html/app/Http/Controllers/TelegramWebhookController.php on line 450
+[01-May-2026 00:39:14 Europe/London] PHP Fatal error:  Cannot redeclare App\Http\Controllers\TelegramWebhookController::parseUKDate() in /home/raynetliverpool/public_html/app/Http/Controllers/TelegramWebhookController.php on line 450
+[01-May-2026 00:39:33 Europe/London] PHP Fatal error:  Cannot redeclare App\Http\Controllers\TelegramWebhookController::parseUKDate() in /home/raynetliverpool/public_html/app/Http/Controllers/TelegramWebhookController.php on line 450
+[01-May-2026 00:40:07 Europe/London] PHP Fatal error:  Cannot redeclare App\Http\Controllers\TelegramWebhookController::parseUKDate() in /home/raynetliverpool/public_html/app/Http/Controllers/TelegramWebhookController.php on line 450
+[13-May-2026 13:33:34 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes) in /home/raynetliverpool/public_html/app/Http/Controllers/OpsMapController.php on line 341
+[13-May-2026 18:25:24 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes) in /home/raynetliverpool/public_html/app/Http/Controllers/OpsMapController.php on line 341
+[13-May-2026 23:36:00 UTC] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /home/raynetliverpool/public_html/vendor/vlucas/phpdotenv/src/Loader/Loader.php on line 11
+[13-May-2026 23:40:24 UTC] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /home/raynetliverpool/public_html/vendor/nesbot/carbon/src/Carbon/CarbonImmutable.php on line 836
+[14-May-2026 00:13:32 UTC] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /home/raynetliverpool/public_html/vendor/symfony/finder/Iterator/ExcludeDirectoryFilterIterator.php on line 25
+[14-May-2026 00:13:32 UTC] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /home/raynetliverpool/public_html/config/filesystems.php on line 16
+[16-May-2026 00:16:19 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes) in /home/raynetliverpool/public_html/app/Http/Controllers/OpsMapController.php on line 341
+[16-May-2026 00:16:28 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes) in /home/raynetliverpool/public_html/app/Http/Controllers/OpsMapController.php on line 341
+[16-May-2026 00:16:38 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes) in /home/raynetliverpool/public_html/app/Http/Controllers/OpsMapController.php on line 341
+[19-May-2026 20:19:20 Europe/London] PHP Fatal error:  Uncaught ReflectionException: Class "view" does not exist in /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php:1161
+Stack trace:
+#0 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php(1161): ReflectionClass->__construct('view')
+#1 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php(972): Illuminate\Container\Container->build('view')
+#2 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1078): Illuminate\Container\Container->resolve('view', Array, true)
+#3 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php(903): Illuminate\Foundation\Application->resolve('view', Array)
+#4 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1058): Illuminate\Container\Container->make('view', Array)
+#5 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php(1856): Illuminate\Foundation\Application->make('view')
+#6 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Routing/RoutingServiceProvider.php(177): Illuminate\Container\Container->offsetGet('Illuminate\\Cont...')
+#7 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php(1154): Illuminate\Routing\RoutingServiceProvider->Illuminate\Routing\{closure}(Object(Illuminate\Foundation\Application), Array)
+#8 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php(972): Illuminate\Container\Container->build(Object(Closure))
+#9 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1078): Illuminate\Container\Container->resolve('Illuminate\\Cont...', Array, true)
+#10 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php(903): Illuminate\Foundation\Application->resolve('Illuminate\\Cont...', Array)
+#11 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1058): Illuminate\Container\Container->make('Illuminate\\Cont...', Array)
+#12 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/helpers.php(138): Illuminate\Foundation\Application->make('Illuminate\\Cont...', Array)
+#13 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/helpers.php(851): app('Illuminate\\Cont...')
+#14 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Exceptions/Handler.php(987): response('<!-- Target cla...', 500, Array)
+#15 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Exceptions/Handler.php(839): Illuminate\Foundation\Exceptions\Handler->toIlluminateResponse(Object(Symfony\Component\HttpFoundation\Response), Object(Illuminate\Contracts\Container\BindingResolutionException))
+#16 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Exceptions/Handler.php(738): Illuminate\Foundation\Exceptions\Handler->prepareResponse(Object(Illuminate\Http\Request), Object(Illuminate\Contracts\Container\BindingResolutionException))
+#17 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Exceptions/Handler.php(626): Illuminate\Foundation\Exceptions\Handler->renderExceptionResponse(Object(Illuminate\Http\Request), Object(Illuminate\Contracts\Container\BindingResolutionException))
+#18 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(221): Illuminate\Foundation\Exceptions\Handler->render(Object(Illuminate\Http\Request), Object(Illuminate\Contracts\Container\BindingResolutionException))
+#19 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(198): Illuminate\Foundation\Bootstrap\HandleExceptions->renderHttpResponse(Object(Illuminate\Contracts\Container\BindingResolutionException))
+#20 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(258): Illuminate\Foundation\Bootstrap\HandleExceptions->handleException(Object(Illuminate\Contracts\Container\BindingResolutionException))
+#21 [internal function]: Illuminate\Foundation\Bootstrap\HandleExceptions->Illuminate\Foundation\Bootstrap\{closure}(Object(Illuminate\Contracts\Container\BindingResolutionException))
+#22 {main}
+
+Next Illuminate\Contracts\Container\BindingResolutionException: Target class [view] does not exist. in /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php:1163
+Stack trace:
+#0 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php(972): Illuminate\Container\Container->build('view')
+#1 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1078): Illuminate\Container\Container->resolve('view', Array, true)
+#2 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php(903): Illuminate\Foundation\Application->resolve('view', Array)
+#3 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1058): Illuminate\Container\Container->make('view', Array)
+#4 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php(1856): Illuminate\Foundation\Application->make('view')
+#5 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Routing/RoutingServiceProvider.php(177): Illuminate\Container\Container->offsetGet('Illuminate\\Cont...')
+#6 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php(1154): Illuminate\Routing\RoutingServiceProvider->Illuminate\Routing\{closure}(Object(Illuminate\Foundation\Application), Array)
+#7 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php(972): Illuminate\Container\Container->build(Object(Closure))
+#8 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1078): Illuminate\Container\Container->resolve('Illuminate\\Cont...', Array, true)
+#9 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php(903): Illuminate\Foundation\Application->resolve('Illuminate\\Cont...', Array)
+#10 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1058): Illuminate\Container\Container->make('Illuminate\\Cont...', Array)
+#11 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/helpers.php(138): Illuminate\Foundation\Application->make('Illuminate\\Cont...', Array)
+#12 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/helpers.php(851): app('Illuminate\\Cont...')
+#13 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Exceptions/Handler.php(987): response('<!-- Target cla...', 500, Array)
+#14 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Exceptions/Handler.php(839): Illuminate\Foundation\Exceptions\Handler->toIlluminateResponse(Object(Symfony\Component\HttpFoundation\Response), Object(Illuminate\Contracts\Container\BindingResolutionException))
+#15 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Exceptions/Handler.php(738): Illuminate\Foundation\Exceptions\Handler->prepareResponse(Object(Illuminate\Http\Request), Object(Illuminate\Contracts\Container\BindingResolutionException))
+#16 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Exceptions/Handler.php(626): Illuminate\Foundation\Exceptions\Handler->renderExceptionResponse(Object(Illuminate\Http\Request), Object(Illuminate\Contracts\Container\BindingResolutionException))
+#17 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(221): Illuminate\Foundation\Exceptions\Handler->render(Object(Illuminate\Http\Request), Object(Illuminate\Contracts\Container\BindingResolutionException))
+#18 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(198): Illuminate\Foundation\Bootstrap\HandleExceptions->renderHttpResponse(Object(Illuminate\Contracts\Container\BindingResolutionException))
+#19 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(258): Illuminate\Foundation\Bootstrap\HandleExceptions->handleException(Object(Illuminate\Contracts\Container\BindingResolutionException))
+#20 [internal function]: Illuminate\Foundation\Bootstrap\HandleExceptions->Illuminate\Foundation\Bootstrap\{closure}(Object(Illuminate\Contracts\Container\BindingResolutionException))
+#21 {main}
+  thrown in /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php on line 1163
+[19-May-2026 20:19:20 Europe/London] PHP Fatal error:  Uncaught ReflectionException: Class "view" does not exist in /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php:1161
+Stack trace:
+#0 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php(1161): ReflectionClass->__construct('view')
+#1 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php(972): Illuminate\Container\Container->build('view')
+#2 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1078): Illuminate\Container\Container->resolve('view', Array, true)
+#3 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php(903): Illuminate\Foundation\Application->resolve('view', Array)
+#4 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1058): Illuminate\Container\Container->make('view', Array)
+#5 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php(1856): Illuminate\Foundation\Application->make('view')
+#6 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Routing/RoutingServiceProvider.php(177): Illuminate\Container\Container->offsetGet('Illuminate\\Cont...')
+#7 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php(1154): Illuminate\Routing\RoutingServiceProvider->Illuminate\Routing\{closure}(Object(Illuminate\Foundation\Application), Array)
+#8 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php(972): Illuminate\Container\Container->build(Object(Closure))
+#9 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1078): Illuminate\Container\Container->resolve('Illuminate\\Cont...', Array, true)
+#10 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php(903): Illuminate\Foundation\Application->resolve('Illuminate\\Cont...', Array)
+#11 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1058): Illuminate\Container\Container->make('Illuminate\\Cont...', Array)
+#12 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/helpers.php(138): Illuminate\Foundation\Application->make('Illuminate\\Cont...', Array)
+#13 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/helpers.php(851): app('Illuminate\\Cont...')
+#14 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Exceptions/Handler.php(987): response('<!-- Uncaught R...', 500, Array)
+#15 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Exceptions/Handler.php(839): Illuminate\Foundation\Exceptions\Handler->toIlluminateResponse(Object(Symfony\Component\HttpFoundation\Response), Object(Symfony\Component\ErrorHandler\Error\FatalError))
+#16 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Exceptions/Handler.php(738): Illuminate\Foundation\Exceptions\Handler->prepareResponse(Object(Illuminate\Http\Request), Object(Symfony\Component\ErrorHandler\Error\FatalError))
+#17 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Exceptions/Handler.php(626): Illuminate\Foundation\Exceptions\Handler->renderExceptionResponse(Object(Illuminate\Http\Request), Object(Symfony\Component\ErrorHandler\Error\FatalError))
+#18 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(221): Illuminate\Foundation\Exceptions\Handler->render(Object(Illuminate\Http\Request), Object(Symfony\Component\ErrorHandler\Error\FatalError))
+#19 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(198): Illuminate\Foundation\Bootstrap\HandleExceptions->renderHttpResponse(Object(Symfony\Component\ErrorHandler\Error\FatalError))
+#20 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(234): Illuminate\Foundation\Bootstrap\HandleExceptions->handleException(Object(Symfony\Component\ErrorHandler\Error\FatalError))
+#21 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(258): Illuminate\Foundation\Bootstrap\HandleExceptions->handleShutdown()
+#22 [internal function]: Illuminate\Foundation\Bootstrap\HandleExceptions->Illuminate\Foundation\Bootstrap\{closure}()
+#23 {main}
+
+Next Illuminate\Contracts\Container\BindingResolutionException: Target class [view] does not exist. in /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php:1163
+Stack trace:
+#0 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php(972): Illuminate\Container\Container->build('view')
+#1 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1078): Illuminate\Container\Container->resolve('view', Array, true)
+#2 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php(903): Illuminate\Foundation\Application->resolve('view', Array)
+#3 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1058): Illuminate\Container\Container->make('view', Array)
+#4 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php(1856): Illuminate\Foundation\Application->make('view')
+#5 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Routing/RoutingServiceProvider.php(177): Illuminate\Container\Container->offsetGet('Illuminate\\Cont...')
+#6 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php(1154): Illuminate\Routing\RoutingServiceProvider->Illuminate\Routing\{closure}(Object(Illuminate\Foundation\Application), Array)
+#7 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php(972): Illuminate\Container\Container->build(Object(Closure))
+#8 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1078): Illuminate\Container\Container->resolve('Illuminate\\Cont...', Array, true)
+#9 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php(903): Illuminate\Foundation\Application->resolve('Illuminate\\Cont...', Array)
+#10 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1058): Illuminate\Container\Container->make('Illuminate\\Cont...', Array)
+#11 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/helpers.php(138): Illuminate\Foundation\Application->make('Illuminate\\Cont...', Array)
+#12 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/helpers.php(851): app('Illuminate\\Cont...')
+#13 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Exceptions/Handler.php(987): response('<!-- Uncaught R...', 500, Array)
+#14 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Exceptions/Handler.php(839): Illuminate\Foundation\Exceptions\Handler->toIlluminateResponse(Object(Symfony\Component\HttpFoundation\Response), Object(Symfony\Component\ErrorHandler\Error\FatalError))
+#15 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Exceptions/Handler.php(738): Illuminate\Foundation\Exceptions\Handler->prepareResponse(Object(Illuminate\Http\Request), Object(Symfony\Component\ErrorHandler\Error\FatalError))
+#16 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Exceptions/Handler.php(626): Illuminate\Foundation\Exceptions\Handler->renderExceptionResponse(Object(Illuminate\Http\Request), Object(Symfony\Component\ErrorHandler\Error\FatalError))
+#17 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(221): Illuminate\Foundation\Exceptions\Handler->render(Object(Illuminate\Http\Request), Object(Symfony\Component\ErrorHandler\Error\FatalError))
+#18 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(198): Illuminate\Foundation\Bootstrap\HandleExceptions->renderHttpResponse(Object(Symfony\Component\ErrorHandler\Error\FatalError))
+#19 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(234): Illuminate\Foundation\Bootstrap\HandleExceptions->handleException(Object(Symfony\Component\ErrorHandler\Error\FatalError))
+#20 /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(258): Illuminate\Foundation\Bootstrap\HandleExceptions->handleShutdown()
+#21 [internal function]: Illuminate\Foundation\Bootstrap\HandleExceptions->Illuminate\Foundation\Bootstrap\{closure}()
+#22 {main}
+  thrown in /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php on line 1163

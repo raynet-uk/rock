@@ -318,7 +318,7 @@
                                 {{ $user->name ?? 'Unknown' }}
                             </div>
                             @if($user?->callsign)
-                                <div style="font-size:10px;color:var(--text-muted);letter-spacing:.06em;">{{ $user->callsign }}</div>
+                                <div style="font-size:10px;color:var(--text-muted);letter-spacing:.06em;">{{ $_isTempAdmin && isset($user) && method_exists($user, 'piiVisible') && !$user->piiVisible() ? '●●●●●' : $user->callsign }}</div>
                             @endif
                         </div>
                     </div>
@@ -396,9 +396,9 @@
                                 <div class="member-name-inner">
                                     <div class="member-av">{{ $initials }}</div>
                                     <div>
-                                        <div class="member-name-text">{{ $user->name }}</div>
-                                        @if($user->callsign)
-                                            <div class="member-callsign">{{ $user->callsign }}</div>
+                                        <div class="member-name-text">{{ $_isTempAdmin && isset($user) && method_exists($user, 'piiVisible') && !$user->piiVisible() ? '●●●●●●●●●' : $user->name }}</div>
+                                        @if($user->callsign && (!$_isTempAdmin || ($user->isTemporaryGuest() || $user->isTemporaryAdmin())))
+                                            <div class="member-callsign">{{ $_isTempAdmin && isset($user) && method_exists($user, 'piiVisible') && !$user->piiVisible() ? '●●●●●' : $user->callsign }}</div>
                                         @endif
                                     </div>
                                 </div>

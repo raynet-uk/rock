@@ -281,7 +281,7 @@ body{font-family:var(--font);background:var(--grey);color:var(--text);}
                         $isInProg  = $status === 'incomplete';
                     @endphp
                     <tr>
-                        <td style="font-weight:bold;color:var(--text);">{{ $u?->name ?? 'User #'.$userId }}</td>
+                        <td style="font-weight:bold;color:var(--text);">{{ ($_isTempAdmin && isset($u) && !($u->isTemporaryGuest() || $u->isTemporaryAdmin())) ? '●●●●●●●●●' : ($u?->name ?? 'User #'.$userId) }}</td>
                         <td style="font-family:monospace;font-size:11px;">{{ $u?->callsign ?? '—' }}</td>
                         <td>
                             @if($isPassed)
@@ -313,7 +313,7 @@ body{font-family:var(--font);background:var(--grey);color:var(--text);}
                     @foreach($enrollments as $e)
                     @if(!$sd->memberData->has($e->user_id))
                     <tr>
-                        <td style="font-weight:bold;color:var(--text);">{{ $e->user->name }}</td>
+                        <td style="font-weight:bold;color:var(--text);">{{ ($_isTempAdmin && isset($e->user) && !($e->user->isTemporaryGuest() || $e->user->isTemporaryAdmin())) ? '●●●●●●●●●' : $e->user->name }}</td>
                         <td style="font-family:monospace;font-size:11px;">{{ $e->user->callsign ?? '—' }}</td>
                         <td><span class="badge badge-grey">Not Started</span></td>
                         <td><span style="color:var(--muted);">—</span></td>
@@ -445,8 +445,8 @@ body{font-family:var(--font);background:var(--grey);color:var(--text);}
                     @endphp
                     <tr class="member-accordion-row" onclick="toggleAccordion('{{ $rowId }}')">
                         <td style="font-weight:bold;color:var(--text);">
-                            {{ $memberUser?->name ?? 'Unknown' }}
-                            @if($memberUser?->callsign)
+                            {{ ($_isTempAdmin && isset($memberUser) && !($memberUser->isTemporaryGuest() || $memberUser->isTemporaryAdmin())) ? '●●●●●●●●●' : ($memberUser?->name ?? 'Unknown') }}
+                            @if($memberUser?->callsign && (!$_isTempAdmin || ($memberUser->isTemporaryGuest() || $memberUser->isTemporaryAdmin())))
                                 <span style="font-size:10px;color:var(--muted);font-family:monospace;margin-left:.35rem;">{{ $memberUser->callsign }}</span>
                             @endif
                         </td>
@@ -484,7 +484,7 @@ body{font-family:var(--font);background:var(--grey);color:var(--text);}
                         <td colspan="7" style="padding:0;">
                             <div class="accordion-inner">
                                 <div style="font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.65rem;">
-                                    All Attempts — {{ $memberUser?->name }}
+                                    All Attempts — {{ ($_isTempAdmin && isset($memberUser) && !($memberUser->isTemporaryGuest() || $memberUser->isTemporaryAdmin())) ? '●●●●●●●●●' : $memberUser?->name }}
                                 </div>
                                 @foreach($userSubs->sortBy('attempt_number') as $sub)
                                 <div class="attempt-block">
@@ -585,7 +585,7 @@ body{font-family:var(--font);background:var(--grey);color:var(--text);}
                         $rowId          = 'member-' . $e->user_id;
                     @endphp
                     <tr class="member-accordion-row" onclick="toggleAccordion('{{ $rowId }}')">
-                        <td style="font-weight:bold;color:var(--text);">{{ $e->user->name }}</td>
+                        <td style="font-weight:bold;color:var(--text);">{{ ($_isTempAdmin && isset($e->user) && !($e->user->isTemporaryGuest() || $e->user->isTemporaryAdmin())) ? '●●●●●●●●●' : $e->user->name }}</td>
                         <td style="font-family:monospace;font-size:11px;">{{ $e->user->callsign ?? '—' }}</td>
                         <td style="font-size:11px;color:var(--muted);">{{ $e->enrolled_at->format('d M Y') }}</td>
                         <td>
@@ -622,7 +622,7 @@ body{font-family:var(--font);background:var(--grey);color:var(--text);}
                         <td colspan="8" style="padding:0;">
                             <div class="accordion-inner">
                                 <div style="font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.65rem;">
-                                    Lesson Completion — {{ $e->user->name }}
+                                    Lesson Completion — {{ ($_isTempAdmin && isset($e->user) && !($e->user->isTemporaryGuest() || $e->user->isTemporaryAdmin())) ? '●●●●●●●●●' : $e->user->name }}
                                 </div>
                                 @foreach($course->modules->sortBy('sort_order') as $mod)
                                 <div style="font-size:11px;font-weight:bold;color:var(--navy);margin-bottom:.35rem;margin-top:.5rem;">
@@ -677,4 +677,5 @@ function toggleAccordion(id) {
     if (btn) btn.textContent = isOpen ? 'Details ▼' : 'Details ▲';
 }
 </script>
+@include('admin.lms.reset-panel')
 @endsection

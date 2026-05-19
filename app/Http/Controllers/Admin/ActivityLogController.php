@@ -269,6 +269,35 @@ public function create()
             ->with('success', 'Activity log entry created.');
     }
 
+
+    public function storeBulk(Request $request)
+    {
+        $data = $request->validate([
+            'user_ids'   => ['required', 'array', 'min:1'],
+            'user_ids.*' => ['required', 'exists:users,id'],
+            'event_name' => ['required', 'string', 'max:255'],
+            'event_date' => ['required', 'date'],
+            'hours'      => ['required', 'numeric', 'min:0.5', 'max:24'],
+            'notes'      => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        foreach ($data['user_ids'] as $userId) {
+            ActivityLog::create([
+                'user_id'    => $userId,
+                'event_name' => $data['event_name'],
+                'event_date' => $data['event_date'],
+                'hours'      => $data['hours'],
+                'notes'      => $data['notes'] ?? null,
+                'logged_by'  => auth()->id(),
+            ]);
+            $this->syncUserSnapshot($userId);
+        }
+
+        $count = count($data['user_ids']);
+        return redirect()->route('admin.activity-logs.index')
+            ->with('success', "Activity log created for {$count} member(s).");
+    }
+
     public function edit(ActivityLog $activityLog)
     {
         $users = User::orderBy('name')->select('id', 'name')->get();

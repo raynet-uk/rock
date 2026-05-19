@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\AlertStatus;
+use App\Services\TelegramService;
 use Illuminate\Http\Request;
 
 class AlertStatusController extends Controller
 {
+    public function __construct(protected TelegramService $telegram) {}
+
     public function update(Request $request)
     {
         $data = $request->validate([
@@ -18,6 +21,12 @@ class AlertStatusController extends Controller
         $status = AlertStatus::query()->first() ?? new AlertStatus();
         $status->fill($data);
         $status->save();
+
+        $this->telegram->sendAlertNotification(
+            level:    (int) $data['level'],
+            headline: $data['headline'] ?? null,
+            message:  $data['message'] ?? null,
+        );
 
         return redirect()
             ->route('admin.dashboard')

@@ -11,9 +11,18 @@ use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
 {
-    public function create(): View
+    public function create(Request $request): View
     {
-        return view('auth.login');
+        $referer = $request->headers->get('referer', '');
+        $fromM0kkn = str_contains($referer, 'm0kkn.dragon-net.pl');
+
+        if ($fromM0kkn) {
+            session(['login_from' => 'm0kkn']);
+        }
+
+        return view('auth.login', [
+            'from' => $fromM0kkn ? 'm0kkn' : session('login_from'),
+        ]);
     }
 
     public function store(LoginRequest $request): RedirectResponse

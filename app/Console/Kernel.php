@@ -4,4 +4,6 @@ protected function schedule(Schedule $schedule): void
         ->everyThirtyMinutes()
         // ->withoutOverlapping()          // optional but good
         ->runInBackground();               // optional
+    
+    $schedule->command('resources:fetch-emails')->everyMinute();
 }

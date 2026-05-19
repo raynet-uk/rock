@@ -44,7 +44,30 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function isAdmin(): bool
     {
-        return $this->hasRole(['admin', 'super-admin']);
+        return $this->hasRole(['admin', 'super-admin', 'temporary_admin']);
+    }
+
+    public function isTemporaryAdmin(): bool
+    {
+        return $this->hasRole('temporary_admin');
+    }
+
+    public function isTemporaryGuest(): bool
+    {
+        return $this->hasRole('temporary_guest') || $this->guest_expires_at !== null;
+    }
+
+    /**
+     * Whether PII is visible to the currently authenticated admin.
+     * Temporary admins can only see PII of other temporary accounts.
+     */
+    public function piiVisible(): bool
+    {
+        $viewer = auth()->user();
+        if (! $viewer) return false;
+        if (! $viewer->isTemporaryAdmin()) return true;
+        // Temp admins can only see PII of temp accounts
+        return $this->isTemporaryGuest() || $this->isTemporaryAdmin();
     }
 
     public function isCommittee(): bool
@@ -108,6 +131,12 @@ class User extends Authenticatable implements MustVerifyEmail
         // Legacy columns kept in DB for now, removed after migration verified:
         'is_admin', 'is_super_admin',
         'avatar',
+        'allstar_node',
+        'svxlink_network',
+        'raynet_voip',
+        'telegram_chat_id',
+        'guest_expires_at',
+        'guest_expiry_notified_at',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -128,6 +157,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'has_vehicle'                  => 'boolean',
         'max_travel_miles'             => 'integer',
         'attended_event_this_year'     => 'boolean',
+        'guest_expires_at'             => 'datetime',
+        'guest_expiry_notified_at'     => 'datetime',
         'events_attended_this_year'    => 'integer',
         'volunteering_hours_this_year' => 'decimal:1',
     ];

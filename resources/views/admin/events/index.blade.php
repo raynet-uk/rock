@@ -687,7 +687,7 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
                         @foreach ($types as $type)
                             <option value="{{ $type->id }}"
                                 {{ old('event_type_id', $editingEvent->event_type_id ?? '') == $type->id ? 'selected' : '' }}>
-                                {{ $type->name }}
+                                {{ $_isTempAdmin && isset($type) && method_exists($type, 'piiVisible') && !$type->piiVisible() ? '●●●●●●●●●' : $type->name }}
                             </option>
                         @endforeach
                     </select>

@@ -1,0 +1,20 @@
+{
+    "name":          "After Action Report",
+    "alias":         "afteractionreport",
+    "description":   "Post-Exercise Report (PXR) module aligned with JESIP Joint Doctrine and UK emergency planning standards.",
+    "version":       "1.0.0",
+    "requires_core": ">=1.0.0",
+    "author":        "RAYNET Liverpool",
+    "author_uri":    "https://raynet-liverpool.net",
+    "module_uri":    "https://raynet-liverpool.net/modules/afteractionreport",
+    "docs_uri":      "https://raynet-liverpool.net/modules/afteractionreport/docs",
+    "license":       "GPL-2.0+",
+    "license_uri":   "https://www.gnu.org/licenses/gpl-2.0.txt",
+    "tags":          ["pxr", "jesip", "exercise", "report", "resilience"],
+    "changelog": {
+        "1.0.0": "Initial release — JESIP-aligned Post-Exercise Report module."
+    },
+    "providers": [
+        "Modules\\Afteractionreport\\Providers\\AfterActionReportServiceProvider"
+    ]
+}

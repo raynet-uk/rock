@@ -11,7 +11,7 @@ class VerifyEmailNotification extends VerifyEmail
         $url = $this->verificationUrl($notifiable);
 
         return (new MailMessage)
-            ->subject('Verify your email — ' . \App\Helpers\RaynetSetting::groupName() Members Portal')
+            ->subject('Verify your email — ' . \App\Helpers\RaynetSetting::groupName() . ' Members Portal')
             ->view('emails.verify-email', [
                 'url'          => $url,
                 'notifiable'   => $notifiable,

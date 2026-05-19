@@ -176,7 +176,7 @@ body { font-family:var(--font); color:var(--text); background:var(--grey); }
                 <td style="font-size:12px;color:var(--text-muted);">{{ $item->serial_number ?? '—' }}</td>
                 <td>
                     @if ($item->callsign)
-                    <span style="font-weight:bold;letter-spacing:.04em;">{{ $item->callsign }}</span>
+                    <span style="font-weight:bold;letter-spacing:.04em;">{{ $_isTempAdmin && isset($item) && method_exists($item, 'piiVisible') && !$item->piiVisible() ? '●●●●●' : $item->callsign }}</span>
                     @else <span style="color:var(--text-muted);">—</span>
                     @endif
                 </td>
@@ -188,9 +188,9 @@ body { font-family:var(--font); color:var(--text); background:var(--grey); }
                 </td>
                 <td>
                     @if ($item->user)
-                    <div style="font-size:13px;">{{ $item->user->name }}</div>
+                    <div style="font-size:13px;">{{ $_isTempAdmin && isset($item->user) && method_exists($item->user, 'piiVisible') && !$item->user->piiVisible() ? '●●●●●●●●●' : $item->user->name }}</div>
                     @if ($item->user->callsign)
-                    <div style="font-size:11px;color:var(--text-muted);">{{ $item->user->callsign }}</div>
+                    <div style="font-size:11px;color:var(--text-muted);">{{ $_isTempAdmin && isset($item->user) && method_exists($item->user, 'piiVisible') && !$item->user->piiVisible() ? '●●●●●' : $item->user->callsign }}</div>
                     @endif
                     @else <span style="color:var(--text-muted);">Unassigned</span>
                     @endif
@@ -272,7 +272,7 @@ body { font-family:var(--font); color:var(--text); background:var(--grey); }
                         <select name="user_id">
                             <option value="">— Unassigned —</option>
                             @foreach ($members as $m)
-                            <option value="{{ $m->id }}">{{ $m->name }}{{ $m->callsign ? ' ('.$m->callsign.')' : '' }}</option>
+                            <option value="{{ $m->id }}">{{ $_isTempAdmin && isset($m) && method_exists($m, 'piiVisible') && !$m->piiVisible() ? '●●●●●●●●●' : $m->name }}{{ $m->callsign ? ' ('.$m->callsign.')' : '' }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -360,7 +360,7 @@ body { font-family:var(--font); color:var(--text); background:var(--grey); }
                             <option value="">— Unassigned —</option>
                             @foreach ($members as $m)
                             <option value="{{ $m->id }}" {{ $item->user_id == $m->id ? 'selected' : '' }}>
-                                {{ $m->name }}{{ $m->callsign ? ' ('.$m->callsign.')' : '' }}
+                                {{ $_isTempAdmin && isset($m) && method_exists($m, 'piiVisible') && !$m->piiVisible() ? '●●●●●●●●●' : $m->name }}{{ $m->callsign ? ' ('.$m->callsign.')' : '' }}
                             </option>
                             @endforeach
                         </select>
@@ -369,7 +369,7 @@ body { font-family:var(--font); color:var(--text); background:var(--grey); }
                 <div class="form-row three">
                     <div class="field">
                         <label>Callsign</label>
-                        <input type="text" name="callsign" value="{{ $item->callsign }}" style="text-transform:uppercase;">
+                        <input type="text" name="callsign" value="{{ $_isTempAdmin && isset($item) && method_exists($item, 'piiVisible') && !$item->piiVisible() ? '●●●●●' : $item->callsign }}" style="text-transform:uppercase;">
                     </div>
                     <div class="field">
                         <label>Licence Class</label>

@@ -92,6 +92,30 @@
                 </p>
             </div>
 
+            <div>
+                <label for="telegram_chat_id" style="display:block; font-size:0.85rem; color:#e5e7eb; margin-bottom:0.25rem;">
+                    Telegram Chat ID
+                </label>
+                <input
+                    id="telegram_chat_id"
+                    name="telegram_chat_id"
+                    type="text"
+                    value="{{ old('telegram_chat_id', $user->telegram_chat_id) }}"
+                    placeholder="e.g. 5257679106"
+                    style="
+                        width:100%;
+                        padding:0.45rem 0.6rem;
+                        border-radius:0.5rem;
+                        border:1px solid rgba(148,163,184,0.7);
+                        background:#020617;
+                        color:#e5e7eb;
+                    "
+                >
+                <p style="margin:0.3rem 0 0; font-size:0.75rem; color:#9ca3af;">
+                    DM <strong>@raynet_liverpool_bot</strong> on Telegram and send <code>/id</code> to get your Chat ID. This enables direct alert notifications and bot commands like /available.
+                </p>
+            </div>
+
             <div style="margin-top:0.5rem;">
                 <button type="submit" style="
                     padding:0.5rem 1.0rem;

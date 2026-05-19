@@ -16,7 +16,19 @@ class UserAdminController extends Controller
 {
     public function index()
     {
-        $users = User::orderBy('name')->paginate(25);
+        // Temporary admins can only see temporary guest/admin accounts
+        if (auth()->user()->isTemporaryAdmin()) {
+            $roleUserIds = User::role(['temporary_guest', 'temporary_admin'])->pluck('id');
+            $users = User::with('roles')
+                ->where(function($q) use ($roleUserIds) {
+                    $q->whereIn('id', $roleUserIds)
+                      ->orWhereNotNull('guest_expires_at');
+                })
+                ->orderBy('name')
+                ->paginate(25);
+        } else {
+            $users = User::with('roles')->orderBy('name')->paginate(25);
+        }
 
         $suspendedIds = $users->getCollection()
             ->filter(fn($u) => $u->status === 'Suspended')
@@ -109,6 +121,9 @@ class UserAdminController extends Controller
                 'dstar_callsign'  => ['nullable', 'string', 'max:15'],
                 'c4fm_callsign'   => ['nullable', 'string', 'max:15'],
                 'aprs_ssid'       => ['nullable', 'string', 'max:10'],
+                'allstar_node'    => ['nullable', 'string', 'max:100'],
+                'svxlink_network' => ['nullable', 'string', 'max:100'],
+                'raynet_voip'     => ['nullable', 'string', 'max:100'],
                 'modes'           => ['nullable', 'array'],
                 'modes.*'         => ['string', 'max:30'],
             ]);
@@ -121,6 +136,9 @@ class UserAdminController extends Controller
                 'dstar_callsign'  => $user->dstar_callsign,
                 'c4fm_callsign'   => $user->c4fm_callsign,
                 'aprs_ssid'       => $user->aprs_ssid,
+                'allstar_node'    => $user->allstar_node,
+                'svxlink_network' => $user->svxlink_network,
+                'raynet_voip'     => $user->raynet_voip,
                 'modes'           => $user->modes,
             ];
 
@@ -131,6 +149,9 @@ class UserAdminController extends Controller
             $user->dstar_callsign  = $request->dstar_callsign ? strtoupper($request->dstar_callsign) : null;
             $user->c4fm_callsign   = $request->c4fm_callsign ? strtoupper($request->c4fm_callsign) : null;
             $user->aprs_ssid       = $request->aprs_ssid ? strtoupper($request->aprs_ssid) : null;
+            $user->allstar_node    = $request->allstar_node ?: null;
+            $user->svxlink_network = $request->svxlink_network ?: null;
+            $user->raynet_voip     = $request->raynet_voip ?: null;
             $user->modes           = $request->modes ?? [];
             $user->save();
 
@@ -147,6 +168,9 @@ class UserAdminController extends Controller
                     'dstar_callsign'  => $user->dstar_callsign,
                     'c4fm_callsign'   => $user->c4fm_callsign,
                     'aprs_ssid'       => $user->aprs_ssid,
+                    'allstar_node'    => $user->allstar_node,
+                    'svxlink_network' => $user->svxlink_network,
+                    'raynet_voip'     => $user->raynet_voip,
                     'modes'           => $user->modes,
                 ]
             );
@@ -175,6 +199,8 @@ class UserAdminController extends Controller
             'nok_name'              => ['nullable', 'string', 'max:100'],
             'nok_relationship'      => ['nullable', 'string', 'max:50'],
             'nok_phone'             => ['nullable', 'string', 'max:20'],
+            'telegram_chat_id'      => ['nullable', 'string', 'max:50'],
+            'created_at_override'   => ['nullable', 'date'],
         ]);
 
         $user->name           = $request->name;
@@ -197,6 +223,7 @@ class UserAdminController extends Controller
         $user->nok_name         = $request->nok_name ?: null;
         $user->nok_relationship = $request->nok_relationship ?: null;
         $user->nok_phone        = $request->nok_phone ?: null;
+        $user->telegram_chat_id = $request->telegram_chat_id ?: null;
 
         // Capture diff before save
         $dirty    = $user->getDirty();
@@ -220,6 +247,18 @@ class UserAdminController extends Controller
         }
 
         $user->save();
+
+        // Super admin can override the created_at (member since) date
+        if (auth()->user()->isSuperAdmin() && $request->filled('created_at_override')) {
+            \Illuminate\Support\Facades\DB::table('users')
+                ->where('id', $user->id)
+                ->update(['created_at' => \Carbon\Carbon::parse($request->created_at_override)->startOfDay()]);
+            AuditLogger::log(
+                'user.created_at_overridden',
+                $user,
+                "Member since date changed for {$user->name} to {$request->created_at_override}"
+            );
+        }
 
         // ── Audit logging ─────────────────────────────────────────────────
         if ($passwordChanged) {
@@ -568,55 +607,155 @@ class UserAdminController extends Controller
             ->with('status', 'Activity log entry removed and totals resynced.')
             ->with('active_tab', 'activity');
     }
-public function grantDmrAccess(\App\Models\User $user)
-{
-    $user->givePermissionTo('view dmr dashboard');
 
-    \App\Helpers\AuditLogger::log(
-        'dmr_access_granted',
-        $user,
-        "DMR dashboard access granted to {$user->name} by " . auth()->user()->name
-    );
+    public function grantDmrAccess(\App\Models\User $user)
+    {
+        $user->givePermissionTo('view dmr dashboard');
 
-    return back()->with('status', $user->name . ' has been granted DMR dashboard access.');
-}
+        \App\Helpers\AuditLogger::log(
+            'dmr_access_granted',
+            $user,
+            "DMR dashboard access granted to {$user->name} by " . auth()->user()->name
+        );
 
-public function revokeDmrAccess(\App\Models\User $user)
-{
-    $user->revokePermissionTo('view dmr dashboard');
+        return back()->with('status', $user->name . ' has been granted DMR dashboard access.');
+    }
 
-    \App\Helpers\AuditLogger::log(
-        'dmr_access_revoked',
-        $user,
-        "DMR dashboard access revoked from {$user->name} by " . auth()->user()->name
-    );
+    public function revokeDmrAccess(\App\Models\User $user)
+    {
+        $user->revokePermissionTo('view dmr dashboard');
 
-    return back()->with('status', $user->name . "'s DMR dashboard access has been revoked.");
-}
-public function grantDmrMasters(\App\Models\User $user)
-{
-    $user->givePermissionTo('view dmr masters');
+        \App\Helpers\AuditLogger::log(
+            'dmr_access_revoked',
+            $user,
+            "DMR dashboard access revoked from {$user->name} by " . auth()->user()->name
+        );
 
-    \App\Helpers\AuditLogger::log(
-        'dmr_masters_access_granted',
-        $user,
-        "DMR masters access granted to {$user->name} by " . auth()->user()->name
-    );
+        return back()->with('status', $user->name . "'s DMR dashboard access has been revoked.");
+    }
 
-    return back()->with('status', $user->name . ' has been granted DMR masters access.');
-}
+    public function grantDmrMasters(\App\Models\User $user)
+    {
+        $user->givePermissionTo('view dmr masters');
 
-public function revokeDmrMasters(\App\Models\User $user)
-{
-    $user->revokePermissionTo('view dmr masters');
+        \App\Helpers\AuditLogger::log(
+            'dmr_masters_access_granted',
+            $user,
+            "DMR masters access granted to {$user->name} by " . auth()->user()->name
+        );
 
-    \App\Helpers\AuditLogger::log(
-        'dmr_masters_access_revoked',
-        $user,
-        "DMR masters access revoked from {$user->name} by " . auth()->user()->name
-    );
+        return back()->with('status', $user->name . ' has been granted DMR masters access.');
+    }
 
-    return back()->with('status', $user->name . "'s DMR masters access has been revoked.");
-}
+    public function revokeDmrMasters(\App\Models\User $user)
+    {
+        $user->revokePermissionTo('view dmr masters');
 
+        \App\Helpers\AuditLogger::log(
+            'dmr_masters_access_revoked',
+            $user,
+            "DMR masters access revoked from {$user->name} by " . auth()->user()->name
+        );
+
+        return back()->with('status', $user->name . "'s DMR masters access has been revoked.");
+    }
+
+    public function convertToGuest(Request $request, User $user)
+    {
+        $request->validate([
+            'expires_at' => ['nullable', 'date'],
+            'notes'      => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        // Remove all existing roles
+        $user->syncRoles([]);
+
+        // Assign temporary guest role
+        $user->assignRole('temporary_guest');
+
+        // Set expiry and reset notification flag
+        $user->update([
+            'guest_expires_at'         => $request->expires_at ?? null,
+            'guest_expiry_notified_at' => null,
+            'notes'                    => $request->notes ?? $user->notes,
+        ]);
+
+        \Illuminate\Support\Facades\Log::info('User converted to temporary guest', [
+            'user_id'  => $user->id,
+            'admin_id' => auth()->id(),
+        ]);
+        AuditLogger::log('guest.converted_from_member', $user, "Converted {$user->name} from member to temporary guest", [
+            'role' => 'member',
+        ], [
+            'role'       => 'temporary_guest',
+            'expires_at' => $user->guest_expires_at?->toDateTimeString(),
+        ]);
+
+        // Send conversion notification email if requested
+        if ($request->boolean('send_notification')) {
+            try {
+                \Illuminate\Support\Facades\Mail::to($user->email)
+                    ->send(new \App\Mail\TemporaryGuestConverted($user));
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Failed to send guest conversion email', [
+                    'user_id' => $user->id,
+                    'error'   => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return redirect()
+            ->route('admin.users.edit', $user->id)
+            ->with('success', "{$user->name} has been converted to a temporary guest account.");
+    }
+
+    public function convertToMember(Request $request, User $user)
+    {
+        $request->validate([
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        // Remove temporary guest role
+        if ($user->hasRole('temporary_guest')) {
+            $user->removeRole('temporary_guest');
+        }
+
+        // Assign standard member role
+        $user->assignRole('member');
+
+        // Clear all guest expiry fields
+        $user->update([
+            'guest_expires_at'         => null,
+            'guest_expiry_notified_at' => null,
+            'notes'                    => $request->notes ?? $user->notes,
+        ]);
+
+        \Illuminate\Support\Facades\Log::info('Temporary guest converted to member', [
+            'user_id'  => $user->id,
+            'admin_id' => auth()->id(),
+        ]);
+        AuditLogger::log('guest.converted_to_member', $user, "Converted {$user->name} from temporary guest to full member", [
+            'role'       => 'temporary_guest',
+            'expires_at' => 'cleared',
+        ], [
+            'role' => 'member',
+        ]);
+
+        // Send promotion notification email if requested
+        if ($request->boolean('send_notification')) {
+            try {
+                \Illuminate\Support\Facades\Mail::to($user->email)
+                    ->send(new \App\Mail\TemporaryGuestPromoted($user));
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Failed to send member promotion email', [
+                    'user_id' => $user->id,
+                    'error'   => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return redirect()
+            ->route('admin.users.edit', $user->id)
+            ->with('success', "{$user->name} has been converted to a full member account.");
+    }
 }

@@ -155,17 +155,10 @@ const LESSON_ID   = {{ $lesson->id }};
 const CSRF        = '{{ $csrfToken }}';
 const COMPLETE_URL = '{{ $completeUrl }}';
 
-var _scormData     = {};
+// CMI data pre-loaded server-side — available synchronously for LMSInitialize
+var _scormData     = {!! json_encode($scormData) !!};
 var _initialized   = false;
-var _completed     = false;
-
-// Pre-load any saved CMI data
-fetch('/my-training/scorm/' + LESSON_ID + '/api/get', {
-    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF }
-})
-.then(r => r.ok ? r.json() : {})
-.then(data => { _scormData = data || {}; })
-.catch(() => {});
+var _completed     = {{ $scormData->has('cmi.core.lesson_status') && in_array($scormData->get('cmi.core.lesson_status'), ['passed','completed']) ? 'true' : 'false' }};
 
 function _persist(key, value) {
     fetch('/my-training/scorm/' + LESSON_ID + '/api/set', {

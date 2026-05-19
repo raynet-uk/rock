@@ -27,14 +27,16 @@ class AdminNotificationEmail extends Notification
         $priority = $this->notification->priority;
 
         $subjectPrefix = match($priority) {
+            1 => '[EMERGENCY]',
+            2 => '[URGENT]',
             3 => '[OPERATIONAL]',
-            4 => '[URGENT]',
-            5 => '[EMERGENCY]',
             default => '[RAYNET]',
         };
 
+        $groupName = \App\Helpers\RaynetSetting::groupName();
+
         return (new MailMessage)
-            ->subject("{$subjectPrefix} {$this->notification->title} — ' . \App\Helpers\RaynetSetting::groupName()")
+            ->subject("{$subjectPrefix} {$this->notification->title} — {$groupName}")
             ->view('emails.admin-notification', [
                 'notif'      => $this->notification,
                 'cfg'        => $cfg,

@@ -120,6 +120,7 @@ $typeLabels = [
     'checklist'    => 'Checklist',
 ];
 $isDone = $progressRecord && $progressRecord->completed_at;
+$minSeconds = ($lesson->type === 'text' && !empty($lesson->duration_minutes)) ? (int)$lesson->duration_minutes * 60 : 0;
 
 // Video URL conversion
 $videoUrl   = $lesson->video_url ?? '';
@@ -361,20 +362,19 @@ $allProgress = \App\Models\CourseProgress::where('user_id', auth()->id())
                         @endif
                     </div>
                     @if($lesson->type !== 'quiz')
-                    <button class="complete-btn {{ $isDone ? 'done' : '' }}"
-                            id="completeBtn"
-                            onclick="markComplete({{ $lesson->id }})"
-                            @if(!$isDone && in_array($lesson->type, ['video','audio','checklist'])) disabled @endif
-                        @if($isDone)
-                            ✓ Completed
-                        @elseif($lesson->type === 'video')
-                            ⏳ Watch video first
-                        @elseif($lesson->type === 'checklist')
-                            ⏳ Complete all items first
-                        @else
-                            ✓ Mark Complete
-                        @endif
-                    </button>
+@php
+    $btnLabel = $isDone ? '✓ Completed'
+        : ($lesson->type === 'video'     ? '⏳ Watch video first'
+        : ($lesson->type === 'audio'     ? '⏳ Listen first'
+        : ($lesson->type === 'checklist' ? '⏳ Complete all items first'
+        : ($minSeconds > 0             ? '⏳ Reading...'
+        : '✓ Mark Complete'))));
+@endphp
+<button class="complete-btn {{ $isDone ? 'done' : '' }}"
+        id="completeBtn"
+        onclick="markComplete({{ $lesson->id }})"
+        @if(!$isDone && in_array($lesson->type, ['video','audio','checklist'])) disabled @endif
+        @if(!$isDone && $minSeconds > 0) disabled @endif>{{ $btnLabel }}</button>
                     @endif
                 </div>
                 <div class="complete-success" id="completeSuccess">✓ Lesson marked as complete!</div>
@@ -600,6 +600,33 @@ function toggleCheckItem(idx, total) {
         }
     }
 }
+@endif
+// ── TEXT READING TIMER ─────────────────────────────────────────────────────
+@if($lesson->type === 'text' && !$isDone && $minSeconds > 0)
+(function() {
+    var minSeconds = {{ $minSeconds }};
+    var elapsed    = 0;
+    var unlocked   = false;
+
+    function tick() {
+        if (document.hidden) return;
+        elapsed++;
+        var remaining = minSeconds - elapsed;
+        var btn = document.getElementById('completeBtn');
+        if (remaining > 0) {
+            var mins = Math.floor(remaining / 60);
+            var secs = remaining % 60;
+            var display = mins > 0 ? mins + 'm ' + secs + 's remaining' : secs + 's remaining';
+            if (btn) btn.textContent = '⏳ ' + display;
+        } else {
+            if (unlocked) return;
+            unlocked = true;
+            unlockComplete('✓ You can now mark this lesson as complete.');
+        }
+    }
+
+    setInterval(tick, 1000);
+})();
 @endif
 </script>
 @endsection

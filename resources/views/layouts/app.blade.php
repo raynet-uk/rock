@@ -54,7 +54,7 @@
         .btn-dismiss-broadcast:hover { background: #16a34a; }
 
         /* ── NAVBAR ── */
-        .navbar { position: sticky; top: 0; z-index: 200; height: var(--nav-height); background: white; border-bottom: 2px solid var(--navy); box-shadow: var(--shadow-sm); }
+        .navbar { position: sticky; top: 0; z-index: 1000; height: var(--nav-height); background: white; border-bottom: 2px solid var(--navy); box-shadow: var(--shadow-sm); }
         .nav-container { max-width: 1280px; margin: 0 auto; height: 100%; padding: 0 1rem; display: flex; align-items: center; justify-content: space-between; }
         .brand { display: flex; align-items: center; text-decoration: none; }
         .brand-tagline { font-size: 9px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--red); font-family: var(--font); line-height: 1; padding-left: 2px; white-space: nowrap; }
@@ -62,6 +62,16 @@
         .nav-main { display: flex; align-items: center; gap: 1.2rem; }
         .nav-main a { color: var(--muted); font-size: 0.95rem; font-weight: 500; text-decoration: none; padding: 0.4rem 0.6rem; transition: color 0.2s ease; }
         .nav-main a:hover, .nav-main a.active { color: var(--red); }
+        .nav-dropdown { position: relative; }
+        .nav-dropdown-btn { color: var(--muted); font-size: 0.95rem; font-weight: 500; text-decoration: none; padding: 0.4rem 0.6rem; transition: color 0.2s ease; background: none; border: none; cursor: pointer; font-family: var(--font); display: flex; align-items: center; gap: 4px; }
+        .nav-dropdown-btn:hover, .nav-dropdown-btn.active { color: var(--red); }
+        .nav-dropdown-btn .chev { font-size: 8px; transition: transform .2s; }
+        .nav-dropdown-btn[aria-expanded=true] .chev { transform: rotate(180deg); }
+        .nav-dropdown-menu { display: none; position: absolute; top: calc(100% + 8px); left: 0; min-width: 180px; background: var(--white); border: 1px solid var(--grey-mid); border-top: 3px solid var(--navy); box-shadow: var(--shadow-md); z-index: 9999; padding: .3rem 0; }
+        .nav-dropdown-menu.open { display: block; animation: ddFadeIn .15s ease; }
+        .nav-dropdown-menu a { display: flex; align-items: center; gap: .6rem; padding: .55rem 1rem; font-size: 13px; font-weight: 500; color: var(--text-mid); text-decoration: none; transition: background .1s; white-space: nowrap; }
+        .nav-dropdown-menu a:hover { background: var(--navy-faint); color: var(--navy); }
+        .nav-dropdown-menu a.active { color: var(--red); background: var(--light); }
         .header-controls { display: flex; align-items: center; gap: 0.6rem; }
 
         /* ── BELL ── */
@@ -70,7 +80,7 @@
         .bell-btn:hover { background: var(--navy-faint); border-color: var(--navy); }
         .bell-badge { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; border-radius: 999px; background: var(--red); border: 2px solid white; display: none; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; color: white; padding: 0 4px; line-height: 1; font-family: var(--font); }
         .bell-badge.visible { display: flex; }
-        .notif-panel { display: none; position: absolute; top: calc(100% + 10px); right: 0; width: 320px; background: var(--white); border: 1px solid var(--grey-mid); border-top: 3px solid var(--navy); box-shadow: var(--shadow-md); z-index: 500; }
+        .notif-panel { display: none; position: absolute; top: calc(100% + 10px); right: 0; width: 320px; background: var(--white); border: 1px solid var(--grey-mid); border-top: 3px solid var(--navy); box-shadow: var(--shadow-md); z-index: 9999; }
         .notif-panel.open { display: block; }
         .notif-panel-head { padding: .65rem 1rem; background: var(--grey); border-bottom: 1px solid var(--grey-mid); display: flex; align-items: center; justify-content: space-between; }
         .notif-panel-title { font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: .1em; color: var(--navy); }
@@ -104,7 +114,7 @@
         .avatar-callsign { font-size: 10px; font-weight: 700; color: var(--text-muted); font-family: var(--font); letter-spacing: .06em; }
         .avatar-chevron { font-size: 9px; color: var(--grey-dark); margin-left: 2px; transition: transform .2s; display: inline-block; }
         .avatar-btn[aria-expanded="true"] .avatar-chevron { transform: rotate(180deg); }
-        .avatar-dropdown { display: none; position: absolute; top: calc(100% + 10px); right: 0; width: 270px; background: var(--white); border: 1px solid var(--grey-mid); box-shadow: 0 8px 32px rgba(0,31,64,.18), 0 2px 8px rgba(0,31,64,.08); z-index: 500; overflow: hidden; }
+        .avatar-dropdown { display: none; position: absolute; top: calc(100% + 10px); right: 0; width: 270px; background: var(--white); border: 1px solid var(--grey-mid); box-shadow: 0 8px 32px rgba(0,31,64,.18), 0 2px 8px rgba(0,31,64,.08); z-index: 9999; overflow: hidden; }
         .avatar-dropdown.open { display: block; animation: ddFadeIn .15s ease; }
         @keyframes ddFadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
         .avatar-dd-user { padding: 1rem; background: var(--navy); display: flex; align-items: center; gap: .75rem; position: relative; }
@@ -291,11 +301,19 @@
                 <a href="{{ route('about') }}"           class="{{ request()->routeIs('about')           ? 'active' : '' }}">About</a>
                 <a href="{{ route('event-support') }}"   class="{{ request()->routeIs('event-support')   ? 'active' : '' }}">Event Support</a>
                 <a href="{{ route('request-support') }}" class="{{ request()->routeIs('request-support') ? 'active' : '' }}">Request Support</a>
-                <a href="{{ route('data-dashboard') }}"  class="{{ request()->routeIs('data-dashboard')  ? 'active' : '' }}">Data Dashboard</a>
                 <a href="{{ route('training') }}"        class="{{ request()->routeIs('training')        ? 'active' : '' }}">Training</a>
-                @auth
-                <a href="{{ route('ops-map') }}"         class="{{ request()->routeIs('ops-map')         ? 'active' : '' }}">Ops Map</a>
-                @endauth
+                <a href="{{ route('resources.index') }}" class="{{ request()->routeIs('resources*') ? 'active' : '' }}">Drive</a>
+                <div class="nav-dropdown">
+                    <button class="nav-dropdown-btn {{ request()->routeIs('data-dashboard') || request()->routeIs('ops-map*') ? 'active' : '' }}" onclick="this.setAttribute('aria-expanded', this.getAttribute('aria-expanded')==='true'?'false':'true'); this.nextElementSibling.classList.toggle('open')" aria-expanded="false">
+                        Tools <span class="chev">▼</span>
+                    </button>
+                    <div class="nav-dropdown-menu">
+                        <a href="{{ route('data-dashboard') }}" class="{{ request()->routeIs('data-dashboard') ? 'active' : '' }}">📡 Data Dashboard</a>
+                        @auth
+                        <a href="{{ route('ops-map') }}" class="{{ request()->routeIs('ops-map*') ? 'active' : '' }}">🗺️ Ops Map</a>
+                        @endauth
+                    </div>
+                </div>
             </div>
 
             <div class="header-controls">
@@ -411,7 +429,8 @@
                 @endauth
                 @guest
                     <a href="{{ route('login') }}"    class="btn-pill btn-member">Login</a>
-                    <a href="{{ route('register') }}" class="btn-pill btn-register">Register</a>
+                   <!--  <a href="{{ route('member-application') }}" class="btn-pill" style="background:var(--navy);color:#fff;border:1px solid rgba(255,255,255,.2)">📋 Join RAYNET</a> -->
+                <a href="{{ route('register') }}" class="btn-pill btn-register">Register</a>
                 @endguest
             </div>
 
@@ -444,6 +463,14 @@
                 <a href="{{ route('request-support') }}" class="{{ request()->routeIs('request-support') ? 'active' : '' }}"><span class="mobile-menu-icon">🆘</span> Request Support</a>
                 <a href="{{ route('data-dashboard') }}"  class="{{ request()->routeIs('data-dashboard')  ? 'active' : '' }}"><span class="mobile-menu-icon">📊</span> Data Dashboard</a>
                 <a href="{{ route('training') }}"        class="{{ request()->routeIs('training')        ? 'active' : '' }}"><span class="mobile-menu-icon">🎓</span> Training</a>
+                <a href="{{ route('resources.index') }}"  class="{{ request()->routeIs('resources*')       ? 'active' : '' }}"><span class="mobile-menu-icon">&#128193;</span> Drive</a>
+            </div>
+            <div class="mobile-nav-section">
+                <div class="mobile-nav-label">Tools</div>
+                <a href="{{ route('data-dashboard') }}"   class="{{ request()->routeIs('data-dashboard')   ? 'active' : '' }}"><span class="mobile-menu-icon">📡</span> Data Dashboard</a>
+                @auth
+                <a href="{{ route('ops-map') }}"          class="{{ request()->routeIs('ops-map*')         ? 'active' : '' }}"><span class="mobile-menu-icon">🗺️</span> Ops Map</a>
+                @endauth
             </div>
             @auth
             <div class="mobile-notif-section">
@@ -490,10 +517,57 @@
             @guest
             <div style="display:flex;flex-direction:column;gap:.8rem;margin-top:.5rem;">
                 <a href="{{ route('login') }}"    class="btn-pill btn-member"   style="justify-content:center;">Login</a>
+                <!-- <a href="{{ route('member-application') }}" class="btn-pill" style="justify-content:center;background:var(--navy);color:#fff;border:1px solid rgba(255,255,255,.2)">📋 Apply to Join</a> -->
                 <a href="{{ route('register') }}" class="btn-pill btn-register" style="justify-content:center;">Register</a>
             </div>
             @endguest
         </div>
+
+    @auth
+    @if(auth()->user()->guest_expires_at || auth()->user()->hasRole('temporary_guest'))
+    <div id="guestBanner" style="background:linear-gradient(90deg,#92400e,#b45309);border-top:1px solid rgba(255,255,255,.1);padding:.35rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:.65rem;">
+            <span style="font-size:13px;flex-shrink:0;">⏱</span>
+            <div>
+                <div style="font-size:11px;font-weight:bold;color:#fff;letter-spacing:.04em;text-transform:uppercase;line-height:1.2;">Temporary Guest Access</div>
+                <div style="font-size:10px;color:rgba(255,255,255,.8);margin-top:1px;">
+                    @if(auth()->user()->guest_expires_at && auth()->user()->guest_expires_at->isFuture())
+                        Expires {{ auth()->user()->guest_expires_at->format('d M Y \a\t H:i') }}
+                    @elseif(auth()->user()->guest_expires_at && auth()->user()->guest_expires_at->isPast())
+                        Access expired {{ auth()->user()->guest_expires_at->diffForHumans() }}
+                    @else
+                        No expiry set — contact your administrator
+                    @endif
+                </div>
+            </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:.5rem;flex-shrink:0;">
+            @if(auth()->user()->guest_expires_at && auth()->user()->guest_expires_at->isFuture())
+                <div id="guestBannerCountdown" style="font-size:11px;font-weight:bold;color:#fff;font-family:monospace;background:rgba(0,0,0,.25);padding:.18rem .55rem;border:1px solid rgba(255,255,255,.2);">--:--:--</div>
+            @endif
+            <span style="font-size:9px;font-weight:bold;color:#92400e;background:#fef3c7;border:1px solid #fde68a;padding:2px 7px;text-transform:uppercase;letter-spacing:.05em;">⏱ Guest</span>
+        </div>
+    </div>
+    @if(auth()->user()->guest_expires_at && auth()->user()->guest_expires_at->isFuture())
+    <script>
+    (function(){
+        var expiry={{ auth()->user()->guest_expires_at->valueOf() }};
+        var el=document.getElementById('guestBannerCountdown');
+        if(!el)return;
+        function tick(){
+            var diff=Math.max(0,Math.floor((expiry-Date.now())/1000));
+            if(diff<=0){el.textContent='EXPIRED';el.style.background='rgba(200,16,46,.5)';return;}
+            var d=Math.floor(diff/86400),h=Math.floor((diff%86400)/3600),m=Math.floor((diff%3600)/60),s=diff%60;
+            var pad=function(n){return String(n).padStart(2,'0');};
+            el.textContent=d>0?d+'d '+pad(h)+':'+pad(m)+':'+pad(s):pad(h)+':'+pad(m)+':'+pad(s);
+            setTimeout(tick,1000);
+        }
+        tick();
+    })();
+    </script>
+    @endif
+    @endif
+    @endauth
     </nav>
 
     {{-- Alert banner --}}
@@ -510,6 +584,7 @@
         </div>
     @endif
 
+
     {{-- Page content --}}
     <main class="content-wrap">
         @yield('content')
@@ -519,6 +594,12 @@
     <footer class="footer">
         <div class="footer-inner">
             <span>© {{ date('Y') }} {{ \App\Helpers\RaynetSetting::groupName() }} (Group {{ \App\Helpers\RaynetSetting::groupNumber() }}). All rights reserved.</span>
+            <span style="margin-top:.3rem;display:block;">
+                &#128222;
+                <span style="display:inline-flex;gap:0;letter-spacing:0">
+                    <span>0151</span><span style="display:inline-block;width:4px"></span><span>440</span><span style="display:inline-block;width:4px"></span><span>2290</span>
+                </span>
+            </span>
             <span>Affiliated to RAYNET-UK · Volunteer emergency communications for {{ \App\Helpers\RaynetSetting::groupRegion() }}.</span>
         </div>
         <div class="credits">
@@ -639,7 +720,10 @@ function renderNotifications() {
         const el = document.getElementById(id);
         if (!el) return;
         if (notifications.length === 0) { el.innerHTML = '<div class="notif-empty"><div class="notif-empty-icon">🔔</div>You\'re all caught up!</div>'; return; }
-        el.innerHTML = notifications.map(n => '<div class="notif-item ' + (n.read_at ? '' : 'unread') + '"><div class="notif-dot ' + (n.read_at ? 'read' : '') + '"></div><div class="notif-text"><strong>' + escHtml(n.title||'Notification') + '</strong><div class="notif-body">' + escHtml(n.body||'') + '</div><div class="notif-time">' + escHtml(n.ago||'') + '</div></div></div>').join('');
+        el.innerHTML = notifications.map(n => {
+            const hqBadge = n.from_hq ? '<span style="display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:1px 6px;background:rgba(200,16,46,.1);border:1px solid rgba(200,16,46,.3);color:#C8102E;margin-bottom:3px;">📡 HQ Broadcast</span>' : '';
+            return '<div class="notif-item ' + (n.read_at ? '' : 'unread') + '"><div class="notif-dot ' + (n.read_at ? 'read' : '') + '"></div><div class="notif-text">' + hqBadge + '<strong>' + escHtml(n.title||'Notification') + '</strong><div class="notif-body">' + escHtml(n.body||'') + '</div><div class="notif-time">' + escHtml(n.ago||'') + '</div></div></div>';
+        }).join('');
     });
 }
 async function markAllRead() {
@@ -658,5 +742,16 @@ loadNotifications();
 @include('partials.cookie-banner')
 @stack('styles')
 @stack('scripts')
+<script>
+// Close nav dropdowns when clicking outside
+document.addEventListener('click', function(e) {
+    document.querySelectorAll('.nav-dropdown-btn').forEach(function(btn) {
+        if (!btn.closest('.nav-dropdown').contains(e.target)) {
+            btn.setAttribute('aria-expanded', 'false');
+            btn.nextElementSibling.classList.remove('open');
+        }
+    });
+});
+</script>
 </body>
 </html>

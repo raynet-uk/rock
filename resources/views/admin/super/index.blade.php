@@ -407,7 +407,10 @@ $storageOk = is_writable(storage_path());
 
 /* Pagination */
 .sa-pagination { padding:.75rem 1.1rem; background:var(--grey); border-top:1px solid var(--grey-mid); display:flex; align-items:center; justify-content:space-between; gap:.5rem; flex-wrap:wrap; font-size:12px; color:var(--text-muted); }
-
+.sa-pagination { padding:.75rem 1.1rem; background:var(--grey); border-top:1px solid var(--grey-mid); display:flex; align-items:center; justify-content:space-between; gap:.5rem; flex-wrap:wrap; font-size:12px; color:var(--text-muted); }
+.sa-pagination svg { width:12px; height:12px; display:inline-block; vertical-align:middle; }
+.al-pagination svg { width:12px; height:12px; display:inline-block; vertical-align:middle; }
+.lh-pagination svg { width:12px; height:12px; display:inline-block; vertical-align:middle; }
 @keyframes fadeUp{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
 .tab-pane { display:none; }
 .tab-pane.active { display:block; animation:fadeUp .2s ease; }
@@ -1422,25 +1425,57 @@ $storageOk = is_writable(storage_path());
         </div>
     </form>
 
-    {{-- ── PREMIUM TABLE ── --}}
-    <div class="lh-table-card">
+   {{-- ── PREMIUM TABLE ── --}}
+    <div class="lh-table-card" id="lh-table-card">
         <div class="lh-table-head-bar">
             <div class="lh-table-head-title">Access Records</div>
             <span class="lh-table-count-pill">{{ $loginHistoryTotal }} total records</span>
             @if($failedToday > 0)
                 <span class="lh-table-fail-pill">⚠ {{ $failedToday }} failed today</span>
             @endif
+            {{-- Clear all / bulk delete controls --}}
+            <div style="margin-left:auto; display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;">
+                <form method="POST" action="{{ route('admin.super.login-history.delete-failed') }}"
+                      onsubmit="return confirm('Delete ALL failed login records? This cannot be undone.')">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="btn btn-red btn-sm">✕ Clear Failed Logins</button>
+                </form>
+                <form method="POST" action="{{ route('admin.super.login-history.delete-all') }}"
+                      onsubmit="return confirm('Delete the ENTIRE login history? This cannot be undone.')">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="btn btn-red btn-sm" style="background:rgba(200,16,46,.1);">🗑 Clear All History</button>
+                </form>
+            </div>
+        </div>
+
+        {{-- Bulk action bar (shown when rows are checked) --}}
+        <div class="lh-bulk-bar" id="lhBulkBar" style="display:none;">
+            <span class="lh-bulk-bar-label">⚡ Bulk Actions</span>
+            <span id="lhSelectedCount" style="font-size:12px;font-weight:700;color:var(--text);">0 selected</span>
+            <form method="POST" action="{{ route('admin.super.login-history.delete-bulk') }}"
+                  id="lhBulkForm" onsubmit="return confirmBulkDelete()">
+                @csrf @method('DELETE')
+                <div id="lhBulkIds"></div>
+                <button type="submit" class="btn btn-red btn-sm">🗑 Delete Selected</button>
+            </form>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="clearLhSelection()">✕ Deselect All</button>
         </div>
 
         <div style="overflow-x:auto;">
-            <table class="lh-premium-table">
+            <table class="lh-premium-table" id="lhTable">
                 <thead>
                     <tr>
+                        <th style="width:36px;">
+                            <label class="lh-select-all-wrap" title="Select all on this page">
+                                <input type="checkbox" id="lhSelectAll" onchange="toggleAllLh(this)">
+                            </label>
+                        </th>
                         <th>Status &amp; Time</th>
                         <th>Member</th>
                         <th>IP Address</th>
                         <th>Device</th>
                         <th>Duration</th>
+                        <th style="width:60px;"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1453,18 +1488,22 @@ $storageOk = is_writable(storage_path());
                     $isBot3 = collect($botPatterns)->contains(fn($p)=>str_contains(strtolower($ua3),$p));
                     $deviceEmoji3 = $isBot3 ? '🤖' : ($isTab3 ? '⬜' : ($isMob3 ? '📱' : '💻'));
                     $deviceType3  = $isBot3 ? 'Bot' : ($isTab3 ? 'Tablet' : ($isMob3 ? 'Mobile' : 'Desktop'));
-                    // Detect browser from UA
                     $browser3 = 'Unknown browser';
                     if (str_contains($ua3,'Firefox'))      $browser3 = 'Firefox';
                     elseif(str_contains($ua3,'Chrome'))    $browser3 = 'Chrome';
                     elseif(str_contains($ua3,'Safari'))    $browser3 = 'Safari';
                     elseif(str_contains($ua3,'Edge'))      $browser3 = 'Edge';
                     elseif(str_contains($ua3,'MSIE') || str_contains($ua3,'Trident')) $browser3 = 'IE';
-                    // Is this IP a known threat?
                     $isThreatIp = $failedByIp->contains('ip_address', $lh->ip_address) && $failedByIp->where('ip_address',$lh->ip_address)->first()?->cnt >= 3;
                     $userInitial = $lh->user ? strtoupper(substr($lh->user->name,0,1)) : '?';
                 @endphp
-                <tr class="lh-tr {{ $isSuccess ? 'success-row' : 'failed-row' }}">
+                <tr class="lh-tr {{ $isSuccess ? 'success-row' : 'failed-row' }}" data-id="{{ $lh->id }}">
+                    {{-- Checkbox --}}
+                    <td class="lh-td" style="text-align:center;padding:.7rem .5rem;">
+                        <input type="checkbox" class="lh-row-check lh-check"
+                               value="{{ $lh->id }}" onchange="updateLhBulk()">
+                    </td>
+
                     {{-- Status + time --}}
                     <td class="lh-td">
                         <div class="lh-status-wrap">
@@ -1484,9 +1523,7 @@ $storageOk = is_writable(storage_path());
                     {{-- Member --}}
                     <td class="lh-td">
                         <div class="lh-user-wrap">
-                            <div class="lh-user-av {{ $lh->user ? '' : 'unknown' }}">
-                                {{ $userInitial }}
-                            </div>
+                            <div class="lh-user-av {{ $lh->user ? '' : 'unknown' }}">{{ $userInitial }}</div>
                             <div>
                                 @if($lh->user)
                                     <div class="lh-user-name">{{ $lh->user->name }}</div>
@@ -1531,10 +1568,20 @@ $storageOk = is_writable(storage_path());
                             <span style="font-size:11px;color:var(--grey-dark);">—</span>
                         @endif
                     </td>
+
+                    {{-- Delete button --}}
+                    <td class="lh-td" style="text-align:center;padding:.7rem .5rem;">
+                        <form method="POST"
+                              action="{{ route('admin.super.login-history.delete', $lh->id) }}"
+                              onsubmit="return confirm('Delete this login record?')">
+                            @csrf @method('DELETE')
+                            <button type="submit" class="lh-del-btn" title="Delete this record">🗑</button>
+                        </form>
+                    </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="5">
+                    <td colspan="7">
                         <div class="lh-empty">
                             <span class="lh-empty-icon">🔐</span>
                             <div class="lh-empty-text">No login records found</div>
@@ -1556,7 +1603,6 @@ $storageOk = is_writable(storage_path());
         </div>
         @endif
     </div>
-
 </div>{{-- /tab-login-history --}}
 
 
@@ -1644,6 +1690,25 @@ $storageOk = is_writable(storage_path());
 .al-empty-text{font-size:13px;color:var(--text-muted);}
 .al-tip-strip{padding:.75rem 1.1rem;border-top:1px solid var(--grey-mid);background:rgba(124,58,237,.03);display:flex;align-items:center;gap:.85rem;flex-wrap:wrap;}
 .al-tip-code{font-family:monospace;font-size:11px;background:var(--sa-purple-dark);color:#c4b5fd;padding:.3rem .75rem;display:inline-block;line-height:1.6;}
+/* ── Delete actions ── */
+.lh-del-btn {
+    display: inline-flex; align-items: center; gap: .3rem;
+    padding: .25rem .6rem; background: transparent;
+    border: 1px solid rgba(200,16,46,.25); color: var(--red);
+    font-family: var(--font); font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .05em;
+    cursor: pointer; transition: all .12s; white-space: nowrap;
+}
+.lh-del-btn:hover { background: var(--red-faint); border-color: var(--red); }
+.lh-bulk-bar {
+    padding: .65rem 1.25rem;
+    background: #fff2f2; border-bottom: 1px solid rgba(200,16,46,.2);
+    display: flex; align-items: center; gap: .75rem; flex-wrap: wrap;
+}
+.lh-bulk-bar-label { font-size: 11px; font-weight: 700; color: var(--red); text-transform: uppercase; letter-spacing: .08em; }
+.lh-select-all-wrap { display: flex; align-items: center; gap: .4rem; font-size: 11px; font-weight: 700; color: var(--text-muted); cursor: pointer; }
+.lh-select-all-wrap input { accent-color: var(--red); width: 14px; height: 14px; cursor: pointer; }
+.lh-row-check { accent-color: var(--red); width: 14px; height: 14px; cursor: pointer; }
 </style>
 
 <div class="sa-card">
@@ -1848,9 +1913,22 @@ $storageOk = is_writable(storage_path());
         history.replaceState(null,'','#'+name);
     }
     btns.forEach(b=>b.addEventListener('click',()=>activate(b.dataset.tab)));
-    const hash=location.hash.replace('#','');
-    const valid=['maintenance','sessions','login-history','audit-log','super-admins','system'];
-    activate(valid.includes(hash)?hash:'maintenance');
+const hash=location.hash.replace('#','');
+const valid=['maintenance','sessions','login-history','audit-log','super-admins','system'];
+
+// Check URL params to infer which tab should be active
+const params = new URLSearchParams(location.search);
+let activeTab = 'maintenance';
+if (valid.includes(hash)) {
+    activeTab = hash;
+} else if (params.has('al_page') || params.has('audit_admin') || params.has('audit_action') || params.has('audit_from') || params.has('audit_to')) {
+    activeTab = 'audit-log';
+} else if (params.has('lh_page') || params.has('lh_user') || params.has('lh_status') || params.has('lh_from') || params.has('lh_to')) {
+    activeTab = 'login-history';
+} else if (params.has('search_sess')) {
+    activeTab = 'sessions';
+}
+activate(activeTab);
 })();
 
 /* ── Login history Chart.js ── */
@@ -1998,5 +2076,40 @@ function updateMaintTimer(){
 }
 updateMaintTimer();setInterval(updateMaintTimer,1000);
 @endif
+/* ── Login history bulk delete ── */
+function toggleAllLh(master) {
+    document.querySelectorAll('.lh-check').forEach(cb => cb.checked = master.checked);
+    updateLhBulk();
+}
+function updateLhBulk() {
+    const checked = document.querySelectorAll('.lh-check:checked');
+    const bar     = document.getElementById('lhBulkBar');
+    const counter = document.getElementById('lhSelectedCount');
+    const master  = document.getElementById('lhSelectAll');
+    const all     = document.querySelectorAll('.lh-check');
+    bar.style.display     = checked.length > 0 ? 'flex' : 'none';
+    counter.textContent   = checked.length + ' selected';
+    master.indeterminate  = checked.length > 0 && checked.length < all.length;
+    master.checked        = checked.length === all.length && all.length > 0;
+    // Rebuild hidden id inputs
+    const container = document.getElementById('lhBulkIds');
+    container.innerHTML = '';
+    checked.forEach(cb => {
+        const inp = document.createElement('input');
+        inp.type  = 'hidden';
+        inp.name  = 'ids[]';
+        inp.value = cb.value;
+        container.appendChild(inp);
+    });
+}
+function clearLhSelection() {
+    document.querySelectorAll('.lh-check').forEach(cb => cb.checked = false);
+    document.getElementById('lhSelectAll').checked = false;
+    updateLhBulk();
+}
+function confirmBulkDelete() {
+    const n = document.querySelectorAll('.lh-check:checked').length;
+    return n > 0 && confirm('Delete ' + n + ' selected login record(s)? This cannot be undone.');
+}
 </script>
 @endsection

@@ -255,9 +255,14 @@
         @php
             $currentUrl = null;
             $routesContent = file_get_contents(base_path('routes/web.php'));
-            // Try to find current route for this page
-            if (preg_match("/Route::(?:get|view)\s*\(\s*['"]([^'"]+)['"]\s*,\s*['"]pages\." . preg_quote($slug, '/') . "['"]/", $routesContent, $rm)) {
-                $currentUrl = $rm[1];
+            $lines2 = explode(chr(10), $routesContent);
+            foreach ($lines2 as $line2) {
+                if (strpos($line2, "pages.{$slug}") !== false) {
+                    if (preg_match(chr(47).chr(39)."([^".chr(39)."]+)".chr(39).chr(47), $line2, $rm2)) {
+                        $currentUrl = $rm2[1];
+                        break;
+                    }
+                }
             }
         @endphp
 

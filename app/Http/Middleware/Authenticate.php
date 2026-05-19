@@ -14,6 +14,10 @@ class Authenticate extends Middleware
     {
         // For normal web requests, send them to the member login form.
         if (! $request->expectsJson()) {
+            $referer = $request->headers->get('referer', '');
+            if (str_contains($referer, 'm0kkn.dragon-net.pl')) {
+                session(['login_from' => 'm0kkn']);
+            }
             return route('login');
         }
 

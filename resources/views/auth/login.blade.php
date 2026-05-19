@@ -5,6 +5,7 @@
 @php
     $intendedUrl      = session('url.intended', '');
     $isVerifyRedirect = str_contains($intendedUrl, '/email/verify/');
+    $fromM0kkn        = ($from ?? session('login_from')) === 'm0kkn';
 @endphp
 
 <style>
@@ -292,11 +293,17 @@ body { font-family: var(--font); font-size: 14px; color: var(--text); background
                 </div>
             </div>
             <div class="left-hero">
+                @if($fromM0kkn)
+                <div class="left-eyebrow" style="color:#90caf9;">📡 M0KKN Dashboard</div>
+                <div class="left-title">Sign in to<br><span>M0KKN</span></div>
+                <div class="left-desc">You came from the M0KKN repeater dashboard. Sign in below and you'll be returned there automatically.</div>
+            @else
                 <div class="left-eyebrow">Secure member access</div>
                 <div class="left-title">Welcome <span>back</span></div>
                 <div class="left-desc">
                     Access your operator profile, activity log, upcoming events, and group communications — all in one place.
                 </div>
+            @endif
                 <div class="left-chips">
                     <span class="chip"><span class="chip-dot"></span>{{ \App\Helpers\RaynetSetting::groupName() }}</span>
                     <span class="chip"><span class="chip-dot"></span>{{ \App\Helpers\RaynetSetting::groupRegion() }}</span>

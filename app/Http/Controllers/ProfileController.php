@@ -39,6 +39,12 @@ class ProfileController extends Controller
                 'max:20',
                 'regex:/^[0-9]+$/',
             ],
+            'telegram_chat_id' => [
+                'nullable',
+                'string',
+                'max:50',
+                'regex:/^-?[0-9]+$/',
+            ],
         ], [
             'callsign.regex'  => 'Callsign must be 3–10 characters of letters, numbers or "/".',
             'callsign.unique' => 'That callsign is already in use or pending approval by another account.',
@@ -50,7 +56,8 @@ class ProfileController extends Controller
         $oldCallsign = $user->callsign ? strtoupper(trim($user->callsign)) : null;
 
         $user->name   = $request->name;
-        $user->dmr_id = $request->dmr_id ? trim($request->dmr_id) : null;
+        $user->dmr_id          = $request->dmr_id ? trim($request->dmr_id) : null;
+        $user->telegram_chat_id = $request->telegram_chat_id ? trim($request->telegram_chat_id) : null;
 
         $submitted       = $request->callsign ? strtoupper(trim($request->callsign)) : null;
         $statusMessage   = 'Profile updated successfully.';
@@ -123,4 +130,41 @@ class ProfileController extends Controller
 
         return response()->json(['found' => true, 'data' => $data]);
     }
+   public function importQrzAvatar(Request $request)
+{
+    $request->validate([
+        'qrz_image_url' => ['required', 'url', 'max:2048'],
+    ]);
+
+    $url  = $request->input('qrz_image_url');
+    $host = parse_url($url, PHP_URL_HOST);
+
+    if (!str_ends_with($host, 'qrz.com') && !str_ends_with($host, 'qrzcdn.com')) {
+        return back()->withErrors(['avatar' => 'Invalid image source.']);
+    }
+
+    try {
+        $binary = \Illuminate\Support\Facades\Http::timeout(10)->get($url)->body();
+    } catch (\Exception $e) {
+        return back()->withErrors(['avatar' => 'Could not fetch image from QRZ.com. Please upload manually.']);
+    }
+
+    if (!$binary || strlen($binary) > 5 * 1024 * 1024) {
+        return back()->withErrors(['avatar' => 'Image too large or corrupt.']);
+    }
+
+    $user = $request->user();
+
+    if ($user->avatar) {
+        \Illuminate\Support\Facades\Storage::disk('public')->delete($user->avatar);
+    }
+
+    $filename = 'avatars/' . \Illuminate\Support\Str::uuid() . '.jpg';
+    \Illuminate\Support\Facades\Storage::disk('public')->put($filename, $binary);
+
+    $user->avatar = $filename;
+    $user->save();
+
+    return redirect()->route('profile.edit')->with('status', 'Profile photo imported from QRZ.com.');
+}
 }

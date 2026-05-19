@@ -14,6 +14,8 @@ return Application::configure(
         \App\Http\Middleware\RedirectIfNotInstalled::class,
         \App\Http\Middleware\CheckMaintenanceMode::class,
         \App\Http\Middleware\CheckSuspended::class,
+        \App\Http\Middleware\CheckGuestExpiry::class,
+        \App\Http\Middleware\CheckTemporaryAdmin::class,
         \App\Http\Middleware\ForcePasswordChange::class,
     ]);
     // Exclude Passport OAuth endpoints from CSRF verification
@@ -24,6 +26,7 @@ return Application::configure(
         'oauth/introspect',
         'oauth/logout',
         'api/cms/*',
+        'telegram/webhook',
     ]);
     $middleware->alias([
         // Standard auth aliases
@@ -41,6 +44,7 @@ return Application::configure(
         'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
         // Install wizard
         'not.installed' => \App\Http\Middleware\NotInstalled::class,
+        'block.page.editor' => \App\Http\Middleware\BlockPageEditor::class,
     ]);
 })->withExceptions(function (Exceptions $exceptions) {
     //

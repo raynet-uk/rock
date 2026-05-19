@@ -677,7 +677,7 @@ body{font-family:var(--font);background:var(--grey);color:var(--text);font-size:
                         <select name="user_id">
                             <option value="">All members</option>
                             @foreach($users as $u)
-                                <option value="{{ $u->id }}" {{ request('user_id') == $u->id ? 'selected' : '' }}>{{ $u->name }}</option>
+                                <option value="{{ $u->id }}" {{ request('user_id') == $u->id ? 'selected' : '' }}>{{ $_isTempAdmin && !($u->isTemporaryGuest() || $u->isTemporaryAdmin()) ? '●●●●●●●●●' : $u->name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -751,7 +751,7 @@ body{font-family:var(--font);background:var(--grey);color:var(--text);font-size:
                         <td>
                             <div style="display:flex;align-items:center;gap:.5rem;">
                                 <div class="user-av">{{ strtoupper(substr($log->user->name ?? '?',0,1)) }}</div>
-                                <span style="font-weight:bold;">{{ $log->user->name ?? '—' }}</span>
+                                <span style="font-weight:bold;">{{ ($_isTempAdmin && isset($log->user) && !($log->user->isTemporaryGuest() || $log->user->isTemporaryAdmin())) ? '●●●●●●●●●' : ($log->user->name ?? '—') }}</span>
                             </div>
                         </td>
                         <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ $log->event_name }}">{{ $log->event_name }}</td>

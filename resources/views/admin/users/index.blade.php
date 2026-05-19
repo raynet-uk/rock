@@ -126,6 +126,14 @@
     border-bottom-color: rgba(200,16,46,.15);
 }
 .member-row[data-status="suspended"]:hover { background: #fde4e4; }
+.member-row[data-guest="1"] { background: #fffbf0; border-left: 3px solid #b45309; }
+.member-row[data-guest="1"]:hover { background: #fff3d6; }
+.member-row[data-guest="1"] .mc-av { border-right-color: rgba(180,83,9,.15); }
+.member-row[data-guest="1"] .mc-identity,
+.member-row[data-guest="1"] .mc-callsign,
+.member-row[data-guest="1"] .mc-role,
+.member-row[data-guest="1"] .mc-status,
+.member-row[data-guest="1"] .mc-activity { border-right-color: rgba(180,83,9,.15); }
 .member-row[data-status="suspended"] .mc-av { border-right-color: rgba(200,16,46,.15); }
 .member-row[data-status="suspended"] .mc-identity,
 .member-row[data-status="suspended"] .mc-callsign,
@@ -148,6 +156,7 @@
 .mc-identity{padding:.85rem .9rem .85rem .85rem;display:flex;flex-direction:column;justify-content:center;border-right:1px solid var(--grey-mid);}
 .member-name{font-size:13.5px;font-weight:bold;color:var(--text);line-height:1.3;display:flex;align-items:center;gap:.35rem;flex-wrap:wrap;}
 .member-email{font-size:11px;color:var(--text-muted);margin-top:3px;}
+.pii-redacted{filter:blur(3px);user-select:none;pointer-events:none;color:var(--text-muted);}
 .member-badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;align-items:center;}
 
 .level-row{display:flex;align-items:center;gap:2px;}
@@ -650,10 +659,11 @@
     @endphp
     
 <div class="member-row"
+     data-guest="{{ $user->guest_expires_at || $user->hasRole('temporary_guest') ? '1' : '0' }}"
      data-status="{{ $isSuspended ? 'suspended' : strtolower($user->status ?? '') }}"
      data-role="{{ strtolower($user->role ?? '') }}"
      data-attended="{{ $attended ? '1' : '0' }}"
-     data-search="{{ strtolower($user->name.' '.$user->email.' '.($user->callsign ?? '').' '.($user->role ?? '').' '.($user->status ?? '').' '.($user->licence_class ?? '').' '.($user->dmr_id ?? '')) }}">
+     data-search="{{ auth()->user()->isTemporaryAdmin() && !($user->guest_expires_at || $user->hasRole('temporary_guest') || $user->hasRole('temporary_admin')) ? strtolower($user->name.' '.($user->callsign ?? '').' '.($user->role ?? '')) : strtolower($user->name.' '.$user->email.' '.($user->callsign ?? '').' '.($user->role ?? '').' '.($user->status ?? '').' '.($user->licence_class ?? '').' '.($user->dmr_id ?? '')) }}">
 
     {{-- ── MOBILE ── --}}
     <div class="mob-top">
@@ -669,7 +679,13 @@
     <span class="bi bi-suspended" title="{{ $suspendedTooltip }}">⊘ Suspended</span>
 @endif
             </div>
-            <div class="member-email">{{ $user->email }}</div>
+            <div class="member-email">
+                @if(auth()->user()->isTemporaryAdmin() && !($user->guest_expires_at || $user->hasRole("temporary_guest") || $user->hasRole("temporary_admin")))
+                    <span class="pii-redacted">●●●●●●●@●●●●●●.●●●</span>
+                @else
+                    {{ $user->email }}
+                @endif
+            </div>
         </div>
         @if ($user->status)
         <div class="status-block" style="flex-shrink:0;margin-top:2px;">
@@ -679,18 +695,32 @@
         @endif
     </div>
     <div class="mob-meta">
-        @if ($user->callsign)         <span class="callsign-chip">{{ strtoupper($user->callsign) }}</span> @endif
+        @if ($user->callsign)
+            <span class="callsign-chip">
+                @if($user->piiVisible()) {{ strtoupper($user->callsign) }} @else <span style="filter:blur(3px);user-select:none;">●●●●●</span> @endif
+            </span>
+        @endif
         @if ($user->pending_callsign) <span class="pending-chip-sm">⏳ {{ strtoupper($user->pending_callsign) }}</span> @endif
         @if ($licClass)               <span class="lic-badge {{ $licClass }}">{{ $user->licence_class }}</span> @endif
         @if ($user->dmr_id)
-            <span class="dmr-badge"><span class="dmr-label">DMR</span><span class="dmr-badge-digits">{{ $user->dmr_id }}</span></span>
+            <span class="dmr-badge"><span class="dmr-label">DMR</span><span class="dmr-badge-digits">@if($user->piiVisible()){{ $user->dmr_id }}@else<span style="filter:blur(3px);user-select:none;">●●●●●●●</span>@endif</span></span>
             @if ($user->callsign)
                 <span class="dmr-live" data-callsign="{{ strtoupper($user->callsign) }}">
                     <span class="dmr-live-loading">…</span>
                 </span>
             @endif
         @endif
-        @if ($user->role) <span class="role-pill">{{ $user->role }}</span> @endif
+        @if ($user->role) <span class="role-pill">{{ ucwords(str_replace(['-','_'],' ',$user->role ?? '')) }}</span> @endif
+        @if ($user->hasRole("temporary_guest") || $user->guest_expires_at)
+            @if($user->guest_expires_at && $user->guest_expires_at->isPast())
+                <span class="bi" style="background:rgba(200,16,46,.08);border:1px solid rgba(200,16,46,.3);color:#C8102E;font-size:10px;font-weight:700;padding:2px 7px;letter-spacing:.05em;text-transform:uppercase;">⏱ Guest Expired</span>
+            @else
+                <span class="bi" style="background:rgba(180,83,9,.12);border:1px solid rgba(180,83,9,.4);color:#b45309;font-size:10px;font-weight:700;padding:2px 7px;letter-spacing:.05em;text-transform:uppercase;">⏱ Temp Guest</span>
+            @endif
+            @if ($user->guest_expires_at)
+                <span class="bi" style="background:rgba(180,83,9,.06);border:1px solid rgba(180,83,9,.25);color:#b45309;font-size:10px;padding:2px 7px;font-family:monospace;">{{ $user->guest_expires_at->isPast() ? "Expired " . $user->guest_expires_at->diffForHumans() : $user->guest_expires_at->diffForHumans() }}</span>
+            @endif
+        @endif
         @if ($attended) <span class="act-chip act-attended">✓ Attended</span>
         @else           <span class="act-chip act-absent">✗ Not attended</span> @endif
     </div>
@@ -720,7 +750,10 @@
 
             {{-- ── DESKTOP: Avatar ── --}}
             <div class="mc-av mc-desktop">
-                @if($user->avatar)
+                @if($user->guest_expires_at || $user->hasRole("temporary_guest"))
+                    <img src="{{ Storage::url('avatars/TempAvatar.png') }}"
+                         style="width:36px;height:36px;border-radius:50%;object-fit:cover;margin-top:2px;border:2px solid rgba(180,83,9,.4);box-shadow:0 1px 4px rgba(0,0,0,.15);flex-shrink:0;" alt="Temporary Guest" title="Temporary Guest">
+                @elseif($user->avatar)
                     <img src="{{ Storage::url($user->avatar) }}"
                          style="width:36px;height:36px;border-radius:50%;object-fit:cover;margin-top:2px;border:2px solid rgba(0,51,102,.15);box-shadow:0 1px 4px rgba(0,0,0,.15);flex-shrink:0;" alt="">
                 @else
@@ -731,7 +764,13 @@
             {{-- ── DESKTOP: Identity ── --}}
             <div class="mc-identity mc-desktop">
                 <div class="member-name">{{ $user->name }}</div>
-                <div class="member-email">{{ $user->email }}</div>
+                <div class="member-email">
+                    @if(auth()->user()->isTemporaryAdmin() && !($user->guest_expires_at || $user->hasRole("temporary_guest") || $user->hasRole("temporary_admin")))
+                        <span class="pii-redacted">●●●●●●●@●●●●●●.●●●</span>
+                    @else
+                        {{ $user->email }}
+                    @endif
+                </div>
                 <div class="member-badges">
                     @if ($user->is_admin)           <span class="bi bi-admin">⚡ Admin</span>     @endif
                     @if ($user->is_super_admin) <span class="bi bi-super">★ Super</span> @endif
@@ -742,13 +781,27 @@
                     @if ($isSuspended)
     <span class="bi bi-suspended" title="{{ $suspendedTooltip }}">⊘ Suspended</span>
 @endif
+                    @if ($user->hasRole("temporary_guest") || $user->guest_expires_at)
+                        @if($user->guest_expires_at && $user->guest_expires_at->isPast())
+                            <span class="bi" style="background:rgba(200,16,46,.08);border:1px solid rgba(200,16,46,.3);color:#C8102E;font-size:10px;font-weight:700;padding:2px 7px;letter-spacing:.05em;text-transform:uppercase;">⏱ Guest Expired</span>
+                        @else
+                            <span class="bi" style="background:rgba(180,83,9,.12);border:1px solid rgba(180,83,9,.4);color:#b45309;font-size:10px;font-weight:700;padding:2px 7px;letter-spacing:.05em;text-transform:uppercase;">⏱ Temp Guest</span>
+                        @endif
+                        @if ($user->guest_expires_at)
+                            <span class="bi" style="background:rgba(180,83,9,.06);border:1px solid rgba(180,83,9,.25);color:#b45309;font-size:10px;padding:2px 7px;font-family:monospace;">
+                                {{ $user->guest_expires_at->isPast() ? "Expired " . $user->guest_expires_at->diffForHumans() : "Exp " . $user->guest_expires_at->diffForHumans() }}
+                            </span>
+                        @endif
+                    @endif
                 </div>
             </div>
 
             {{-- ── DESKTOP: Callsign + Licence + DMR ── --}}
             <div class="mc-callsign mc-desktop">
                 @if ($user->callsign)
-                    <span class="callsign-chip">{{ strtoupper($user->callsign) }}</span>
+                    <span class="callsign-chip">
+                        @if($user->piiVisible()) {{ strtoupper($user->callsign) }} @else <span style="filter:blur(3px);user-select:none;">●●●●●</span> @endif
+                    </span>
                 @else
                     <span class="no-callsign">— None</span>
                 @endif
@@ -761,7 +814,7 @@
                 @if ($user->dmr_id)
                     <span class="dmr-badge">
                         <span class="dmr-label">DMR</span>
-                        <span class="dmr-badge-digits">{{ $user->dmr_id }}</span>
+                        <span class="dmr-badge-digits">@if($user->piiVisible()){{ $user->dmr_id }}@else<span style="filter:blur(3px);user-select:none;">●●●●●●●</span>@endif</span>
                     </span>
                     {{-- Live RadioID activity — populated by JS --}}
                     @if ($user->callsign)
@@ -775,7 +828,7 @@
             {{-- ── DESKTOP: Role & Level ── --}}
             <div class="mc-role mc-desktop">
                 @if ($user->role)
-                    <span class="role-pill">{{ $user->role }}</span>
+                    <span class="role-pill">{{ ucwords(str_replace(['-','_'],' ',$user->role ?? '')) }}</span>
                     @if ($user->level !== null)
                         <div class="level-row" title="Level {{ $user->level }} / {{ $maxLevel }}">
                             @for ($i = 1; $i <= $maxLevel; $i++)

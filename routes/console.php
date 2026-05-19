@@ -60,3 +60,17 @@ Schedule::command('lms:daily')
     ->withoutOverlapping();
 // Push report to Command Centre daily
 \Illuminate\Support\Facades\Schedule::command('raynet:push-report')->dailyAt('06:00');
+\Illuminate\Support\Facades\Schedule::command('raynet:heartbeat')->everyFifteenMinutes();
+
+// Fetch emailed resources every minute
+Schedule::command('resources:fetch-emails')
+    ->everyMinute()
+    ->withoutOverlapping();
+
+// Check for expired resources daily
+Schedule::call(function () {
+    app(\App\Http\Controllers\ResourceController::class)->checkExpired();
+})->daily()->name('resources:check-expired');
+
+// Auto-expire temporary guest accounts
+Schedule::command('guests:expire')->everyMinute()->timezone('Europe/London')->withoutOverlapping();

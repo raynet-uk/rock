@@ -260,7 +260,63 @@ public function enroll(Request $request)
         CourseEnrollment::where('course_id', $courseId)->where('user_id', $userId)->delete();
         return response()->json(['success' => true]);
     }
+// ── RESET ─────────────────────────────────────────────────────────────────
 
+    public function resetCourse($courseId, $userId)
+    {
+        // Delete all progress for this user on this course
+        CourseProgress::where('course_id', $courseId)->where('user_id', $userId)->delete();
+
+        // Delete quiz submissions
+        \App\Models\QuizSubmission::where('course_id', $courseId)->where('user_id', $userId)->delete();
+
+        // Reset enrollment completion
+        CourseEnrollment::where('course_id', $courseId)->where('user_id', $userId)
+            ->update(['completed_at' => null]);
+
+        // Remove certificate
+        \App\Models\CourseCertificate::where('course_id', $courseId)->where('user_id', $userId)->delete();
+
+        return response()->json(['success' => true, 'message' => 'Course progress reset.']);
+    }
+
+    public function resetLesson($courseId, $userId, $lessonId)
+    {
+        CourseProgress::where('course_id', $courseId)
+            ->where('user_id', $userId)
+            ->where('lesson_id', $lessonId)
+            ->delete();
+
+        // If course was previously completed, un-complete it
+        CourseEnrollment::where('course_id', $courseId)->where('user_id', $userId)
+            ->update(['completed_at' => null]);
+
+        // Remove certificate too since course is no longer complete
+        \App\Models\CourseCertificate::where('course_id', $courseId)->where('user_id', $userId)->delete();
+
+        return response()->json(['success' => true, 'message' => 'Lesson progress reset.']);
+    }
+
+    public function resetQuiz($courseId, $userId, $quizId)
+    {
+        $quiz = CourseQuiz::findOrFail($quizId);
+
+        // Reset progress record for this lesson
+        CourseProgress::where('course_id', $courseId)
+            ->where('user_id', $userId)
+            ->where('lesson_id', $quiz->lesson_id)
+            ->update(['completed_at' => null, 'quiz_score' => null, 'attempts' => 0]);
+
+        // Delete all submissions for this quiz by this user
+        \App\Models\QuizSubmission::where('quiz_id', $quizId)->where('user_id', $userId)->delete();
+
+        // Un-complete the enrollment/certificate
+        CourseEnrollment::where('course_id', $courseId)->where('user_id', $userId)
+            ->update(['completed_at' => null]);
+        \App\Models\CourseCertificate::where('course_id', $courseId)->where('user_id', $userId)->delete();
+
+        return response()->json(['success' => true, 'message' => 'Quiz reset.']);
+    }
     // ── ANALYTICS ─────────────────────────────────────────────────────────────
 
    public function analytics($id)

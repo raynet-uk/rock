@@ -19,6 +19,7 @@ use App\Models\Event;
 use App\Models\AlertStatus;
 use Illuminate\Support\Carbon;
 use App\Http\Controllers\Admin\UserAdminController;
+use App\Http\Controllers\Admin\TemporaryGuestController;
 use App\Http\Controllers\Admin\CallsignController;
 use App\Http\Controllers\Admin\ImpersonationController;
 use App\Http\Controllers\Admin\ActivityLogController;
@@ -36,6 +37,7 @@ use App\Http\Controllers\Admin\OAuthClientController;
 use App\Http\Controllers\Admin\PageEditorController;
 use App\Http\Controllers\Admin\PageBuilderController;
 use App\Http\Controllers\InstallController;
+use App\Http\Controllers\ResourceController;
 // ── Committee ──────────────────────────────────────────────────────────────
 use App\Http\Controllers\Committee\CommitteeDashboardController;
 use App\Http\Controllers\Committee\ReadinessController;
@@ -59,6 +61,12 @@ use App\Http\Controllers\InstallPreviewController;
 | INSTALL WIZARD — runs only when site is not yet installed
 |--------------------------------------------------------------------------
 */
+
+// Public QRZ lookup (used on registration page — no auth required)
+Route::get('/qrz-lookup/{callsign}', [\App\Http\Controllers\ProfileController::class, 'qrzLookup'])
+     ->name('qrz.lookup.public')
+     ->where('callsign', '[A-Za-z0-9]+');
+
 Route::middleware('not.installed')->group(function () {
     Route::get('/install',           [InstallController::class, 'index'])    ->name('install.index');
     Route::get('/install/step1',     [InstallController::class, 'step1'])    ->name('install.step1');
@@ -94,15 +102,37 @@ Route::view('/about',         'pages.about')->name('about');
 Route::view('/event-support', 'pages.event-support')->name('event-support');
 Route::view('/training',      'pages.training')->name('training');
 Route::view('/cookies',       'pages.cookies')->name('cookies');
+Route::view('/guest-expired', 'auth.guest-expired')->name('guest.expired');
 Route::view('/privacy',       'pages.privacy')->name('privacy');
 Route::view('/test', 'pages.test')->name('test');
 
 Route::get('/data-dashboard', [LivePropagationController::class, 'index'])->name('data-dashboard');
 
+// ── Resources ──────────────────────────────────────────────────────────────
+Route::get('/library', [ResourceController::class, 'index'])->name('resources.index');
+Route::get('/library/download/{resource}', [ResourceController::class, 'download'])->name('resources.download');
+Route::get('/library/{resource}/inline', [App\Http\Controllers\ResourceController::class, 'inline'])->name('resources.inline');
+Route::get('/library/{resource}/preview',  [ResourceController::class, 'preview'])->name('resources.preview');
+
+// Resources — auth required
+Route::middleware(['auth','verified'])->group(function () {
+    Route::post('/library/{resource}/bookmark',  [ResourceController::class, 'bookmark'])->name('resources.bookmark');
+    Route::post('/library/follow-category',      [ResourceController::class, 'followCategory'])->name('resources.follow-category');
+    Route::get('/library/{resource}/audit',      [ResourceController::class, 'auditLog'])->name('resources.audit');
+});
+
 Route::get('/request-support',  [SupportRequestController::class, 'create'])->name('request-support');
 Route::post('/request-support', [SupportRequestController::class, 'store'])->name('request-support.submit');
 
 Route::get('/register/pending', fn() => view('auth.register-pending'))->name('register.pending');
+Route::get('/member-application', [App\Http\Controllers\MemberApplicationController::class, 'show'])->name('member-application');
+Route::post('/member-application', [App\Http\Controllers\MemberApplicationController::class, 'submit'])->name('member-application.submit');
+Route::get('/member-application/success', [App\Http\Controllers\MemberApplicationController::class, 'success'])->name('member-application.success');
+Route::get('/member-application/sign/{token}',        [App\Http\Controllers\MemberApplicationController::class, 'signPage'])->name('member-application.sign');
+Route::post('/member-application/sign/{token}',       [App\Http\Controllers\MemberApplicationController::class, 'signSubmit'])->name('member-application.sign.submit');
+Route::get('/member-application/sign/{token}/status', [App\Http\Controllers\MemberApplicationController::class, 'signStatus'])->name('member-application.sign.status');
+Route::post('/member-application/sign-token',         [App\Http\Controllers\MemberApplicationController::class, 'generateSignToken'])->name('member-application.sign-token');
+
 
 // Email open tracking pixel — public, no auth
 Route::get('/track/email-open/{token}', function (string $token) {
@@ -126,6 +156,14 @@ Route::get('/track/email-open/{token}', function (string $token) {
         ]
     );
 })->name('track.email-open');
+
+/*
+|--------------------------------------------------------------------------
+| TELEGRAM WEBHOOK — public, no auth required
+|--------------------------------------------------------------------------
+*/
+Route::post('/telegram/webhook', [\App\Http\Controllers\TelegramWebhookController::class, 'handle'])
+    ->name('telegram.webhook');
 
 /*
 |--------------------------------------------------------------------------
@@ -291,6 +329,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/members', MemberDashboardController::class)->name('members');
 
+    // ── Resources management (committee and above) ───────────────────────────
+    Route::middleware(['role:committee|admin|super-admin'])->group(function () {
+        // ── Resources management ─────────────────────────────────────────────
+        Route::post('/library',                        [ResourceController::class, 'store'])->name('resources.store');
+        Route::patch('/library/{resource}',            [ResourceController::class, 'update'])->name('resources.update');
+        Route::patch('/library/{resource}/approve',    [ResourceController::class, 'approve'])->name('resources.approve');
+        Route::post('/library/{resource}/new-version', [ResourceController::class, 'newVersion'])->name('resources.new-version');
+        Route::delete('/library/{resource}',           [ResourceController::class, 'destroy'])->name('resources.destroy');
+    });
+
     Route::post('/events/{event}/rsvp',   [RsvpController::class, 'store'])  ->name('events.rsvp.store');
     Route::delete('/events/{event}/rsvp', [RsvpController::class, 'destroy'])->name('events.rsvp.destroy');
 
@@ -313,6 +361,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/profile/avatar',      [AvatarController::class, 'update'])  ->name('profile.avatar.update');
     Route::post('/profile/avatar/crop', [AvatarController::class, 'crop'])    ->name('profile.avatar.crop');
     Route::delete('/profile/avatar',    [AvatarController::class, 'destroy']) ->name('profile.avatar.destroy');
+    Route::post('/profile/avatar/qrz', [App\Http\Controllers\ProfileController::class, 'importQrzAvatar'])
+    ->name('profile.avatar.qrz');
 
     Route::get('/members/activity/{year?}/{month?}', [\App\Http\Controllers\ActivityCalendarController::class, 'show'])
         ->where(['year' => '[0-9]{4}', 'month' => '[0-1][0-9]|[1-9]'])
@@ -345,6 +395,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     'title'    => $r->notification->title,
                     'body'     => $r->notification->body ?? '',
                     'priority' => $r->notification->priority,
+                    'from_hq'  => $r->notification->sent_by === null,
                     'read_at'  => $r->read_at,
                     'ago'      => $r->created_at->diffForHumans(),
                 ])
@@ -482,11 +533,12 @@ Route::prefix('admin')->group(function () {
 
     Route::middleware(['web', 'admin'])->group(function () {
 
+        
         // ── MODULE MANAGER ─────────────────────────────────────────────────
         require __DIR__ . '/modules.php';
 
         // ── PAGE EDITOR ────────────────────────────────────────────────────
-        Route::prefix('pages')->name('admin.pages.')->group(function () {
+        Route::prefix('pages')->name('admin.pages.')->middleware(['block.page.editor'])->group(function () {
             Route::get('/',                [PageEditorController::class, 'index'])        ->name('index');
             Route::get('/create',          [PageEditorController::class, 'create'])       ->name('create');
             Route::post('/',               [PageEditorController::class, 'store'])        ->name('store');
@@ -521,6 +573,9 @@ Route::prefix('admin')->group(function () {
             Route::put('/quizzes/{id}',            [LmsAdminController::class, 'updateQuiz'])   ->name('quizzes.update');
             Route::post('/enroll',                 [LmsAdminController::class, 'enroll'])       ->name('enroll');
             Route::delete('/{courseId}/unenroll/{userId}', [LmsAdminController::class, 'unenroll'])->name('unenroll');
+            Route::delete('/{courseId}/reset/{userId}',        [LmsAdminController::class, 'resetCourse']) ->name('reset.course');
+            Route::delete('/{courseId}/reset/{userId}/lesson/{lessonId}', [LmsAdminController::class, 'resetLesson']) ->name('reset.lesson');
+            Route::delete('/{courseId}/reset/{userId}/quiz/{quizId}',     [LmsAdminController::class, 'resetQuiz'])   ->name('reset.quiz');
             Route::post('/lessons/{lessonId}/scorm-upload', [\App\Http\Controllers\ScormController::class, 'upload'])->name('lessons.scorm-upload');
             Route::get('/scorm-builder',         [\App\Http\Controllers\Admin\ScormBuilderController::class, 'index']) ->name('scorm-builder');
             Route::post('/scorm-builder/export', [\App\Http\Controllers\Admin\ScormBuilderController::class, 'export'])->name('scorm-builder.export');
@@ -542,6 +597,8 @@ Route::prefix('admin')->group(function () {
         Route::post('users/{id}/avatar',   [AvatarController::class, 'adminUpdate']) ->name('admin.users.avatar.update');
         Route::delete('users/{id}/avatar', [AvatarController::class, 'adminDestroy'])->name('admin.users.avatar.destroy');
         Route::delete('users/{user}',      [UserAdminController::class, 'destroy'])  ->name('admin.users.destroy');
+        Route::post ('users/{user}/convert-to-guest', [UserAdminController::class, 'convertToGuest'])->name('admin.users.convert-to-guest');
+        Route::post ('users/{user}/convert-to-member', [UserAdminController::class, 'convertToMember'])->name('admin.users.convert-to-member');
         Route::post('users/{user}/promote',[UserAdminController::class, 'promote'])  ->name('admin.users.promote');
 
         // ── Role management ───────────────────────────────────────────────
@@ -622,6 +679,7 @@ Route::prefix('admin')->group(function () {
                     'update'  => 'admin.activity-logs.update',
                     'destroy' => 'admin.activity-logs.destroy',
                 ]);
+            Route::post('activity-logs/bulk', [ActivityLogController::class, 'storeBulk'])->name('admin.activity-logs.store-bulk');
         });
 
 
@@ -650,6 +708,10 @@ Route::prefix('admin')->group(function () {
                 Route::get('operations', fn() => view('admin.super.operations'))->name('operations');
                 Route::post('maintenance/whitelist/add',    [\App\Http\Controllers\Admin\SuperAdminController::class, 'whitelistAdd']   )->name('maintenance.whitelist.add');
                 Route::post('maintenance/whitelist/remove', [\App\Http\Controllers\Admin\SuperAdminController::class, 'whitelistRemove'])->name('maintenance.whitelist.remove');
+                Route::delete('login-history/{id}',    [\App\Http\Controllers\Admin\SuperAdminController::class, 'deleteLoginHistory'])     ->name('login-history.delete');
+                Route::delete('login-history-bulk',    [\App\Http\Controllers\Admin\SuperAdminController::class, 'deleteLoginHistoryBulk']) ->name('login-history.delete-bulk');
+                Route::delete('login-history-failed',  [\App\Http\Controllers\Admin\SuperAdminController::class, 'deleteFailedLogins'])     ->name('login-history.delete-failed');
+                Route::delete('login-history-all',     [\App\Http\Controllers\Admin\SuperAdminController::class, 'deleteAllLoginHistory'])  ->name('login-history.delete-all');
             });
 
 
@@ -719,6 +781,8 @@ Route::middleware('admin')->group(function () {
 
     Route::get('/admin/settings',  [\App\Http\Controllers\Admin\AdminSettingsController::class, 'index']) ->name('admin.settings');
     Route::post('/admin/settings', [\App\Http\Controllers\Admin\AdminSettingsController::class, 'update'])->name('admin.settings.update');
+   Route::post('/admin/settings/telegram/permissions', [\App\Http\Controllers\Admin\AdminSettingsController::class, 'updateTelegramPermissions'])->name('admin.settings.telegram.permissions');
+    Route::get('/admin/settings/telegram-test', [\App\Http\Controllers\Admin\AdminSettingsController::class, 'telegramTest'])->name('admin.settings.telegram-test');
 
     // ── Events ────────────────────────────────────────────────────────────
     Route::get('/admin/events',            [EventAdminController::class, 'index'])         ->name('admin.events');
@@ -851,3 +915,42 @@ Route::middleware(['web', 'admin'])->prefix('admin/installer-preview')->name('in
     Route::post('/complete',[InstallPreviewController::class, 'complete'])->name('complete');
 });
 
+// Member application invite acceptance
+Route::get('/join/{token}', [App\Http\Controllers\AcceptInviteController::class, 'show'])
+    ->name('member-application.accept-invite');
+Route::post('/join/{token}', [App\Http\Controllers\AcceptInviteController::class, 'submit'])
+    ->name('member-application.accept-invite.submit');
+
+
+// Admin: Member Applications
+Route::prefix('admin')->middleware(['web', 'admin'])->group(function () {
+    Route::get('member-applications', [App\Http\Controllers\Admin\MemberApplicationAdminController::class, 'index'])
+        ->name('admin.member-applications.index');
+    Route::get('member-applications/{application}', [App\Http\Controllers\Admin\MemberApplicationAdminController::class, 'show'])
+        ->name('admin.member-applications.show');
+    Route::post('member-applications/{application}/convert', [App\Http\Controllers\Admin\MemberApplicationAdminController::class, 'convert'])
+        ->name('admin.member-applications.convert');
+    Route::post('member-applications/{application}/reject', [App\Http\Controllers\Admin\MemberApplicationAdminController::class, 'reject'])
+        ->name('admin.member-applications.reject');
+    Route::delete('member-applications/{application}', [App\Http\Controllers\Admin\MemberApplicationAdminController::class, 'destroy'])
+        ->name('admin.member-applications.destroy');
+    Route::get('member-applications/{application}/download-pdf', [App\Http\Controllers\Admin\MemberApplicationAdminController::class, 'downloadPdf'])
+        ->name('admin.member-applications.download-pdf');
+    Route::get('member-applications/{application}/download-doc/{type}', [App\Http\Controllers\Admin\MemberApplicationAdminController::class, 'downloadDoc'])
+        ->name('admin.member-applications.download-doc');
+});
+
+
+Route::get('/alert-levels', fn() => view('pages.alert-levels'))->name('alert-levels');
+
+// ── Temporary Guests ──────────────────────────────────────────────────────
+Route::prefix('admin/temporary-guests')->name('admin.temporary-guests.')->middleware(['web','admin'])->group(function () {
+    Route::get   ('/',              [TemporaryGuestController::class, 'index'])    ->name('index');
+    Route::get   ('/create',        [TemporaryGuestController::class, 'create'])   ->name('create');
+    Route::post  ('/',              [TemporaryGuestController::class, 'store'])    ->name('store');
+    Route::get   ('/{user}/edit',   [TemporaryGuestController::class, 'edit'])     ->name('edit');
+    Route::put   ('/{user}',        [TemporaryGuestController::class, 'update'])   ->name('update');
+    Route::delete('/{user}',        [TemporaryGuestController::class, 'destroy'])  ->name('destroy');
+    Route::post  ('/{user}/disable',   [TemporaryGuestController::class, 'disable'])   ->name('disable');
+    Route::post  ('/{user}/reinstate', [TemporaryGuestController::class, 'reinstate']) ->name('reinstate');
+});

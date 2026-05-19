@@ -149,11 +149,11 @@
             @foreach ($online as $row)
             <tr>
                 <td>
-                    <strong>{{ $row->name }}</strong>
+                    <strong>{{ $_isTempAdmin && isset($row) && method_exists($row, 'piiVisible') && !$row->piiVisible() ? '●●●●●●●●●' : $row->name }}</strong>
                     @if ($row->is_admin)
                         <span class="badge-admin">Admin</span>
                     @endif
-                    <div style="font-size:0.8rem;color:#666;">{{ $row->email }}</div>
+                    <div style="font-size:0.8rem;color:#666;">{{ $_isTempAdmin && isset($row) && method_exists($row, 'piiVisible') && !$row->piiVisible() ? '●●●●●●●' : $row->email }}</div>
                 </td>
                 <td>
                     <span class="last-seen">

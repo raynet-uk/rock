@@ -71,27 +71,32 @@ class ScormController extends Controller
      * Serve the SCORM player page — contains the SCORM 1.2 API bridge
      * and an iframe that loads the package.
      */
-    public function play(Request $request, int $lessonId)
-    {
-        $lesson     = CourseLesson::findOrFail($lessonId);
-        $enrollment = CourseEnrollment::where('user_id', auth()->id())
-                        ->where('course_id', $lesson->course_id)
-                        ->firstOrFail();
+  public function play(Request $request, int $lessonId)
+{
+    $lesson     = CourseLesson::findOrFail($lessonId);
+    $enrollment = CourseEnrollment::where('user_id', auth()->id())
+                    ->where('course_id', $lesson->course_id)
+                    ->firstOrFail();
 
-        $launchUrl = $lesson->video_url;
-        if (!$launchUrl) {
-            abort(404, 'No SCORM package has been uploaded for this lesson.');
-        }
-
-        $csrfToken    = csrf_token();
-        $completeUrl  = route('lms.complete', ['id' => $lessonId]);
-        $enrollmentId = $enrollment->id;
-
-        return view('lms.scorm-player', compact(
-            'lesson', 'launchUrl', 'csrfToken', 'completeUrl', 'enrollmentId'
-        ));
+    $launchUrl = $lesson->video_url;
+    if (!$launchUrl) {
+        abort(404, 'No SCORM package has been uploaded for this lesson.');
     }
 
+    $csrfToken    = csrf_token();
+    $completeUrl  = route('lms.complete', ['id' => $lessonId]);
+    $enrollmentId = $enrollment->id;
+
+    // Load CMI data server-side so it's available synchronously
+    $scormData = \App\Models\LmsScormData::where('user_id', auth()->id())
+                    ->where('lesson_id', $lessonId)
+                    ->get()
+                    ->pluck('value', 'key');
+
+    return view('lms.scorm-player', compact(
+        'lesson', 'launchUrl', 'csrfToken', 'completeUrl', 'enrollmentId', 'scormData'
+    ));
+}
     /**
      * SCORM 1.2 / 2004 data endpoint — stores CMI data for the current user/lesson.
      * Called via fetch() from the SCORM API bridge running in the parent page.

@@ -4,115 +4,104 @@
     $meta        = $alertStatus?->meta();
     $level       = $alertStatus->level ?? 5;
     $colour      = $meta['colour'] ?? '#22c55e';
-
-    // For Level 3 (yellow) use dark text, else white text
-    $textColour  = ($level == 3) ? '#111827' : '#f9fafb';
-    $subtleText  = ($level == 3) ? '#1f2937' : 'rgba(248,250,252,0.85)';
+    $textColour  = in_array($level, [1, 2, 4]) ? '#0b1120' : '#ffffff';
+    $subtleText  = in_array($level, [1, 2, 4]) ? '#374151' : 'rgba(255,255,255,0.75)';
 @endphp
 
-<div style="
-    max-width: 360px;
-    border-radius: 1rem;
-    overflow: hidden;
-    box-shadow: 0 10px 30px rgba(15,23,42,0.75);
-    border: 1px solid rgba(15,23,42,0.95);
-    background: #020617;
-    font-size: 0.88rem;
-">
-    {{-- Header strip --}}
+<a href="{{ route('alert-levels') }}"
+   style="text-decoration:none;display:block;"
+   title="View all response levels">
     <div style="
-        display:flex;
-        background:#020617;
-        border-bottom:1px solid rgba(15,23,42,0.95);
-    ">
-        {{-- Left label --}}
+        border-radius: 12px;
+        overflow: hidden;
+        font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+        border: 1px solid rgba(0,0,0,0.12);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    "
+    onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(0,0,0,0.2)'"
+    onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 2px 12px rgba(0,0,0,0.15)'"
+    >
+        {{-- Coloured body --}}
         <div style="
-            flex:1;
-            padding:0.4rem 0.9rem;
-            background:#0b1b3b;
-            color:#e5e7eb;
-            font-size:0.75rem;
-            text-transform:uppercase;
-            letter-spacing:0.12em;
-            font-weight:600;
-            border-right:1px solid rgba(15,23,42,0.95);
-            border-top-left-radius:1rem;
+            background: {{ $colour }};
+            padding: 1rem 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
         ">
-            {{ \App\Helpers\RaynetSetting::groupName() }}
-        </div>
-
-        {{-- Centre level box --}}
-       <div style="
-            flex:0 0 80px;
-            display:flex;
-            justify-content:center;      /* horizontal centring */
-            align-items:center;          /* vertical centring */
-            background:#000000;
-            color:#fff;
-            font-size:2.6rem;            /* adjust size here */
-            font-weight:800;
-            padding-top:2px;             /* NU D G E  UP/DOWN */
-            letter-spacing:-1px;
-        ">
-            {{ $level }}
-        </div>
-
-        {{-- Right label --}}
-        <div style="
-            flex:1;
-            padding:0.4rem 0.9rem;
-            background:#020617;
-            color:#cbd5f5;
-            font-size:0.75rem;
-            text-transform:uppercase;
-            letter-spacing:0.12em;
-            font-weight:600;
-            text-align:right;
-            border-top-right-radius:1rem;
-        ">
-            RAYNET Status
-        </div>
-    </div>
-
-    {{-- Body --}}
-    <div style="
-        padding:0.95rem 1.05rem 1.05rem;
-        background: {{ $colour }};
-        color: {{ $textColour }};
-    ">
-        {{-- Level line --}}
-        <div style="font-size:1.05rem; font-weight:700; margin-bottom:0.2rem;">
-            Level {{ $level }}
-        </div>
-
-        {{-- Title --}}
-        <div style="font-weight:600; margin-bottom:0.3rem;">
-            {{ $meta['title'] ?? 'Alert Level '.$level }}
-        </div>
-
-        {{-- Default description --}}
-        <div style="font-size:0.86rem; margin-bottom:0.45rem; color: {{ $subtleText }};">
-            {{ $meta['description'] ?? '' }}
-        </div>
-
-        {{-- Custom message --}}
-        @if(!empty($alertStatus?->message))
+            {{-- Level number box --}}
             <div style="
-                margin-top:0.45rem;
-                padding-top:0.45rem;
-                border-top:1px dashed rgba(15,23,42,0.3);
-                font-size:0.84rem;
-                font-weight:500;
-                color: {{ $textColour }};
-                background:rgba(255,255,255,0.22);
-                border-radius:0.4rem;
-                padding:0.45rem 0.6rem;
+                width: 52px;
+                height: 52px;
+                border-radius: 10px;
+                background: rgba(0,0,0,0.18);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+                line-height: 1;
             ">
-                {{ $alertStatus->message }}
+                <div style="font-size: 0.55rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: {{ $textColour }}; opacity: 0.75; margin-bottom: 1px;">LVL</div>
+                <div style="font-size: 1.6rem; font-weight: 800; color: {{ $textColour }}; letter-spacing: -1px;">{{ $level }}</div>
+            </div>
+
+            {{-- Text --}}
+            <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: {{ $subtleText }}; margin-bottom: 2px;">
+                    Current Response Level
+                </div>
+                <div style="font-size: 1rem; font-weight: 700; color: {{ $textColour }}; line-height: 1.2; margin-bottom: 3px;">
+                    {{ $meta['title'] ?? 'Level '.$level }}
+                </div>
+                <div style="font-size: 0.8rem; color: {{ $subtleText }}; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    {{ $meta['description'] ?? '' }}
+                </div>
+            </div>
+
+            {{-- Arrow --}}
+            <div style="font-size: 1.2rem; color: {{ $textColour }}; opacity: 0.4; flex-shrink: 0;">›</div>
+        </div>
+
+        {{-- Custom message strip --}}
+        @if (!empty($alertStatus?->message))
+            <div style="
+                background: rgba(0,0,0,0.65);
+                padding: 0.5rem 1.1rem;
+                font-size: 0.8rem;
+                color: rgba(255,255,255,0.9);
+                line-height: 1.4;
+                display: flex;
+                align-items: flex-start;
+                gap: 0.5rem;
+            ">
+                <span style="flex-shrink:0;">📢</span>
+                <span>{{ $alertStatus->message }}</span>
             </div>
         @endif
 
-        {{-- Status line --}}
-       
+        {{-- Footer — RAYNET branding --}}
+        <div style="
+            background: #0b1b3b;
+            padding: 0.45rem 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+        ">
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+                <img src="https://www.raynet-uk.net/technical/graphics/raynet-uk.gif"
+                     alt="RAYNET-UK"
+                     style="height:18px;width:auto;opacity:0.85;flex-shrink:0;"
+                     onerror="this.style.display='none'">
+                <span style="font-size: 0.7rem; color: #64748b; font-weight: 600; letter-spacing: 0.05em;">
+                    {{ \App\Helpers\RaynetSetting::groupNumber() }}
+                </span>
+            </div>
+            <div style="font-size: 0.7rem; color: #475569; font-weight: 600;">
+                Tap for details →
+            </div>
+        </div>
     </div>
-</div>
+</a>

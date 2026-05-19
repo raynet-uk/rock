@@ -81,7 +81,7 @@
     .sb-mobile-toggle{display:none;background:none;border:none;cursor:pointer;padding:.4rem;color:var(--navy);font-size:18px}
 
     /* MAIN */
-    .rn-main{margin-left:var(--sidebar-w);margin-top:var(--topbar-h);min-height:calc(100vh - var(--topbar-h));padding:1.75rem 1.5rem 4rem}
+    .rn-main{margin-left:var(--sidebar-w);margin-top:var(--topbar-h);min-height:calc(100vh - var(--topbar-h));padding:1.75rem 1.5rem 4rem;flex:1;min-width:0}
 
     /* PAGE HEADER */
     .rn-page-header{margin-bottom:1.5rem}
@@ -217,8 +217,14 @@
                         All Members @if($pendingCount > 0)<span class="sb-badge">{{ $pendingCount }}</span>@endif
                     </a>
                     <a href="{{ route('admin.roles') }}" class="sb-subitem {{ $currentRoute === 'admin.roles' ? 'active' : '' }}">Roles</a>
+                    <a href="{{ route('admin.temporary-guests.index') }}" class="sb-subitem {{ str_starts_with($currentRoute, 'admin.temporary-guests') ? 'active' : '' }}">Temporary Guests</a>
                     <a href="{{ route('admin.availability.index') }}" class="sb-subitem {{ $currentRoute === 'admin.availability.index' ? 'active' : '' }}">Availability</a>
                     <a href="{{ route('admin.online') }}" class="sb-subitem {{ $currentRoute === 'admin.online' ? 'active' : '' }}">Who's Online</a>
+                    <a href="{{ route('admin.member-applications.index') }}" class="sb-subitem {{ str_starts_with($currentRoute,'admin.member-applications') ? 'active' : '' }}">
+                        Applications
+                        @php try { $pendingApps = \App\Models\MemberApplication::where('status','pending')->count(); } catch(\Throwable $e) { $pendingApps = 0; } @endphp
+                        @if($pendingApps > 0)<span class="sb-badge sb-badge--amber">{{ $pendingApps }}</span>@endif
+                    </a>
                 </div>
             </div>
 
@@ -356,7 +362,49 @@
         <div class="rn-notice rn-notice--ok fade-in">✓ {{ session('status') }}</div>
         @endif
 
-        @yield('content')
+        
+    {{-- Temporary Admin Banner --}}
+    @if(auth()->check() && auth()->user()->isTemporaryAdmin())
+    <div style="background:linear-gradient(90deg,#92400e,#b45309);border-bottom:3px solid #d97706;padding:.5rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:.65rem;">
+            <span style="font-size:16px;flex-shrink:0;">🔑</span>
+            <div>
+                <div style="font-size:11px;font-weight:bold;color:#fff;letter-spacing:.04em;text-transform:uppercase;">Temporary Admin · Read-Only Access</div>
+                <div style="font-size:10px;color:rgba(255,255,255,.8);margin-top:1px;">
+                    You can manage temporary guest accounts only. All member data and write actions are restricted.
+                    @if(auth()->user()->guest_expires_at && auth()->user()->guest_expires_at->isFuture())
+                        · Expires {{ auth()->user()->guest_expires_at->format('d M Y \a\t H:i') }}
+                    @endif
+                </div>
+            </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:.5rem;flex-shrink:0;">
+            <span style="font-size:9px;font-weight:bold;color:#fff;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.2);padding:2px 8px;text-transform:uppercase;letter-spacing:.05em;">👁 Read Only</span>
+            <span style="font-size:9px;font-weight:bold;color:#92400e;background:#fef3c7;border:1px solid #fde68a;padding:2px 8px;text-transform:uppercase;letter-spacing:.05em;">⏱ Temp Admin</span>
+        </div>
+    </div>
+    @endif
+
+    {{-- Temporary Admin Blocked Toast --}}
+    @if(session('temp_admin_blocked'))
+    <div id="tempAdminToast" style="position:fixed;bottom:24px;right:24px;z-index:9999;max-width:380px;background:#1a2332;border:1px solid rgba(180,83,9,.5);border-left:4px solid #b45309;padding:14px 18px;box-shadow:0 8px 32px rgba(0,0,0,.35);animation:toastIn .3s ease;">
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+            <span style="font-size:20px;flex-shrink:0;margin-top:1px;">🔒</span>
+            <div style="flex:1;">
+                <div style="font-size:12px;font-weight:bold;color:#fef3c7;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Read-Only Access</div>
+                <div style="font-size:12px;color:rgba(255,255,255,.8);line-height:1.5;">{{ session('temp_admin_blocked') }}</div>
+            </div>
+            <button onclick="document.getElementById('tempAdminToast').remove()" style="background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:16px;flex-shrink:0;padding:0;line-height:1;">✕</button>
+        </div>
+    </div>
+    <style>
+    @keyframes toastIn { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
+    </style>
+    <script>
+    setTimeout(function(){ var t=document.getElementById('tempAdminToast'); if(t) t.style.opacity='0', t.style.transition='opacity .4s', setTimeout(function(){t.remove()},400); }, 5000);
+    </script>
+    @endif
+@yield('content')
     </main>
 </div>
 

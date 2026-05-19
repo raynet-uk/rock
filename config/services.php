@@ -43,5 +43,26 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+'telegram' => [
+    'bot_token'          => env('TELEGRAM_BOT_TOKEN'),
+    'admin_ids'          => explode(',', env('TELEGRAM_ADMIN_IDS', '5257679106')),
+    'controller_chat_id' => env('TELEGRAM_CONTROLLER_CHAT_ID'),
+    'group_chat_id'      => env('TELEGRAM_GROUP_CHAT_ID'),
+],
+'raynet' => [
+    'portal_url' => env('RAYNET_PORTAL_URL', 'https://raynet-liverpool.net'),
+],
+'imap' => [
+    'host'               => env('MAIL_HOST', 'mail.raynet-liverpool.net'),
+    'publicfile_password'=> env('IMAP_PUBLICFILE_PASSWORD'),
+    'memberfile_password'=> env('IMAP_MEMBERFILE_PASSWORD'),
+],
 
+    'imap' => [
+        'host'                  => env('MAIL_HOST', 'mail.raynet-liverpool.net'),
+        'publicfile_password'   => env('IMAP_PUBLICFILE_PASSWORD'),
+        'memberfile_password'   => env('IMAP_MEMBERFILE_PASSWORD'),
+        'committeefile_password'=> env('IMAP_COMMITTEEFILE_PASSWORD'),
+        'adminfile_password'    => env('IMAP_ADMINFILE_PASSWORD'),
+    ],
 ];

@@ -47,13 +47,12 @@
     @if(session('success')) <div class="as-notice as-notice--ok">✓ {{ session('success') }}</div> @endif
     @if(session('error'))   <div class="as-notice as-notice--err">⚠ {{ session('error') }}</div>  @endif
 
-    {{-- ══ GROUP IDENTITY ══════════════════════════════════════════════════ --}}
+    {{-- GROUP IDENTITY --}}
     <form method="POST" action="{{ route('admin.settings.update') }}">
         @csrf
         <div class="as-card">
             <div class="as-card-head"><h2>📻 Group Identity</h2></div>
             <div class="as-card-body">
-
                 <div class="as-row">
                     <div class="as-field">
                         <label class="as-label" for="group_name">Group Name</label>
@@ -70,7 +69,6 @@
                         <div class="as-hint">Used in browser title and emails. Usually same as group name.</div>
                     </div>
                 </div>
-
                 <div class="as-row-3">
                     <div class="as-field">
                         <label class="as-label" for="group_number">Group Number</label>
@@ -92,7 +90,6 @@
                                placeholder="e.g. {{ \App\Helpers\RaynetSetting::groupRegion() }}" maxlength="20">
                     </div>
                 </div>
-
                 <div class="as-row">
                     <div class="as-field">
                         <label class="as-label" for="group_region">Region / Area</label>
@@ -109,9 +106,7 @@
                         <div class="as-hint">Your public website URL.</div>
                     </div>
                 </div>
-
                 <div class="as-section-divider">Group Controller</div>
-
                 <div class="as-row">
                     <div class="as-field">
                         <label class="as-label" for="gc_name">GC Name</label>
@@ -126,7 +121,6 @@
                                placeholder="gc@yourgroup.raynet-uk.net" maxlength="120">
                     </div>
                 </div>
-
                 <div class="as-field">
                     <label class="as-label" for="site_tagline">Navbar Tagline</label>
                     <input type="text" id="site_tagline" name="site_tagline" class="as-input"
@@ -135,7 +129,6 @@
                            oninput="document.getElementById('previewTagline').textContent = this.value || '—'">
                     <div class="as-hint">Small red text beneath the logo in the navbar.</div>
                 </div>
-
             </div>
             <div class="as-foot">
                 <a href="{{ route('admin.dashboard') }}" class="as-btn as-btn-ghost">← Dashboard</a>
@@ -144,7 +137,7 @@
         </div>
     </form>
 
-    {{-- ══ LOGO & BRANDING ══════════════════════════════════════════════════ --}}
+    {{-- LOGO & BRANDING --}}
     <form method="POST" action="{{ route('admin.settings.update') }}" enctype="multipart/form-data">
         @csrf
         <div class="as-card">
@@ -192,7 +185,7 @@
         </div>
     </form>
 
-    {{-- ══ EMAIL SETTINGS ══════════════════════════════════════════════════ --}}
+    {{-- EMAIL SETTINGS --}}
     <form method="POST" action="{{ route('admin.settings.update') }}">
         @csrf
         <div class="as-card">
@@ -219,7 +212,39 @@
         </div>
     </form>
 
-    {{-- ══ HEADER CODE ══════════════════════════════════════════════════════ --}}
+    {{-- TELEGRAM SETTINGS --}}
+    <form method="POST" action="{{ route('admin.settings.update') }}">
+        @csrf
+        <div class="as-card">
+            <div class="as-card-head"><h2>📡 Telegram Notifications</h2></div>
+            <div class="as-card-body">
+                <div class="as-field">
+                    <label class="as-label">Group Chat ID</label>
+                    <input type="text" name="telegram_group_chat_ids" class="as-input"
+                           value="{{ old('telegram_group_chat_ids', $telegramGroupChatIds) }}"
+                           placeholder="e.g. -1001234567890, -1009876543210" maxlength="50" style="font-family:monospace">
+                    <div class="as-hint">
+                        Always a negative number. Add <strong>@userinfobot</strong> to your group, send any message, copy the ID, then remove the bot.
+                    </div>
+                </div>
+                <div class="as-field">
+                    <label class="as-label">Topic / Thread ID <span style="font-weight:normal;text-transform:none;letter-spacing:0;font-size:11px">(optional)</span></label>
+                    <input type="text" name="telegram_group_thread_id" class="as-input"
+                           value="{{ old('telegram_group_thread_id', $telegramGroupThreadId) }}"
+                           placeholder="e.g. 2 (leave blank for General)" style="font-family:monospace">
+                    <div class="as-hint">Send <code>/id</code> inside a topic — the bot replies with the Thread ID. Paste it here. Leave blank to post to General.</div>
+                </div>
+            <div class="as-foot">
+                <a href="{{ route('admin.settings.telegram-test') }}"
+                   onclick="return confirm('Send a test alert to the configured Telegram group?')"
+                   class="as-btn as-btn-ghost" style="border-color:#0088cc;color:#0088cc">✈ Send Test Message</a>
+                <button type="submit" class="as-btn as-btn-primary">✓ Save Telegram Settings</button>
+            </div>
+        </div>
+    </form>
+    @include('admin.partials.telegram_perms_card')
+
+    {{-- HEADER CODE --}}
     <form method="POST" action="{{ route('admin.settings.update') }}">
         @csrf
         <div class="as-card">

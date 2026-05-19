@@ -97,7 +97,7 @@
         <div class="cert-header-deco"></div>
         <div class="cert-org">Certificate of Completion</div>
         <div class="cert-org-name">{{ \App\Helpers\RaynetSetting::groupName() }}</div>
-        <div class="cert-region">{{ AppHelpersRaynetSetting::groupName() }} · Group {{ AppHelpersRaynetSetting::groupNumber() }}</div>
+<div class="cert-region">{{ \App\Helpers\RaynetSetting::groupName() }} · Group {{ \App\Helpers\RaynetSetting::groupNumber() }}</div>
         <div class="cert-logo-block">
             <svg class="cert-logo-hex" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
                 <polygon points="32,4 58,18 58,46 32,60 6,46 6,18" fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.3)" stroke-width="2"/>

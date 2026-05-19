@@ -97,7 +97,7 @@ body {
     height: 58px;
     gap: 1rem;
     position: sticky;
-    top: 0;
+    top: 60px;
     z-index: 200;
     box-shadow: 0 2px 16px rgba(0,0,0,.25);
 }
@@ -170,7 +170,7 @@ body {
     flex-direction: column;
     gap: 0;
     position: sticky;
-    top: 58px;
+    top: 118px;
     height: calc(100vh - 58px);
     overflow-y: auto;
 }
@@ -690,7 +690,10 @@ body {
         </nav>
 
         <a href="{{ route('profile.edit') }}" class="topbar-user">
-            @if(auth()->user()->avatar)
+            @if(auth()->user()->hasRole("temporary_guest") || auth()->user()->guest_expires_at)
+                <img src="{{ Storage::url('avatars/TempAvatar.png') }}"
+                     style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid rgba(180,83,9,.4);flex-shrink:0;" alt="Temporary Guest">
+            @elseif(auth()->user()->avatar)
                 <img src="{{ Storage::url(auth()->user()->avatar) }}"
                      style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.2);flex-shrink:0;" alt="">
             @else
@@ -1320,6 +1323,7 @@ function renderHubNotifications() {
                     <span>${pm.icon}</span>
                 </div>
                 <div class="nhi-body">
+                    ${n.from_hq ? `<span style="display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:1px 6px;background:rgba(200,16,46,.1);border:1px solid rgba(200,16,46,.3);color:#C8102E;margin-bottom:4px;">📡 HQ Broadcast</span>` : ''}
                     <div class="nhi-title">${escHtmlHub(n.title || 'Notification')}</div>
                     ${n.body ? `<div class="nhi-text">${escHtmlHub(n.body)}</div>` : ''}
                     <div class="nhi-meta">
