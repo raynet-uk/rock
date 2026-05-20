@@ -673,9 +673,9 @@ body{background:var(--grey);color:var(--text);font-family:var(--font);font-size:
                             <div class="ac-avatar">{{ $initials }}</div>
                             <div class="ac-info">
                                 <div class="ac-name">
-                                    {{ $_isTempAdmin && isset($asgn->user) && method_exists($asgn->user, 'piiVisible') && !$asgn->user->piiVisible() ? '●●●●●●●●●' : $asgn->user->name }}
+                                    {!! pii($asgn->user->name, $asgn->user->piiVisible()) !!}
                                     @if ($asgn->callsign)
-                                        <span style="font-size:11px;color:var(--text-muted);font-weight:normal;">({{ $_isTempAdmin && isset($asgn) && method_exists($asgn, 'piiVisible') && !$asgn->piiVisible() ? '●●●●●' : $asgn->callsign }})</span>
+                                        <span style="font-size:11px;color:var(--text-muted);font-weight:normal;">({!! pii($asgn->callsign, $asgn->user->piiVisible()) !!})</span>
                                     @endif
                                     @if ($aHours)
                                         <span class="ac-hours-badge">{{ $aHours }}h</span>
@@ -842,7 +842,7 @@ body{background:var(--grey);color:var(--text);font-family:var(--font);font-size:
                     @endphp
                     <div class="timeline-row">
                         <div class="tl-name">
-                            <div class="tl-name-val">{{ $_isTempAdmin && isset($asgn->user) && method_exists($asgn->user, 'piiVisible') && !$asgn->user->piiVisible() ? '●●●●●●●●●' : $asgn->user->name }}</div>
+                            <div class="tl-name-val">{!! pii($asgn->user->name, $asgn->user->piiVisible()) !!}</div>
                             <div class="tl-name-role">{{ $asgn->role ?: '—' }}</div>
                             @if ($aHours)
                                 <div class="tl-name-hours">{{ $aHours }}h total</div>
@@ -917,7 +917,7 @@ body{background:var(--grey);color:var(--text);font-family:var(--font);font-size:
                     @foreach ($withFreq as $a)
                         @if ($a->frequency)
                         <tr class="pri">
-                            <td rowspan="{{ (($a->secondary_frequency??null)?1:0)+(($a->fallback_frequency??null)?1:0)+1 }}"><strong>{{ $_isTempAdmin && isset($a->user) && method_exists($a->user, 'piiVisible') && !$a->user->piiVisible() ? '●●●●●●●●●' : $a->user->name }}</strong></td>
+                            <td rowspan="{{ (($a->secondary_frequency??null)?1:0)+(($a->fallback_frequency??null)?1:0)+1 }}"><strong>{!! pii($a->user->name, $a->user->piiVisible()) !!}</strong></td>
                             <td rowspan="{{ (($a->secondary_frequency??null)?1:0)+(($a->fallback_frequency??null)?1:0)+1 }}">{{ $a->callsign ?: '—' }}</td>
                             <td rowspan="{{ (($a->secondary_frequency??null)?1:0)+(($a->fallback_frequency??null)?1:0)+1 }}">{{ $a->role ?: '—' }}</td>
                             <td>{{ $a->channel_label ?? '—' }}</td>
@@ -1052,7 +1052,7 @@ body{background:var(--grey);color:var(--text);font-family:var(--font);font-size:
                             <div class="op-list-item" onclick="flyToMarker({{ $asgn->id }})">
                                 <div class="op-dot" style="background:{{ $col }};"></div>
                                 <div class="op-info">
-                                    <div class="op-name">{{ $_isTempAdmin && isset($asgn->user) && method_exists($asgn->user, 'piiVisible') && !$asgn->user->piiVisible() ? '●●●●●●●●●' : $asgn->user->name }}{{ $asgn->callsign ? ' ('.$asgn->callsign.')' : '' }}</div>
+                                    <div class="op-name">{!! pii($asgn->user->name, $asgn->user->piiVisible()) !!}{{ $asgn->callsign ? ' ('.$asgn->callsign.')' : '' }}</div>
                                     <div class="op-sub">{{ $asgn->location_name ?: ($asgn->lat ? 'Mapped' : 'No position') }}</div>
                                 </div>
                                 @if ($asgn->lat && $asgn->lng)
@@ -1138,7 +1138,7 @@ body{background:var(--grey);color:var(--text);font-family:var(--font);font-size:
                             }, $aShifts));
                         @endphp
                         <tr>
-                            <td><strong>{{ $_isTempAdmin && isset($a->user) && method_exists($a->user, 'piiVisible') && !$a->user->piiVisible() ? '●●●●●●●●●' : $a->user->name }}</strong></td>
+                            <td><strong>{!! pii($a->user->name, $a->user->piiVisible()) !!}</strong></td>
                             <td>{{ $a->callsign ?: '—' }}</td>
                             <td>{{ $a->role ?: '—' }}</td>
                             <td>{{ $a->report_time ? substr($a->report_time,0,5) : '—' }}</td>
@@ -1181,7 +1181,7 @@ body{background:var(--grey);color:var(--text);font-family:var(--font);font-size:
                     @foreach ($withFreq2 as $a)
                         @if ($a->frequency)
                         <tr class="pri">
-                            <td><strong>{{ $_isTempAdmin && isset($a->user) && method_exists($a->user, 'piiVisible') && !$a->user->piiVisible() ? '●●●●●●●●●' : $a->user->name }}</strong></td><td>{{ $a->callsign ?: '—' }}</td><td>{{ $a->role ?: '—' }}</td>
+                            <td><strong>{!! pii($a->user->name, $a->user->piiVisible()) !!}</strong></td><td>{{ $a->callsign ?: '—' }}</td><td>{{ $a->role ?: '—' }}</td>
                             <td>{{ $a->channel_label ?? '—' }}</td><td><span class="channel-tier-badge tier-pri">Primary</span></td>
                             <td><strong>{{ $a->frequency }}</strong></td><td>{{ $a->mode }}</td><td>{{ $a->ctcss_tone ?: '—' }}</td>
                         </tr>
@@ -1220,7 +1220,7 @@ body{background:var(--grey);color:var(--text);font-family:var(--font);font-size:
             <div class="brief-page" style="padding:1.25rem 1.5rem;">
                 <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1rem;">
                     <div>
-                        <div class="brief-page-title" style="display:inline-flex;">{{ $_isTempAdmin && isset($a->user) && method_exists($a->user, 'piiVisible') && !$a->user->piiVisible() ? '●●●●●●●●●' : $a->user->name }}{{ $a->callsign ? ' ('.$a->callsign.')' : '' }} — Individual Brief</div>
+                        <div class="brief-page-title" style="display:inline-flex;">{!! pii($a->user->name, $a->user->piiVisible()) !!}{{ $a->callsign ? ' ('.$a->callsign.')' : '' }} — Individual Brief</div>
                         <div style="font-size:12px;color:var(--text-muted);margin-top:.4rem;">Role: <strong>{{ $a->role ?: 'Not assigned' }}</strong> · Status: <strong>{{ $a->statusLabel() }}</strong>{{ $aHours ? ' · '.$aHours.'h total' : '' }}</div>
                     </div>
                     @if ($a->briefing_token)
@@ -1333,7 +1333,7 @@ body{background:var(--grey);color:var(--text);font-family:var(--font);font-size:
                     <tbody>
                     @foreach ($withEC as $a)
                     <tr>
-                        <td><strong>{{ $_isTempAdmin && isset($a->user) && method_exists($a->user, 'piiVisible') && !$a->user->piiVisible() ? '●●●●●●●●●' : $a->user->name }}</strong>{{ $a->first_aid_trained ? ' 🩺' : '' }}</td>
+                        <td><strong>{!! pii($a->user->name, $a->user->piiVisible()) !!}</strong>{{ $a->first_aid_trained ? ' 🩺' : '' }}</td>
                         <td>{{ $a->emergency_contact_name }}</td>
                         <td><strong>{{ $a->emergency_contact_phone ?? '—' }}</strong></td>
                         <td style="font-size:11px;">{{ $a->medical_notes ?? '—' }}</td>
@@ -1443,9 +1443,9 @@ body{background:var(--grey);color:var(--text);font-family:var(--font);font-size:
                 {{-- Info --}}
                 <div style="flex:1;min-width:0;">
                     <div style="font-size:13px;font-weight:bold;color:var(--text);">
-                        {{ $_isTempAdmin && isset($asgn->user) && method_exists($asgn->user, 'piiVisible') && !$asgn->user->piiVisible() ? '●●●●●●●●●' : $asgn->user->name }}
+                        {!! pii($asgn->user->name, $asgn->user->piiVisible()) !!}
                         @if ($asgn->callsign)
-                            <span style="font-size:11px;color:var(--text-muted);font-weight:normal;">({{ $_isTempAdmin && isset($asgn) && method_exists($asgn, 'piiVisible') && !$asgn->piiVisible() ? '●●●●●' : $asgn->callsign }})</span>
+                            <span style="font-size:11px;color:var(--text-muted);font-weight:normal;">({!! pii($asgn->callsign, $asgn->user->piiVisible()) !!})</span>
                         @endif
                     </div>
                     <div style="font-size:11px;color:var(--text-muted);margin-top:1px;">{{ $asgn->role ?: 'No role' }}</div>
@@ -1619,15 +1619,15 @@ body{background:var(--grey);color:var(--text);font-family:var(--font);font-size:
                             <optgroup label="✓ Available ({{ $availGroup->count() }})">
                             @endif
                             @foreach ($availGroup as $m)
-                                <option value="{{ $m->id }}" data-callsign="{{ $_isTempAdmin && isset($m) && method_exists($m, 'piiVisible') && !$m->piiVisible() ? '●●●●●' : $m->callsign }}">{{ $_isTempAdmin && isset($m) && method_exists($m, 'piiVisible') && !$m->piiVisible() ? '●●●●●●●●●' : $m->name }}{{ $m->callsign ? ' ('.$m->callsign.')' : '' }}</option>
+                                <option value="{{ $m->id }}" data-callsign="{!! pii($m->callsign, $m->piiVisible()) !!}">{!! pii($m->name, $m->piiVisible()) !!}{{ $m->callsign ? ' ('.$m->callsign.')' : '' }}</option>
                             @endforeach
                             @if ($unavailGroup->isNotEmpty())
                             </optgroup>
                             <optgroup label="⚠ Unavailable on this date ({{ $unavailGroup->count() }})">
                             @foreach ($unavailGroup as $m)
-                                <option value="{{ $m->id }}" data-callsign="{{ $_isTempAdmin && isset($m) && method_exists($m, 'piiVisible') && !$m->piiVisible() ? '●●●●●' : $m->callsign }}" data-unavailable="1"
+                                <option value="{{ $m->id }}" data-callsign="{!! pii($m->callsign, $m->piiVisible()) !!}" data-unavailable="1"
                                         style="color:#8a5c00;">
-                                    ⚠ {{ $_isTempAdmin && isset($m) && method_exists($m, 'piiVisible') && !$m->piiVisible() ? '●●●●●●●●●' : $m->name }}{{ $m->callsign ? ' ('.$m->callsign.')' : '' }} — unavailable
+                                    ⚠ {!! pii($m->name, $m->piiVisible()) !!}{{ $m->callsign ? ' ('.$m->callsign.')' : '' }} — unavailable
                                 </option>
                             @endforeach
                             </optgroup>
@@ -3069,7 +3069,7 @@ function printBriefing() {
             @php $initials = implode('', array_map(fn($w) => strtoupper($w[0]), array_slice(explode(' ', $r->user->name),0,2))); @endphp
             <div style="background:#fff;border:1px solid var(--grey-mid);border-left:4px solid {{ $col }};margin-bottom:.5rem;padding:.65rem 1rem;display:flex;align-items:center;gap:.75rem;">
                 <div style="width:36px;height:36px;background:{{ $col }};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;color:#fff;flex-shrink:0;">{{ $initials }}</div>
-                <div style="flex:1;"><div style="font-size:13px;font-weight:bold;">{{ $_isTempAdmin && isset($r->user) && method_exists($r->user, 'piiVisible') && !$r->user->piiVisible() ? '●●●●●●●●●' : $r->user->name }}</div>@if($r->user->callsign)<div style="font-size:11px;color:var(--text-muted);">{{ $_isTempAdmin && isset($r->user) && method_exists($r->user, 'piiVisible') && !$r->user->piiVisible() ? '●●●●●' : $r->user->callsign }}</div>@endif</div>
+                <div style="flex:1;"><div style="font-size:13px;font-weight:bold;">{!! pii($r->user->name, $r->user->piiVisible()) !!}</div>@if($r->user->callsign)<div style="font-size:11px;color:var(--text-muted);">{!! pii($r->user->callsign, $r->user->piiVisible()) !!}</div>@endif</div>
                 <div style="font-size:11px;color:var(--text-muted);">{{ $r->responded_at?->format('j M H:i') }}</div>
             </div>
             @endforeach
@@ -3083,7 +3083,7 @@ function printBriefing() {
             @php $initials = implode('', array_map(fn($w) => strtoupper($w[0]), array_slice(explode(' ', $m->name),0,2))); @endphp
             <div style="display:flex;align-items:center;gap:.75rem;padding:.55rem 1rem;border-bottom:1px solid var(--grey-mid);">
                 <div style="width:30px;height:30px;background:var(--grey-mid);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;color:#fff;flex-shrink:0;">{{ $initials }}</div>
-                <div style="flex:1;"><div style="font-size:13px;font-weight:bold;color:var(--text-muted);">{{ $_isTempAdmin && isset($m) && method_exists($m, 'piiVisible') && !$m->piiVisible() ? '●●●●●●●●●' : $m->name }}</div>@if($m->callsign)<div style="font-size:11px;color:var(--grey-dark);">{{ $_isTempAdmin && isset($m) && method_exists($m, 'piiVisible') && !$m->piiVisible() ? '●●●●●' : $m->callsign }}</div>@endif</div>
+                <div style="flex:1;"><div style="font-size:13px;font-weight:bold;color:var(--text-muted);">{!! pii($m->name, $m->piiVisible()) !!}</div>@if($m->callsign)<div style="font-size:11px;color:var(--grey-dark);">{!! pii($m->callsign, $m->piiVisible()) !!}</div>@endif</div>
                 <span style="font-size:10px;color:var(--grey-dark);">No response</span>
             </div>
             @endforeach
@@ -3165,7 +3165,7 @@ function updateBriefingMemberCount() {
                                 onchange="updateBriefingMemberCount()"
                                 style="width:16px;height:16px;flex-shrink:0;accent-color:var(--navy);cursor:pointer;">
                             <span style="flex:1;">
-                                <span style="display:block;font-size:13px;font-weight:bold;color:var(--text);">{{ $_isTempAdmin && isset($asgn->user) && method_exists($asgn->user, 'piiVisible') && !$asgn->user->piiVisible() ? '●●●●●●●●●' : $asgn->user->name }}</span>
+                                <span style="display:block;font-size:13px;font-weight:bold;color:var(--text);">{!! pii($asgn->user->name, $asgn->user->piiVisible()) !!}</span>
                                 <span style="font-size:10px;color:var(--text-muted);">{{ $asgn->callsign ?: 'No callsign' }} · {{ ucfirst($asgn->status) }} · {{ $asgn->role ?: 'No role' }}</span>
                             </span>
                         </label>

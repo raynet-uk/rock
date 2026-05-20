@@ -268,6 +268,7 @@ body{font-family:var(--font);background:var(--grey);color:var(--text);}
                         <th>Status</th>
                         <th>Score</th>
                         <th>Progress / Location</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -281,8 +282,8 @@ body{font-family:var(--font);background:var(--grey);color:var(--text);}
                         $isInProg  = $status === 'incomplete';
                     @endphp
                     <tr>
-                        <td style="font-weight:bold;color:var(--text);">{{ ($_isTempAdmin && isset($u) && !($u->isTemporaryGuest() || $u->isTemporaryAdmin())) ? '●●●●●●●●●' : ($u?->name ?? 'User #'.$userId) }}</td>
-                        <td style="font-family:monospace;font-size:11px;">{{ $u?->callsign ?? '—' }}</td>
+                        <td style="font-weight:bold;color:var(--text);">{!! pii($u?->name ?? 'User #'.$userId, $u?->piiVisible() ?? true) !!}</td>
+                        <td style="font-family:monospace;font-size:11px;">{!! $u ? pii($u->callsign ?? '—', $u->piiVisible()) : '—' !!}</td>
                         <td>
                             @if($isPassed)
                                 <span class="badge badge-green">✓ {{ ucfirst($data['status']) }}</span>
@@ -306,6 +307,13 @@ body{font-family:var(--font);background:var(--grey);color:var(--text);}
                         <td style="font-size:11px;color:var(--muted);">
                             {{ $data['location'] ?? '—' }}
                         </td>
+                        <td>
+                            @if(!$isPassed)
+                            <button class="btn btn-sm" style="background:#0288d1;color:#fff;border-color:#0288d1;" onclick="manualCompleteScorm({{ $course->id }},{{ $userId }},{{ $sd->lesson->id }},this)">✓ Mark SCORM Passed</button>
+                            @else
+                            <span class="badge badge-green" style="font-size:9px;">✓ Passed</span>
+                            @endif
+                        </td>
                     </tr>
                     @endforeach
 
@@ -313,11 +321,14 @@ body{font-family:var(--font);background:var(--grey);color:var(--text);}
                     @foreach($enrollments as $e)
                     @if(!$sd->memberData->has($e->user_id))
                     <tr>
-                        <td style="font-weight:bold;color:var(--text);">{{ ($_isTempAdmin && isset($e->user) && !($e->user->isTemporaryGuest() || $e->user->isTemporaryAdmin())) ? '●●●●●●●●●' : $e->user->name }}</td>
-                        <td style="font-family:monospace;font-size:11px;">{{ $e->user->callsign ?? '—' }}</td>
+                        <td style="font-weight:bold;color:var(--text);">{!! pii($e->user->name, $e->user->piiVisible()) !!}</td>
+                        <td style="font-family:monospace;font-size:11px;">{!! pii($e->user->callsign ?? '—', $e->user->piiVisible()) !!}</td>
                         <td><span class="badge badge-grey">Not Started</span></td>
                         <td><span style="color:var(--muted);">—</span></td>
                         <td><span style="color:var(--muted);">—</span></td>
+                        <td>
+                            <button class="btn btn-sm" style="background:#0288d1;color:#fff;border-color:#0288d1;" onclick="manualCompleteScorm({{ $course->id }},{{ $e->user_id }},{{ $sd->lesson->id }},this)">✓ Mark SCORM Passed</button>
+                        </td>
                     </tr>
                     @endif
                     @endforeach
@@ -445,9 +456,9 @@ body{font-family:var(--font);background:var(--grey);color:var(--text);}
                     @endphp
                     <tr class="member-accordion-row" onclick="toggleAccordion('{{ $rowId }}')">
                         <td style="font-weight:bold;color:var(--text);">
-                            {{ ($_isTempAdmin && isset($memberUser) && !($memberUser->isTemporaryGuest() || $memberUser->isTemporaryAdmin())) ? '●●●●●●●●●' : ($memberUser?->name ?? 'Unknown') }}
-                            @if($memberUser?->callsign && (!$_isTempAdmin || ($memberUser->isTemporaryGuest() || $memberUser->isTemporaryAdmin())))
-                                <span style="font-size:10px;color:var(--muted);font-family:monospace;margin-left:.35rem;">{{ $memberUser->callsign }}</span>
+                            {!! pii($memberUser?->name ?? 'Unknown', $memberUser?->piiVisible() ?? true) !!}
+                            @if($memberUser?->callsign)
+                                <span style="font-size:10px;color:var(--muted);font-family:monospace;margin-left:.35rem;">{!! pii($memberUser->callsign, $memberUser->piiVisible()) !!}</span>
                             @endif
                         </td>
                         <td>
@@ -475,6 +486,9 @@ body{font-family:var(--font);background:var(--grey);color:var(--text);}
                             {{ $userSubs->sortByDesc('created_at')->first()->created_at->format('d M Y H:i') }}
                         </td>
                         <td>
+                            @if(!$e->completed_at)
+                            <button class="btn btn-sm" style="background:#1a6b3c;color:#fff;border-color:#1a6b3c;margin-right:.35rem;" onclick="event.stopPropagation();manualComplete({{ $course->id }},{{ $e->user_id }},this)" title="Mark all lessons complete and issue certificate">✓ Mark Complete</button>
+                            @endif
                             <button class="expand-toggle" onclick="event.stopPropagation();toggleAccordion('{{ $rowId }}')">
                                 Details ▼
                             </button>
@@ -484,7 +498,7 @@ body{font-family:var(--font);background:var(--grey);color:var(--text);}
                         <td colspan="7" style="padding:0;">
                             <div class="accordion-inner">
                                 <div style="font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.65rem;">
-                                    All Attempts — {{ ($_isTempAdmin && isset($memberUser) && !($memberUser->isTemporaryGuest() || $memberUser->isTemporaryAdmin())) ? '●●●●●●●●●' : $memberUser?->name }}
+                                    All Attempts — {!! pii($memberUser?->name ?? '', $memberUser?->piiVisible() ?? true) !!}
                                 </div>
                                 @foreach($userSubs->sortBy('attempt_number') as $sub)
                                 <div class="attempt-block">
@@ -585,8 +599,8 @@ body{font-family:var(--font);background:var(--grey);color:var(--text);}
                         $rowId          = 'member-' . $e->user_id;
                     @endphp
                     <tr class="member-accordion-row" onclick="toggleAccordion('{{ $rowId }}')">
-                        <td style="font-weight:bold;color:var(--text);">{{ ($_isTempAdmin && isset($e->user) && !($e->user->isTemporaryGuest() || $e->user->isTemporaryAdmin())) ? '●●●●●●●●●' : $e->user->name }}</td>
-                        <td style="font-family:monospace;font-size:11px;">{{ $e->user->callsign ?? '—' }}</td>
+                        <td style="font-weight:bold;color:var(--text);">{!! pii($e->user->name, $e->user->piiVisible()) !!}</td>
+                        <td style="font-family:monospace;font-size:11px;">{!! pii($e->user->callsign ?? '—', $e->user->piiVisible()) !!}</td>
                         <td style="font-size:11px;color:var(--muted);">{{ $e->enrolled_at->format('d M Y') }}</td>
                         <td>
                             <div style="display:flex;align-items:center;gap:.5rem;">
@@ -613,6 +627,9 @@ body{font-family:var(--font);background:var(--grey);color:var(--text);}
                             {{ $e->due_date ? $e->due_date->format('d M Y') : '—' }}
                         </td>
                         <td>
+                            @if(!$e->completed_at)
+                            <button class="btn btn-sm" style="background:#1a6b3c;color:#fff;border-color:#1a6b3c;margin-right:.35rem;" onclick="event.stopPropagation();manualComplete({{ $course->id }},{{ $e->user_id }},this)" title="Mark all lessons complete and issue certificate">✓ Mark Complete</button>
+                            @endif
                             <button class="expand-toggle" onclick="event.stopPropagation();toggleAccordion('{{ $rowId }}')">
                                 Lessons ▼
                             </button>
@@ -622,7 +639,7 @@ body{font-family:var(--font);background:var(--grey);color:var(--text);}
                         <td colspan="8" style="padding:0;">
                             <div class="accordion-inner">
                                 <div style="font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.65rem;">
-                                    Lesson Completion — {{ ($_isTempAdmin && isset($e->user) && !($e->user->isTemporaryGuest() || $e->user->isTemporaryAdmin())) ? '●●●●●●●●●' : $e->user->name }}
+                                    Lesson Completion — {!! pii($e->user->name, $e->user->piiVisible()) !!}
                                 </div>
                                 @foreach($course->modules->sortBy('sort_order') as $mod)
                                 <div style="font-size:11px;font-weight:bold;color:var(--navy);margin-bottom:.35rem;margin-top:.5rem;">
@@ -668,6 +685,28 @@ body{font-family:var(--font);background:var(--grey);color:var(--text);}
 </div>
 
 <script>
+function manualCompleteScorm(courseId, userId, lessonId, btn) {
+    if (!confirm("Mark this SCORM module as passed for this member?")) return;
+    btn.disabled = true; btn.textContent = "Saving...";
+    fetch(`/admin/lms/${courseId}/manual-complete-scorm/${userId}/${lessonId}`, {
+        method: "POST",
+        headers: {"X-CSRF-TOKEN": document.querySelector('meta[name=csrf-token]').content, "Content-Type": "application/json"}
+    }).then(r => r.json()).then(d => {
+        if (d.success) { alert(d.message); location.reload(); }
+        else { alert("Error: " + d.message); btn.disabled = false; btn.textContent = "✓ Mark SCORM Passed"; }
+    }).catch(() => { btn.disabled = false; btn.textContent = "✓ Mark SCORM Passed"; });
+}
+function manualComplete(courseId, userId, btn) {
+    if (!confirm("Mark this member as fully complete? This will complete all lessons and issue a certificate.")) return;
+    btn.disabled = true;
+    btn.textContent = "Saving...";
+    fetch(`/admin/lms/${courseId}/manual-complete/${userId}`, {
+        method: "POST",
+        headers: {"X-CSRF-TOKEN": document.querySelector('meta[name=csrf-token]').content, "Content-Type": "application/json"}
+    }).then(r => r.json()).then(d => {
+        if (d.success) { location.reload(); } else { alert("Error: " + d.message); btn.disabled = false; btn.textContent = "✓ Mark Complete"; }
+    }).catch(() => { btn.disabled = false; btn.textContent = "✓ Mark Complete"; });
+}
 function toggleAccordion(id) {
     const row = document.getElementById(id);
     if (!row) return;

@@ -706,9 +706,9 @@
                     $isTrusted = in_array($emailDomain,$allTrusted);
                 @endphp
                 <tr>
-                    <td style="font-weight:bold">{{ $_isTempAdmin && isset($pending) && method_exists($pending, 'piiVisible') && !$pending->piiVisible() ? '●●●●●●●●●' : $pending->name }}</td>
+                    <td style="font-weight:bold">{!! pii($pending->name, $pending->piiVisible()) !!}</td>
                     <td style="color:var(--text-muted)">
-                        {{ $_isTempAdmin && isset($pending) && method_exists($pending, 'piiVisible') && !$pending->piiVisible() ? '●●●●●●●' : $pending->email }}
+                        {!! pii($pending->email, $pending->piiVisible()) !!}
                         @if($isTrusted)<span style="display:inline-block;margin-left:.3rem;padding:1px 5px;font-size:9px;font-weight:bold;background:var(--green-bg);border:1px solid #b8ddc9;color:var(--green);text-transform:uppercase;letter-spacing:.05em">Trusted</span>@endif
                     </td>
                     <td><span class="cs-pill">📡 {{ $pending->callsign ?? '—' }}</span></td>

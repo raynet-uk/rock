@@ -92,11 +92,36 @@
                 </div>
                 <div class="as-row">
                     <div class="as-field">
-                        <label class="as-label" for="group_region">Region / Area</label>
-                        <input type="text" id="group_region" name="group_region" class="as-input"
-                               value="{{ old('group_region', \App\Models\Setting::get('group_region', '')) }}"
-                               placeholder="e.g. {{ \App\Helpers\RaynetSetting::groupRegion() }}" maxlength="80">
-                        <div class="as-hint">Used in footers and emails.</div>
+                        <label class="as-label" for="group_region">RAYNET Zone</label>
+                        @php $currentRegion = old('group_region', \App\Models\Setting::get('group_region', '')); @endphp
+                        <select id="group_region" name="group_region" class="as-input">
+                            <option value="">— Select zone —</option>
+                            @foreach([
+                                'Zone 1'  => 'Zone 1 — North East England',
+                                'Zone 2'  => 'Zone 2 — Yorkshire and Humberside',
+                                'Zone 3'  => 'Zone 3 — East Midlands',
+                                'Zone 4'  => 'Zone 4 — East Anglia',
+                                'Zone 5'  => 'Zone 5 — Greater London',
+                                'Zone 6'  => 'Zone 6 — South East England',
+                                'Zone 7'  => 'Zone 7 — South West England & Channel Isles',
+                                'Zone 8'  => 'Zone 8 — South Wales',
+                                'Zone 9'  => 'Zone 9 — West Midlands',
+                                'Zone 10' => 'Zone 10 — North West England',
+                                'Zone 11' => 'Zone 11 — Northern Ireland',
+                                'Zone 18' => 'Zone 18 — North Wales',
+                                'Zone 20' => 'Zone 20 — Scotland',
+                            ] as $val => $label)
+                                <option value="{{ $val }}" {{ $currentRegion === $val ? 'selected' : '' }}>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        <div class="as-hint">Your RAYNET zone. Used in homepage text and regional news feed.</div>
+                    </div>
+                    <div class="as-field">
+                        <label class="as-label" for="group_area">Local Area Name</label>
+                        <input type="text" id="group_area" name="group_area" class="as-input"
+                               value="{{ old('group_area', \App\Models\Setting::get('group_area', '')) }}"
+                               placeholder="e.g. Merseyside" maxlength="80">
+                        <div class="as-hint">Used in homepage, footers and emails — e.g. &quot;for Merseyside&quot;.</div>
                     </div>
                     <div class="as-field">
                         <label class="as-label" for="site_url">Site URL</label>

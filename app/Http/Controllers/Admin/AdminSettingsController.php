@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Services\TelegramService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class AdminSettingsController extends Controller
@@ -35,6 +37,7 @@ class AdminSettingsController extends Controller
             'group_number'              => ['nullable', 'string', 'max:20'],
             'group_callsign'            => ['nullable', 'string', 'max:20'],
             'group_region'              => ['nullable', 'string', 'max:80'],
+            'group_area'                => ['nullable', 'string', 'max:80'],
             'gc_name'                   => ['nullable', 'string', 'max:80'],
             'gc_email'                  => ['nullable', 'email', 'max:120'],
             'site_url'                  => ['nullable', 'url', 'max:120'],
@@ -43,7 +46,7 @@ class AdminSettingsController extends Controller
         ]);
 
         $groupFields = [
-            'group_name', 'group_number', 'group_callsign', 'group_region',
+            'group_name', 'group_number', 'group_callsign', 'group_region', 'group_area',
             'gc_name', 'gc_email', 'site_url', 'raynet_zone',
             'site_name', 'site_tagline',
         ];
@@ -85,6 +88,15 @@ class AdminSettingsController extends Controller
             $ext  = $request->file('site_logo')->getClientOriginalExtension();
             $path = $request->file('site_logo')->storeAs('site', 'logo.' . $ext, 'public');
             Setting::set('site_logo_path', $path);
+        }
+
+        // If zone changed, refresh the regional news cache immediately
+        if ($request->has('group_region')) {
+            try {
+                \Artisan::call('rsgb:refresh-region');
+            } catch (\Throwable $e) {
+                \Log::warning('Could not refresh regional news: ' . $e->getMessage());
+            }
         }
 
         return redirect()->route('admin.settings')->with('status', 'Settings saved.');

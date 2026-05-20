@@ -302,9 +302,9 @@
                 <a href="{{ route('event-support') }}"   class="{{ request()->routeIs('event-support')   ? 'active' : '' }}">Event Support</a>
                 <a href="{{ route('request-support') }}" class="{{ request()->routeIs('request-support') ? 'active' : '' }}">Request Support</a>
                 <a href="{{ route('training') }}"        class="{{ request()->routeIs('training')        ? 'active' : '' }}">Training</a>
-                <a href="{{ route('resources.index') }}" class="{{ request()->routeIs('resources*') ? 'active' : '' }}">Drive</a>
+                <a href="{{ route('gallery') }}" class="{{ request()->routeIs('gallery') ? 'active' : '' }}">Gallery</a>
                 <div class="nav-dropdown">
-                    <button class="nav-dropdown-btn {{ request()->routeIs('data-dashboard') || request()->routeIs('ops-map*') ? 'active' : '' }}" onclick="this.setAttribute('aria-expanded', this.getAttribute('aria-expanded')==='true'?'false':'true'); this.nextElementSibling.classList.toggle('open')" aria-expanded="false">
+                    <button class="nav-dropdown-btn {{ request()->routeIs('data-dashboard') || request()->routeIs('ops-map*') || request()->routeIs('resources*') ? 'active' : '' }}" onclick="this.setAttribute('aria-expanded', this.getAttribute('aria-expanded')==='true'?'false':'true'); this.nextElementSibling.classList.toggle('open')" aria-expanded="false">
                         Tools <span class="chev">▼</span>
                     </button>
                     <div class="nav-dropdown-menu">
@@ -312,6 +312,7 @@
                         @auth
                         <a href="{{ route('ops-map') }}" class="{{ request()->routeIs('ops-map*') ? 'active' : '' }}">🗺️ Ops Map</a>
                         @endauth
+                        <a href="{{ route('resources.index') }}" class="{{ request()->routeIs('resources*') ? 'active' : '' }}">📁 Drive</a>
                     </div>
                 </div>
             </div>
@@ -401,6 +402,7 @@
                             <a href="{{ route('members') }}" class="avatar-dd-item" role="menuitem"><span class="avatar-dd-item-icon">🏠</span><span>Members Area</span><span class="avatar-dd-item-arrow">→</span></a>
                             <a href="{{ route('profile.edit') }}" class="avatar-dd-item" role="menuitem"><span class="avatar-dd-item-icon">👤</span><span>My Profile</span><span class="avatar-dd-item-arrow">→</span></a>
                             <a href="{{ route('members.activity') }}" class="avatar-dd-item" role="menuitem"><span class="avatar-dd-item-icon">📅</span><span>Activity Log</span><span class="avatar-dd-item-arrow">→</span></a>
+                            <a href="{{ route('members.refer') }}" class="avatar-dd-item" role="menuitem"><span class="avatar-dd-item-icon">📡</span><span>Invite Someone to Join</span><span class="avatar-dd-item-arrow">→</span></a>
                             <a href="{{ route('password.change') }}" class="avatar-dd-item" role="menuitem"><span class="avatar-dd-item-icon">🔑</span><span>Change Password</span><span class="avatar-dd-item-arrow">→</span></a>
                             @if ($isCommittee)
                             <div class="avatar-dd-divider"><span class="avatar-dd-divider-label">Committee</span></div>
@@ -463,6 +465,7 @@
                 <a href="{{ route('request-support') }}" class="{{ request()->routeIs('request-support') ? 'active' : '' }}"><span class="mobile-menu-icon">🆘</span> Request Support</a>
                 <a href="{{ route('data-dashboard') }}"  class="{{ request()->routeIs('data-dashboard')  ? 'active' : '' }}"><span class="mobile-menu-icon">📊</span> Data Dashboard</a>
                 <a href="{{ route('training') }}"        class="{{ request()->routeIs('training')        ? 'active' : '' }}"><span class="mobile-menu-icon">🎓</span> Training</a>
+                <a href="{{ route('gallery') }}" class="{{ request()->routeIs('gallery') ? 'active' : '' }}"><span class="mobile-menu-icon">📸</span> Gallery</a>
                 <a href="{{ route('resources.index') }}"  class="{{ request()->routeIs('resources*')       ? 'active' : '' }}"><span class="mobile-menu-icon">&#128193;</span> Drive</a>
             </div>
             <div class="mobile-nav-section">
@@ -491,6 +494,7 @@
                 <a href="{{ route('members') }}"          class="{{ request()->routeIs('members')          ? 'active' : '' }}"><span class="mobile-menu-icon">🏠</span> Members Area</a>
                 <a href="{{ route('profile.edit') }}"     class="{{ request()->routeIs('profile.edit')     ? 'active' : '' }}"><span class="mobile-menu-icon">👤</span> My Profile</a>
                 <a href="{{ route('members.activity') }}" class="{{ request()->routeIs('members.activity') ? 'active' : '' }}"><span class="mobile-menu-icon">📅</span> Activity Log</a>
+                <a href="{{ route('members.refer') }}" class="{{ request()->routeIs('members.refer') ? 'active' : '' }}"><span class="mobile-menu-icon">📡</span> Invite Someone to Join</a>
                 <a href="{{ route('ops-map') }}"          class="{{ request()->routeIs('ops-map')          ? 'active' : '' }}"><span class="mobile-menu-icon">🗺️</span> Ops Map</a>
             </div>
             @if ($isCommittee)

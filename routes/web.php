@@ -91,13 +91,16 @@ Route::get('/', function () {
     $today    = Carbon::today();
     $upcoming = Event::where('starts_at', '>=', $today)->orderBy('starts_at')->get();
     $alertStatus = AlertStatus::query()->first();
+    $featuredPhotos = \App\Models\Photo::where('status','approved')->where('featured',true)->orderByDesc('created_at')->take(6)->get();
     return view('pages.home', [
+        'featuredPhotos' => $featuredPhotos,
         'nextEvent'   => $upcoming->first(),
-        'otherEvents' => $upcoming->slice(1, 2),
+        'upcomingEvents' => $upcoming->slice(1),
         'alertStatus' => $alertStatus,
     ]);
 })->name('home');
 
+Route::get('/gallery', [\App\Http\Controllers\GalleryController::class, 'index'])->name('gallery');
 Route::view('/about',         'pages.about')->name('about');
 Route::view('/event-support', 'pages.event-support')->name('event-support');
 Route::view('/training',      'pages.training')->name('training');
@@ -371,6 +374,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/dismiss-message',   [AdminMessageController::class, 'dismiss'])          ->name('message.dismiss');
     Route::post('/dismiss-broadcast', [AdminMessageController::class, 'dismissBroadcast']) ->name('message.dismiss-broadcast');
 
+    Route::get('/my-tagged-photos',                      [\App\Http\Controllers\PhotoTagController::class, 'myTagged'])  ->name('members.photos.tagged');
+    Route::delete('/members/photos/tags/{tag}/remove',   [\App\Http\Controllers\PhotoTagController::class, 'removeSelf'])->name('members.photos.tags.remove-self');
+    Route::post('/members/photos/{photo}/tags',           [\App\Http\Controllers\PhotoTagController::class, 'store'])  ->name('members.photos.tags.store');
+    Route::delete('/members/photos/{photo}/tags/{tag}',   [\App\Http\Controllers\PhotoTagController::class, 'destroy'])->name('members.photos.tags.destroy');
+    Route::post('/members/photos',           [\App\Http\Controllers\MemberPhotoController::class, 'store'])  ->name('members.photos.store');
+    Route::patch('/members/photos/{photo}',  [\App\Http\Controllers\MemberPhotoController::class, 'update'])->name('members.photos.update');
+    Route::delete('/members/photos/{photo}', [\App\Http\Controllers\MemberPhotoController::class, 'destroy'])->name('members.photos.destroy');
+    Route::get('/members/refer',                   [\App\Http\Controllers\MemberReferralController::class, 'show'])  ->name('members.refer');
+    Route::post('/members/refer',                  [\App\Http\Controllers\MemberReferralController::class, 'send'])  ->name('members.refer.send');
+    Route::get('/members/refer/lookup/{callsign}', [\App\Http\Controllers\MemberReferralController::class, 'lookup'])->name('members.refer.lookup');
+
     Route::get('/members/radioid-lookup/{callsign}', function (string $callsign) {
         $response = \Illuminate\Support\Facades\Http::timeout(5)->get(
             'https://database.radioid.net/api/users',
@@ -576,6 +590,8 @@ Route::prefix('admin')->group(function () {
             Route::delete('/{courseId}/reset/{userId}',        [LmsAdminController::class, 'resetCourse']) ->name('reset.course');
             Route::delete('/{courseId}/reset/{userId}/lesson/{lessonId}', [LmsAdminController::class, 'resetLesson']) ->name('reset.lesson');
             Route::delete('/{courseId}/reset/{userId}/quiz/{quizId}',     [LmsAdminController::class, 'resetQuiz'])   ->name('reset.quiz');
+    Route::post('{courseId}/manual-complete/{userId}', [App\Http\Controllers\Admin\LmsAdminController::class, 'manualComplete'])->name('admin.lms.manualComplete');
+    Route::post('{courseId}/manual-complete-scorm/{userId}/{lessonId}', [App\Http\Controllers\Admin\LmsAdminController::class, 'manualCompleteScorm'])->name('admin.lms.manualCompleteScorm');
             Route::post('/lessons/{lessonId}/scorm-upload', [\App\Http\Controllers\ScormController::class, 'upload'])->name('lessons.scorm-upload');
             Route::get('/scorm-builder',         [\App\Http\Controllers\Admin\ScormBuilderController::class, 'index']) ->name('scorm-builder');
             Route::post('/scorm-builder/export', [\App\Http\Controllers\Admin\ScormBuilderController::class, 'export'])->name('scorm-builder.export');
@@ -701,6 +717,16 @@ Route::prefix('admin')->group(function () {
                 Route::delete('/sessions/{sessionId}',  [\App\Http\Controllers\Admin\SuperAdminController::class, 'terminateSession'])     ->name('sessions.terminate');
                 Route::post('/super-admins/{userId}/grant',  [\App\Http\Controllers\Admin\SuperAdminController::class, 'grantSuperAdmin']) ->name('super-admins.grant');
                 Route::post('/super-admins/{userId}/revoke', [\App\Http\Controllers\Admin\SuperAdminController::class, 'revokeSuperAdmin'])->name('super-admins.revoke');
+                Route::get('gallery',                        [\App\Http\Controllers\Admin\GalleryAdminController::class, 'index'])  ->name('admin.gallery.index');
+                Route::post('gallery/{photo}/approve', [\App\Http\Controllers\Admin\GalleryAdminController::class, 'approve'])->name('admin.gallery.approve');
+                Route::post('gallery/{photo}/reject',  [\App\Http\Controllers\Admin\GalleryAdminController::class, 'reject']) ->name('admin.gallery.reject');
+                Route::post('gallery/{photo}/feature', [\App\Http\Controllers\Admin\GalleryAdminController::class, 'feature'])->name('admin.gallery.feature');
+                Route::patch('gallery/{photo}',        [\App\Http\Controllers\Admin\GalleryAdminController::class, 'update']) ->name('admin.gallery.update');
+                Route::delete('gallery/{photo}/tags/{tag}', [\App\Http\Controllers\Admin\GalleryAdminController::class, 'removeTag'])->name('admin.gallery.tag.destroy');
+                Route::patch('gallery/{photo}/location',  [\App\Http\Controllers\Admin\GalleryAdminController::class, 'updateLocation'])->name('admin.gallery.location');
+                Route::delete('gallery/{photo}',       [\App\Http\Controllers\Admin\GalleryAdminController::class, 'destroy'])->name('admin.gallery.destroy');
+                Route::get('referrals', [\App\Http\Controllers\Admin\ReferralAdminController::class, 'index'])->name('admin.referrals.index');
+                Route::delete('referrals/{referral}', [\App\Http\Controllers\Admin\ReferralAdminController::class, 'destroy'])->name('admin.referrals.destroy');
                 Route::get   ('permissions',              [PermissionController::class, 'index']           )->name('permissions.index');
                 Route::patch ('permissions/role/{role}',  [PermissionController::class, 'updateRole']      )->name('permissions.role');
                 Route::post  ('permissions/create',       [PermissionController::class, 'createPermission'])->name('permissions.create');

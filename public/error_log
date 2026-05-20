@@ -202,3 +202,22 @@ Stack trace:
 #21 [internal function]: Illuminate\Foundation\Bootstrap\HandleExceptions->Illuminate\Foundation\Bootstrap\{closure}()
 #22 {main}
   thrown in /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Container/Container.php on line 1163
+[20-May-2026 00:46:28 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes) in /home/raynetliverpool/public_html/app/Http/Controllers/OpsMapController.php on line 341
+[20-May-2026 00:46:28 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 65536 bytes) in /home/raynetliverpool/public_html/vendor/composer/ClassLoader.php on line 576
+[20-May-2026 00:47:40 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes) in /home/raynetliverpool/public_html/app/Http/Controllers/OpsMapController.php on line 341
+[20-May-2026 00:47:40 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 65536 bytes) in /home/raynetliverpool/public_html/vendor/composer/ClassLoader.php on line 576
+[20-May-2026 00:47:59 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes) in /home/raynetliverpool/public_html/app/Http/Controllers/OpsMapController.php on line 341
+[20-May-2026 00:47:59 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 65536 bytes) in /home/raynetliverpool/public_html/vendor/composer/ClassLoader.php on line 576
+[20-May-2026 00:48:31 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes) in /home/raynetliverpool/public_html/app/Http/Controllers/OpsMapController.php on line 341
+[20-May-2026 00:48:38 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes) in /home/raynetliverpool/public_html/app/Http/Controllers/OpsMapController.php on line 341
+[20-May-2026 00:48:39 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 65536 bytes) in /home/raynetliverpool/public_html/vendor/composer/ClassLoader.php on line 576
+[20-May-2026 00:52:10 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes) in /home/raynetliverpool/public_html/app/Http/Controllers/OpsMapController.php on line 341
+[20-May-2026 00:52:10 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 65536 bytes) in /home/raynetliverpool/public_html/vendor/composer/ClassLoader.php on line 576
+[20-May-2026 16:19:53 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes) in /home/raynetliverpool/public_html/app/Http/Controllers/OpsMapController.php on line 341
+[20-May-2026 16:19:53 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 65536 bytes) in /home/raynetliverpool/public_html/vendor/composer/ClassLoader.php on line 576
+[20-May-2026 23:11:08 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes) in /home/raynetliverpool/public_html/app/Http/Controllers/MemberPhotoController.php on line 32
+[20-May-2026 23:11:08 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 151552 bytes) in /home/raynetliverpool/public_html/vendor/composer/ClassLoader.php on line 576
+[20-May-2026 23:12:17 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes) in /home/raynetliverpool/public_html/app/Http/Controllers/MemberPhotoController.php on line 32
+[20-May-2026 23:12:17 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 151552 bytes) in /home/raynetliverpool/public_html/vendor/composer/ClassLoader.php on line 576
+[20-May-2026 23:12:54 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes) in /home/raynetliverpool/public_html/app/Http/Controllers/MemberPhotoController.php on line 32
+[20-May-2026 23:12:54 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 151552 bytes) in /home/raynetliverpool/public_html/vendor/composer/ClassLoader.php on line 576

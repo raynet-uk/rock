@@ -95,6 +95,8 @@ class CheckTemporaryAdmin
             'admin.broadcast',
             // Notifications — contains member PII
             'admin.notifications',
+            // LMS analytics — contains member PII
+            'admin.lms.analytics',
         ];
 
         foreach ($blockedPrefixes as $prefix) {

@@ -134,6 +134,14 @@
 .member-row[data-guest="1"] .mc-role,
 .member-row[data-guest="1"] .mc-status,
 .member-row[data-guest="1"] .mc-activity { border-right-color: rgba(180,83,9,.15); }
+.member-row[data-test="1"] { background: #f0fdf4; border-left: 3px solid #16a34a; }
+.member-row[data-test="1"]:hover { background: #dcfce7; }
+.member-row[data-test="1"] .mc-av { border-right-color: rgba(22,163,74,.15); }
+.member-row[data-test="1"] .mc-identity,
+.member-row[data-test="1"] .mc-callsign,
+.member-row[data-test="1"] .mc-role,
+.member-row[data-test="1"] .mc-status,
+.member-row[data-test="1"] .mc-activity { border-right-color: rgba(22,163,74,.15); }
 .member-row[data-status="suspended"] .mc-av { border-right-color: rgba(200,16,46,.15); }
 .member-row[data-status="suspended"] .mc-identity,
 .member-row[data-status="suspended"] .mc-callsign,
@@ -156,7 +164,7 @@
 .mc-identity{padding:.85rem .9rem .85rem .85rem;display:flex;flex-direction:column;justify-content:center;border-right:1px solid var(--grey-mid);}
 .member-name{font-size:13.5px;font-weight:bold;color:var(--text);line-height:1.3;display:flex;align-items:center;gap:.35rem;flex-wrap:wrap;}
 .member-email{font-size:11px;color:var(--text-muted);margin-top:3px;}
-.pii-redacted{filter:blur(3px);user-select:none;pointer-events:none;color:var(--text-muted);}
+.pii-redacted{filter:blur(4px);transition:filter .2s;cursor:default;user-select:none;pointer-events:none;color:var(--text-muted);}
 .member-badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;align-items:center;}
 
 .level-row{display:flex;align-items:center;gap:2px;}
@@ -448,18 +456,21 @@
     {{-- ── STATS: MEMBERSHIP ── --}}
     <div class="stat-grid stat-grid-4 stagger">
         <div class="stat-card">
-            <div class="stat-label">Total members</div>
-            <div class="stat-value">{{ $users->total() }}</div>
-            <div class="stat-sub">Registered accounts</div>
+            <div class="stat-label">Full Members</div>
+            <div class="stat-value">{{ $memberCount }}</div>
+            <div class="stat-sub">admin · committee · member</div>
         </div>
-        <div class="stat-card">
-            <div class="stat-label">Admins</div>
-            <div class="stat-value">{{ $users->getCollection()->where('is_admin', true)->count() }}</div>
-            <div class="stat-sub">On this page</div>
+        <div class="stat-card" style="border-top-color:#7c3aed;">
+            <div class="stat-label">Temporary</div>
+            <div class="stat-value" style="color:#7c3aed;">{{ $tempGuestCount + $tempAdminCount }}</div>
+            <div class="stat-sub">
+                @if($tempGuestCount)<span style="display:inline-flex;align-items:center;gap:.25rem;margin-right:.5rem;"><span style="width:7px;height:7px;border-radius:50%;background:#7c3aed;display:inline-block;"></span>{{ $tempGuestCount }} guest{{ $tempGuestCount !== 1 ? 's' : '' }}</span>@endif
+                @if($tempAdminCount)<span style="display:inline-flex;align-items:center;gap:.25rem;"><span style="width:7px;height:7px;border-radius:50%;background:#a855f7;display:inline-block;"></span>{{ $tempAdminCount }} admin{{ $tempAdminCount !== 1 ? 's' : '' }}</span>@endif
+            </div>
         </div>
         <div class="stat-card">
             <div class="stat-label">With callsign</div>
-            <div class="stat-value">{{ $users->getCollection()->whereNotNull('callsign')->count() }}</div>
+            <div class="stat-value">{{ \App\Models\User::role(['admin','committee','member'])->whereNotNull('callsign')->count() }}</div>
             <div class="stat-sub">Licensed operators</div>
         </div>
         <div class="stat-card sc-red">
@@ -587,7 +598,7 @@
         <div class="list-toolbar">
             <div style="display:flex;align-items:center;gap:.65rem;">
                 <span class="list-title">Member List</span>
-                <span class="list-count" id="visibleCount">{{ $users->total() }} members</span>
+                <span class="list-count" id="visibleCount">{{ $memberCount }} members</span>
             </div>
             <div style="display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;">
                 <div class="filter-group">
@@ -660,6 +671,7 @@
     
 <div class="member-row"
      data-guest="{{ $user->guest_expires_at || $user->hasRole('temporary_guest') ? '1' : '0' }}"
+     data-test="{{ $user->hasRole('test_user') ? '1' : '0' }}"
      data-status="{{ $isSuspended ? 'suspended' : strtolower($user->status ?? '') }}"
      data-role="{{ strtolower($user->role ?? '') }}"
      data-attended="{{ $attended ? '1' : '0' }}"
@@ -681,7 +693,7 @@
             </div>
             <div class="member-email">
                 @if(auth()->user()->isTemporaryAdmin() && !($user->guest_expires_at || $user->hasRole("temporary_guest") || $user->hasRole("temporary_admin")))
-                    <span class="pii-redacted">●●●●●●●@●●●●●●.●●●</span>
+                    <span class="pii-redacted">{{ $user->email }}</span>
                 @else
                     {{ $user->email }}
                 @endif
@@ -697,13 +709,13 @@
     <div class="mob-meta">
         @if ($user->callsign)
             <span class="callsign-chip">
-                @if($user->piiVisible()) {{ strtoupper($user->callsign) }} @else <span style="filter:blur(3px);user-select:none;">●●●●●</span> @endif
+                @if($user->piiVisible()) {{ strtoupper($user->callsign) }} @else <span class="pii-redacted">{{ strtoupper($user->callsign) }}</span> @endif
             </span>
         @endif
         @if ($user->pending_callsign) <span class="pending-chip-sm">⏳ {{ strtoupper($user->pending_callsign) }}</span> @endif
         @if ($licClass)               <span class="lic-badge {{ $licClass }}">{{ $user->licence_class }}</span> @endif
         @if ($user->dmr_id)
-            <span class="dmr-badge"><span class="dmr-label">DMR</span><span class="dmr-badge-digits">@if($user->piiVisible()){{ $user->dmr_id }}@else<span style="filter:blur(3px);user-select:none;">●●●●●●●</span>@endif</span></span>
+            <span class="dmr-badge"><span class="dmr-label">DMR</span><span class="dmr-badge-digits">@if($user->piiVisible()){{ $user->dmr_id }}@else<span class="pii-redacted">{{ $user->dmr_id }}</span>@endif</span></span>
             @if ($user->callsign)
                 <span class="dmr-live" data-callsign="{{ strtoupper($user->callsign) }}">
                     <span class="dmr-live-loading">…</span>
@@ -766,7 +778,7 @@
                 <div class="member-name">{{ $user->name }}</div>
                 <div class="member-email">
                     @if(auth()->user()->isTemporaryAdmin() && !($user->guest_expires_at || $user->hasRole("temporary_guest") || $user->hasRole("temporary_admin")))
-                        <span class="pii-redacted">●●●●●●●@●●●●●●.●●●</span>
+                        <span class="pii-redacted">{{ $user->email }}</span>
                     @else
                         {{ $user->email }}
                     @endif
@@ -800,7 +812,7 @@
             <div class="mc-callsign mc-desktop">
                 @if ($user->callsign)
                     <span class="callsign-chip">
-                        @if($user->piiVisible()) {{ strtoupper($user->callsign) }} @else <span style="filter:blur(3px);user-select:none;">●●●●●</span> @endif
+                        @if($user->piiVisible()) {{ strtoupper($user->callsign) }} @else <span class="pii-redacted">{{ strtoupper($user->callsign) }}</span> @endif
                     </span>
                 @else
                     <span class="no-callsign">— None</span>
@@ -814,7 +826,7 @@
                 @if ($user->dmr_id)
                     <span class="dmr-badge">
                         <span class="dmr-label">DMR</span>
-                        <span class="dmr-badge-digits">@if($user->piiVisible()){{ $user->dmr_id }}@else<span style="filter:blur(3px);user-select:none;">●●●●●●●</span>@endif</span>
+                        <span class="dmr-badge-digits">@if($user->piiVisible()){{ $user->dmr_id }}@else<span class="pii-redacted">{{ $user->dmr_id }}</span>@endif</span>
                     </span>
                     {{-- Live RadioID activity — populated by JS --}}
                     @if ($user->callsign)

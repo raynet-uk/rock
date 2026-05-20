@@ -41,7 +41,11 @@ class UserAdminController extends Controller
             ->get()
             ->keyBy('entity_id');
 
-        return view('admin.users.index', compact('users', 'suspensionLogs'));
+        $memberCount     = \App\Models\User::role(['admin', 'committee', 'member', 'super-admin'])->count();
+        $tempGuestCount  = \App\Models\User::role('temporary_guest')->count();
+        $tempAdminCount  = \App\Models\User::role('temporary_admin')->count();
+        $testUserCount   = \App\Models\User::role('test_user')->count();
+        return view('admin.users.index', compact('users', 'suspensionLogs', 'memberCount', 'tempGuestCount', 'tempAdminCount', 'testUserCount'));
     }
 
     public function edit($id, QRZLookup $qrz)

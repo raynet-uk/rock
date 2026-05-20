@@ -74,3 +74,12 @@ Schedule::call(function () {
 
 // Auto-expire temporary guest accounts
 Schedule::command('guests:expire')->everyMinute()->timezone('Europe/London')->withoutOverlapping();
+
+// RSGB news refresh
+Schedule::command('rsgb:refresh-news')
+    ->everyThirtyMinutes()
+    ->withoutOverlapping();
+
+Schedule::command('rsgb:refresh-region')
+    ->everyThirtyMinutes()
+    ->withoutOverlapping();

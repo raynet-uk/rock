@@ -172,7 +172,10 @@ class MemberDashboardController extends Controller
         // ------------------------------------------------------------------
         // 9. Return the view with everything neatly bundled
         // ------------------------------------------------------------------
+        $myPhotos = \App\Models\Photo::where('user_id', $user->id)->orderByDesc('created_at')->get();
+
         return view('pages.members', compact(
+            'myPhotos',
             'upcoming',
             'operator',
             'trainingLinks',

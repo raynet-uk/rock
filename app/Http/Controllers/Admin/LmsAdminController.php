@@ -453,4 +453,108 @@ return view('admin.lms.analytics', compact(
     'scormLessons'   // ← added here
 ));
 }
+
+
+    public function manualComplete($courseId, $userId)
+    {
+        $course = Course::with('modules.lessons')->findOrFail($courseId);
+
+        // Check all SCORM lessons are passed before allowing full completion
+        foreach ($course->modules->flatMap(fn($m) => $m->lessons)->where('type', 'scorm') as $lesson) {
+            $scormData = \App\Models\LmsScormData::where('user_id', $userId)
+                ->where('lesson_id', $lesson->id)
+                ->pluck('value', 'key');
+            $status = strtolower($scormData->get('cmi.core.lesson_status',
+                        $scormData->get('cmi.completion_status', 'not attempted')));
+            if (!in_array($status, ['passed', 'completed', 'complete'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot mark complete — one or more SCORM modules are not yet passed. Use the "Mark SCORM Passed" button on each SCORM module row first.'
+                ]);
+            }
+        }
+
+        // Mark all non-SCORM lessons complete
+        foreach ($course->modules->flatMap(fn($m) => $m->lessons) as $lesson) {
+            if ($lesson->type === 'scorm') continue;
+            CourseProgress::updateOrCreate(
+                ['user_id' => $userId, 'course_id' => $courseId, 'lesson_id' => $lesson->id],
+                ['completed_at' => now(), 'quiz_score' => $lesson->type === 'quiz' ? 100 : null]
+            );
+        }
+
+        CourseEnrollment::where('course_id', $courseId)->where('user_id', $userId)
+            ->update(['completed_at' => now()]);
+
+        if ($course->certificate_enabled) {
+            \App\Models\CourseCertificate::firstOrCreate(
+                ['user_id' => $userId, 'course_id' => $courseId],
+                ['certificate_number' => strtoupper(\Illuminate\Support\Str::random(12)), 'issued_at' => now()]
+            );
+        }
+
+        return response()->json(['success' => true, 'message' => 'Course manually marked as complete.']);
+    }
+
+    public function manualCompleteScorm($courseId, $userId, $lessonId)
+    {
+        $course = Course::with('modules.lessons')->findOrFail($courseId);
+
+        // Only write cmi.core.lesson_status — that is all this SCORM package uses
+        \App\Models\LmsScormData::updateOrCreate(
+            ['user_id' => $userId, 'lesson_id' => $lessonId, 'key' => 'cmi.core.lesson_status'],
+            ['value' => 'passed']
+        );
+
+        // Also update completion_status for SCORM 2004 packages
+        \App\Models\LmsScormData::updateOrCreate(
+            ['user_id' => $userId, 'lesson_id' => $lessonId, 'key' => 'cmi.completion_status'],
+            ['value' => 'completed']
+        );
+
+        // Mark lms_progress as complete for this lesson
+        CourseProgress::updateOrCreate(
+            ['user_id' => $userId, 'course_id' => $courseId, 'lesson_id' => $lessonId],
+            ['completed_at' => now()]
+        );
+
+        // Check if ALL lessons are now complete — if so, complete the course too
+        $allLessons = $course->modules->flatMap(fn($m) => $m->lessons);
+        $allDone = true;
+
+        foreach ($allLessons as $lesson) {
+            if ($lesson->type === 'scorm') {
+                $scormData = \App\Models\LmsScormData::where('user_id', $userId)
+                    ->where('lesson_id', $lesson->id)
+                    ->pluck('value', 'key');
+                $status = strtolower($scormData->get('cmi.core.lesson_status',
+                            $scormData->get('cmi.completion_status', 'not attempted')));
+                if (!in_array($status, ['passed', 'completed', 'complete'])) {
+                    $allDone = false;
+                    break;
+                }
+            } else {
+                $exists = CourseProgress::where('user_id', $userId)
+                    ->where('course_id', $courseId)
+                    ->where('lesson_id', $lesson->id)
+                    ->whereNotNull('completed_at')
+                    ->exists();
+                if (!$exists) { $allDone = false; break; }
+            }
+        }
+
+        if ($allDone) {
+            CourseEnrollment::where('course_id', $courseId)->where('user_id', $userId)
+                ->update(['completed_at' => now()]);
+            if ($course->certificate_enabled) {
+                \App\Models\CourseCertificate::firstOrCreate(
+                    ['user_id' => $userId, 'course_id' => $courseId],
+                    ['certificate_number' => strtoupper(\Illuminate\Support\Str::random(12)), 'issued_at' => now()]
+                );
+            }
+            return response()->json(['success' => true, 'message' => 'SCORM marked as passed. All lessons complete — course finished and certificate issued!']);
+        }
+
+        return response()->json(['success' => true, 'message' => 'SCORM lesson marked as passed.']);
+    }
 }

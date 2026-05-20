@@ -34,6 +34,12 @@ class RaynetSetting
 
     public static function groupRegion(): string
     {
+        // Returns local area name (e.g. Merseyside) for display
+        return static::get('group_area', static::get('group_region', ''));
+    }
+
+    public static function groupZone(): string
+    {
         return static::get('group_region', '');
     }
 

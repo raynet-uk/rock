@@ -349,6 +349,23 @@ body {
         </div>
     </div>
 
+    @if(isset($featuredPhotos) && $featuredPhotos->isNotEmpty())
+    <div class="section-head">
+        <div>
+            <h2>Featured Photos</h2>
+            <p>Snapshots from our operations and events.</p>
+        </div>
+        <a href="{{ route('gallery') }}">Full Gallery →</a>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;margin-bottom:2rem;">
+        @foreach($featuredPhotos as $photo)
+        <a href="{{ route('gallery') }}" style="display:block;border-radius:8px;overflow:hidden;aspect-ratio:4/3;background:#f0f0f0;border:1px solid var(--border);">
+            <img src="{{ $photo->thumbUrl() }}" alt="{{ $photo->caption }}" style="width:100%;height:100%;object-fit:cover;transition:transform .3s;" onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'" loading="lazy">
+        </a>
+        @endforeach
+    </div>
+    @endif
+
     <div class="cta-strip">
         <div>
             <div class="cta-strip-title">Planning an Event in {{ \App\Helpers\RaynetSetting::groupRegion() }}?</div>
