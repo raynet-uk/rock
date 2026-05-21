@@ -110,6 +110,8 @@ return [
     |
     */
 
+    'test_override' => env('MAIL_TEST_OVERRIDE', null),
+
     'from' => [
         'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
         'name' => env('MAIL_FROM_NAME', 'Example'),

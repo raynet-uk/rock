@@ -20,6 +20,7 @@
 <IfModule mod_alias.c>
 RedirectMatch 301 ^/$ https://assets.raynet-liverpool.net/public
 </IfModule>
+
 # php -- BEGIN cPanel-generated handler, do not edit
 # Set the “ea-php83” package as the default “PHP” programming language.
 <IfModule mime_module>

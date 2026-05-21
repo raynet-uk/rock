@@ -244,6 +244,14 @@
             </div>
 
             <div class="sb-divider"></div>
+            <div class="sb-section-label">Gallery</div>
+            <a href="{{ route('admin.super.admin.gallery.index') }}" class="sb-item {{ str_starts_with($currentRoute,'admin.super.admin.gallery') ? 'active' : '' }}">
+                <span class="sb-icon">📸</span> Gallery Management
+                @php $pendingPhotos = \App\Models\Photo::where('status','pending')->count(); @endphp
+                @if($pendingPhotos > 0)
+                    <span style="margin-left:auto;background:#f59e0b;color:#fff;font-size:9px;font-weight:bold;padding:1px 6px;border-radius:999px;">{{ $pendingPhotos }}</span>
+                @endif
+            </a>
             <div class="sb-section-label">Operations</div>
 
             <a href="{{ route('admin.dashboard') }}" class="sb-item">

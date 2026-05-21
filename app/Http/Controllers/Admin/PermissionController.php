@@ -8,6 +8,8 @@ use Illuminate\Http\RedirectResponse;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
+use App\Models\User;
+use Illuminate\Support\Facades\Mail;
 
 class PermissionController extends Controller
 {
@@ -63,6 +65,40 @@ class PermissionController extends Controller
     /**
      * Delete a permission (removes from all roles too).
      */
+    public function toggleUserPermission(Request $request): RedirectResponse {
+        $request->validate([
+            'user_id'    => ['required','integer'],
+            'permission' => ['required','string'],
+        ]);
+        $user = User::findOrFail($request->user_id);
+        $perm = $request->permission;
+        if ($user->hasDirectPermission($perm)) {
+            $user->revokePermissionTo($perm);
+            $msg = $perm . " revoked from {$user->name}.";
+        } else {
+            $user->givePermissionTo($perm);
+            $msg = $perm . " granted to {$user->name}.";
+            // Email the user
+            if ($user->email) {
+                try {
+                    $grantedBy = auth()->user();
+                    $groupName = \App\Helpers\RaynetSetting::groupName();
+                    Mail::send('emails.photo-permission-granted', [
+                        'user'       => $user,
+                        'grantedBy'  => $grantedBy,
+                        'permission' => $perm,
+                        'groupName'  => $groupName,
+                    ], function($m) use ($user, $groupName, $perm) {
+                        $m->to($user->email, $user->name)
+                          ->subject('Photo permission granted — ' . $groupName);
+                    });
+                } catch (\Throwable $e) {}
+            }
+        }
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        return back()->with('success', $msg);
+    }
+
     public function deletePermission(Permission $permission): RedirectResponse
     {
         $permission->delete();

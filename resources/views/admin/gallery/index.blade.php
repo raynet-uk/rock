@@ -1,8 +1,8 @@
 @extends('layouts.admin')
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 @section('title', 'Gallery Management')
 @section('content')
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
 :root{--navy:#003366;--red:#C8102E;--grey:#f2f5f9;--grey-mid:#dde2e8;--text:#001f40;--muted:#6b7f96;--amber:#f59e0b;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -100,6 +100,43 @@
                     {{ $photo->user?->name }} · {{ $photo->created_at->format('d M Y') }}
                     @if($photo->location) · 📍 {{ $photo->location }}@endif
                 </div>
+                @if($photo->status === 'rejected')
+                <div style="margin-top:.5rem;background:#fee2e2;border-left:3px solid #dc2626;padding:.5rem .75rem;border-radius:0 4px 4px 0;font-size:.75rem;color:#991b1b;">
+                    @php $rejector = $photo->rejectedBy; @endphp
+                    <div style="font-weight:700;margin-bottom:.3rem;">✕ Rejected</div>
+                    @if($rejector)
+                    <div style="margin-bottom:.2rem;">By: <strong>{{ $rejector->name }}</strong>@if($rejector->callsign) ({{ strtoupper($rejector->callsign) }})@endif</div>
+                    @endif
+                    @if($photo->rejected_at)
+                    <div style="margin-bottom:.2rem;">When: {{ \Carbon\Carbon::parse($photo->rejected_at)->format('d M Y H:i') }}</div>
+                    @endif
+                    @if($photo->admin_notes)
+                    <div style="margin-top:.3rem;padding-top:.3rem;border-top:1px solid #fca5a5;">
+                        <strong>Reason:</strong> {{ $photo->admin_notes }}
+                    </div>
+                    @endif
+                </div>
+                @endif
+                {{-- Audit trail for all photos --}}
+                @php
+                    $auditEntries = \App\Models\AdminAuditLog::where('action', 'like', 'photo.%')
+                        ->where('entity_id', $photo->id)
+                        ->where('entity_type', 'Photo')
+                        ->orderByDesc('created_at')
+                        ->take(6)
+                        ->get();
+                @endphp
+                @if($auditEntries->isNotEmpty())
+                <div style="margin-top:.5rem;border-top:1px solid var(--grey-mid);padding-top:.4rem;">
+                    <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:.3rem;">📋 Audit Trail</div>
+                    @foreach($auditEntries as $entry)
+                    <div style="font-size:.7rem;color:var(--muted);margin-bottom:.2rem;display:flex;gap:.4rem;align-items:flex-start;">
+                        <span style="color:var(--navy);font-family:monospace;white-space:nowrap;flex-shrink:0;">{{ $entry->created_at->format('d M H:i') }}</span>
+                        <span>{{ $entry->description }}</span>
+                    </div>
+                    @endforeach
+                </div>
+                @endif
                 @if($photo->tags && $photo->tags->count())
                 <div style="margin-top:.4rem;display:flex;flex-wrap:wrap;gap:.3rem;">
                     @foreach($photo->tags as $tag)
@@ -115,15 +152,35 @@
                     @endforeach
                 </div>
                 @endif
+                <div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.5rem;">
+                    <span class="photo-chip chip-{{ $photo->status }}">L1: {{ ucfirst($photo->status) }}</span>
+                    <span class="photo-chip" style="background:{{ $photo->public_status==='approved' ? '#d1fae5' : ($photo->public_status==='rejected' ? '#fee2e2' : '#fef3c7') }};color:{{ $photo->public_status==='approved' ? '#065f46' : ($photo->public_status==='rejected' ? '#991b1b' : '#92400e') }};">L2: {{ ucfirst($photo->public_status) }}</span>
+                    @if($photo->featured)<span class="photo-chip chip-featured">⭐</span>@endif
+                </div>
                 <div class="photo-actions">
-                    @if($photo->status !== 'approved')
+                    @if($photo->status === 'pending')
                         <form method="POST" action="{{ route('admin.super.admin.gallery.approve', $photo) }}" style="display:inline;">
-                            @csrf <button class="btn-sm btn-green">✓ Approve</button>
+                            @csrf <button class="btn-sm btn-green">✓ L1 Approve</button>
                         </form>
-                    @endif
-                    @if($photo->status !== 'rejected')
                         <form method="POST" action="{{ route('admin.super.admin.gallery.reject', $photo) }}" style="display:inline;">
                             @csrf <button class="btn-sm btn-red">✕ Reject</button>
+                        </form>
+                    @elseif($photo->status === 'approved')
+                        <form method="POST" action="{{ route('admin.super.admin.gallery.revoke-l1', $photo) }}" style="display:inline;" onsubmit="return confirm('Revoke L1? This removes all approvals.')">
+                            @csrf <button class="btn-sm" style="background:#fef3c7;color:#92400e;">↩ Revoke L1</button>
+                        </form>
+                    @elseif($photo->status === 'rejected')
+                        <form method="POST" action="{{ route('admin.super.admin.gallery.approve', $photo) }}" style="display:inline;">
+                            @csrf <button class="btn-sm btn-green">↩ Re-approve</button>
+                        </form>
+                    @endif
+                    @if($photo->status === 'approved' && $photo->public_status !== 'approved')
+                        <form method="POST" action="{{ route('admin.super.admin.gallery.public-approve', $photo) }}" style="display:inline;">
+                            @csrf <button class="btn-sm" style="background:#dbeafe;color:#1e40af;">🌐 L2 Public</button>
+                        </form>
+                    @elseif($photo->public_status === 'approved')
+                        <form method="POST" action="{{ route('admin.super.admin.gallery.revoke-l2', $photo) }}" style="display:inline;" onsubmit="return confirm('Set photo to members-only?')">
+                            @csrf <button class="btn-sm" style="background:#dbeafe;color:#1e40af;">↩ Members Only</button>
                         </form>
                     @endif
                     @if($photo->isApproved())
@@ -132,12 +189,48 @@
                         </form>
                     @endif
                     <button class="btn-sm btn-navy" onclick="this.closest('.photo-card').querySelector('.edit-form').classList.toggle('open')">✎ Edit</button>
-                    <form method="POST" action="{{ route('admin.super.admin.gallery.destroy', $photo) }}" style="display:inline;" onsubmit="return confirm('Delete this photo permanently?')">
+                    <a href="{{ $photo->url() }}" target="_blank" class="btn-sm btn-navy">🔍 Full</a>
+                    <form method="POST" action="{{ route('admin.super.admin.gallery.destroy', $photo) }}" style="display:inline;" onsubmit="return confirm('Delete permanently?')">
                         @csrf @method('DELETE') <button class="btn-sm btn-red">🗑</button>
                     </form>
-                    <a href="{{ $photo->url() }}" target="_blank" class="btn-sm btn-navy">🔍 Full</a>
-                    <button class="btn-sm btn-navy" onclick="openDetails({{ $photo->id }}, {{ json_encode($photo->location) }}, {{ json_encode($photo->tags->map(fn($t)=>['id'=>$t->id,'callsign'=>$t->callsign,'name'=>$t->name,'x'=>(float)$t->x_pct,'y'=>(float)$t->y_pct])->values()) }}, {{ json_encode($photo->url()) }})">🗺 Details</button>
+                    @php
+                        $tagData = $photo->tags->map(fn($t)=>['id'=>$t->id,'callsign'=>$t->callsign,'name'=>$t->name,'x'=>(float)$t->x_pct,'y'=>(float)$t->y_pct])->values();
+                    @endphp
+                    <button class="btn-sm btn-navy details-btn"
+                        data-id="{{ $photo->id }}"
+                        data-location="{{ $photo->location ?? '' }}"
+                        data-lat="{{ $photo->lat ?? '' }}"
+                        data-lng="{{ $photo->lng ?? '' }}"
+                        data-tags='@json($tagData)'
+                        data-url="{{ $photo->url() }}">🗺 Details</button>
                 </div>
+                @if($photo->status === 'rejected')
+                <div style="margin-top:.5rem;background:#fee2e2;border-left:3px solid #dc2626;padding:.5rem .75rem;border-radius:0 4px 4px 0;font-size:.75rem;color:#991b1b;">
+                    @php $rejector = $photo->rejectedBy; @endphp
+                    <div style="font-weight:700;margin-bottom:.3rem;">✕ Rejected</div>
+                    @if($rejector)<div>By: <strong>{{ $rejector->name }}</strong> @if($rejector->callsign)({{ strtoupper($rejector->callsign) }})@endif</div>@endif
+                    @if($photo->rejected_at)<div>When: {{ \Carbon\Carbon::parse($photo->rejected_at)->format('d M Y H:i') }}</div>@endif
+                    @if($photo->admin_notes)<div style="margin-top:.3rem;padding-top:.3rem;border-top:1px solid #fca5a5;"><strong>Reason:</strong> {{ $photo->admin_notes }}</div>@endif
+                </div>
+                @endif
+                @php
+                    $auditEntries = \App\Models\AdminAuditLog::where('action', 'like', 'photo.%')
+                        ->where('entity_id', $photo->id)
+                        ->where('entity_type', 'Photo')
+                        ->orderByDesc('created_at')
+                        ->take(6)->get();
+                @endphp
+                @if($auditEntries->isNotEmpty())
+                <div style="margin-top:.5rem;border-top:1px solid var(--grey-mid);padding-top:.4rem;">
+                    <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:.3rem;">📋 Audit Trail</div>
+                    @foreach($auditEntries as $entry)
+                    <div style="font-size:.7rem;color:var(--muted);margin-bottom:.2rem;display:flex;gap:.4rem;align-items:flex-start;">
+                        <span style="color:var(--navy);font-family:monospace;white-space:nowrap;flex-shrink:0;">{{ $entry->created_at->format('d M H:i') }}</span>
+                        <span>{{ $entry->description }}</span>
+                    </div>
+                    @endforeach
+                </div>
+                @endif
                 <div class="edit-form">
                     <form method="POST" action="{{ route('admin.super.admin.gallery.update', $photo) }}">
                         @csrf @method('PATCH')
@@ -187,31 +280,51 @@
     </div>
 </div>
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 var detailsMap = null;
-function openDetails(photoId, location, tags, imgUrl) {
-    document.getElementById('detailsImg').src = imgUrl;
-    document.getElementById('detailsLocation').textContent = location || 'No location set';
+document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.details-btn');
+    if (!btn) return;
+    var photoId       = btn.dataset.id;
+    var photoLocation = btn.dataset.location;
+    var photoLat      = btn.dataset.lat ? parseFloat(btn.dataset.lat) : null;
+    var photoLng      = btn.dataset.lng ? parseFloat(btn.dataset.lng) : null;
+    var tags          = JSON.parse(btn.dataset.tags || '[]');
+    var imgUrl        = btn.dataset.url;
+    openDetailsData(photoId, photoLocation, photoLat, photoLng, tags, imgUrl);
+});
 
-    // Tags
+function openDetails(photoId, photoLocation, tags, imgUrl) {
+    openDetailsData(photoId, photoLocation, null, null, tags, imgUrl);
+}
+
+function openDetailsData(photoId, photoLocation, photoLat, photoLng, tags, imgUrl) {
+    document.getElementById('detailsImg').src = imgUrl;
+    document.getElementById('detailsLocation').textContent = photoLocation || 'No location set';
     var tl = document.getElementById('detailsTagsList');
     tl.innerHTML = '';
     var dots = document.getElementById('detailsDots');
     dots.innerHTML = '';
-
     tags.forEach(function(t) {
         var item = document.createElement('div');
         item.style.cssText = 'display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.07);padding:.4rem .6rem;border-radius:4px;';
-        item.innerHTML = '<span style="font-size:.8rem;color:#fff;font-weight:600;">📻 ' + t.callsign + (t.name ? ' · <span style='font-weight:400;opacity:.7;'>' + t.name + '</span>' : '') + '</span>';
+        item.innerHTML = '<span style="font-size:.8rem;color:#fff;font-weight:600;">📻 ' + t.callsign + (t.name ? ' &middot; <span style="font-weight:400;opacity:.7;">' + t.name + '</span>' : '') + '</span>';
         var removeBtn = document.createElement('form');
         removeBtn.method = 'POST';
         removeBtn.action = '/admin/super/gallery/' + photoId + '/tags/' + t.id;
         removeBtn.style.cssText = 'display:inline;margin:0;';
-        removeBtn.innerHTML = '<input type="hidden" name="_token" value="' + document.querySelector('meta[name="csrf-token"]').content + '"><input type="hidden" name="_method" value="DELETE"><button type="submit" style="background:#fee2e2;color:#991b1b;border:none;padding:.2rem .5rem;border-radius:3px;font-size:.7rem;font-weight:bold;cursor:pointer;" onclick="return confirm('Remove tag?')">✕</button>';
+        var tok = document.querySelector('meta[name="csrf-token"]').content;
+        var meth = document.createElement('input'); meth.type='hidden'; meth.name='_method'; meth.value='DELETE';
+        var tkn  = document.createElement('input'); tkn.type='hidden'; tkn.name='_token'; tkn.value=tok;
+        var delbtn = document.createElement('button'); delbtn.type='submit';
+        delbtn.style.cssText='background:#fee2e2;color:#991b1b;border:none;padding:.2rem .5rem;border-radius:3px;font-size:.7rem;font-weight:bold;cursor:pointer;';
+        delbtn.textContent='✕';
+        delbtn.onclick=function(){ return confirm('Remove tag?'); };
+        removeBtn.appendChild(tkn); removeBtn.appendChild(meth); removeBtn.appendChild(delbtn);
         item.appendChild(removeBtn);
         tl.appendChild(item);
-
-        // Dot on image
         var dot = document.createElement('div');
         dot.style.cssText = 'position:absolute;width:22px;height:22px;border-radius:50%;background:rgba(200,16,46,.85);border:2px solid #fff;transform:translate(-50%,-50%);cursor:default;';
         dot.style.left = t.x + '%';
@@ -219,18 +332,20 @@ function openDetails(photoId, location, tags, imgUrl) {
         dot.title = t.name || t.callsign;
         dots.appendChild(dot);
     });
-
     if (tags.length === 0) {
         tl.innerHTML = '<div style="font-size:.8rem;color:rgba(255,255,255,.4);">No tags on this photo.</div>';
     }
-
     document.getElementById('detailsModal').style.display = 'flex';
-
-    // Map
     if (detailsMap) { detailsMap.remove(); detailsMap = null; }
-    if (location) {
+    if (photoLat && photoLng) {
         setTimeout(function() {
-            fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(location) + '&format=json&limit=1')
+            detailsMap = L.map('detailsMapEl').setView([photoLat, photoLng], 17);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution:'© OpenStreetMap'}).addTo(detailsMap);
+            L.marker([photoLat, photoLng]).addTo(detailsMap);
+        }, 100);
+    } else if (photoLocation) {
+        setTimeout(function() {
+            fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(photoLocation) + '&format=json&limit=1')
             .then(function(r){return r.json();})
             .then(function(d) {
                 if (d && d[0]) {

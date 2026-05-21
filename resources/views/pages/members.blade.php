@@ -33,6 +33,8 @@
     $hasDmrAny = $hasDmrDashboard || $hasDmrMasters;
 @endphp
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
 :root {
     --navy:       #003366;
@@ -804,6 +806,23 @@ body {
         <a href="{{ route('gallery') }}" class="sidebar-link {{ request()->routeIs('gallery') ? 'active' : '' }}">
             <span class="sidebar-icon">📸</span> Gallery
         </a>
+        <a href="{{ route('members.my-photos') }}" class="sidebar-link {{ request()->routeIs('members.my-photos') ? 'active' : '' }}">
+            <span class="sidebar-icon">🖼️</span> My Photos
+            <span style="margin-left:auto;background:#C8102E;color:#fff;font-size:8px;font-weight:800;padding:2px 6px;border-radius:999px;letter-spacing:.04em;">NEW</span>
+        </a>
+        <a href="{{ route('members.albums.index') }}" class="sidebar-link {{ request()->routeIs('members.albums*') ? 'active' : '' }}">
+            <span class="sidebar-icon">📚</span> My Albums
+        </a>
+
+        @if(auth()->user()->hasPermissionTo('approve photos') || auth()->user()->isAdmin())
+        @php $pendingCount = \App\Models\Photo::where('status','pending')->count(); @endphp
+        <a href="{{ route('members.photo-approval.index') }}" class="sidebar-link {{ request()->routeIs('members.photo-approval*') ? 'active' : '' }}">
+            <span class="sidebar-icon">✅</span> Photo Approval
+            @if($pendingCount > 0)
+                <span style="margin-left:auto;background:#f59e0b;color:#fff;font-size:9px;font-weight:bold;padding:1px 6px;border-radius:999px;">{{ $pendingCount }}</span>
+            @endif
+        </a>
+        @endif
         <a href="{{ route('data-dashboard') }}" class="sidebar-link">
             <span class="sidebar-link-icon">📡</span> Data Dashboard
         </a>
@@ -882,6 +901,11 @@ body {
             <a href="{{ route('calendar') }}" class="mqn-link">📅 Calendar</a>
             <a href="{{ route('lms.index') }}" class="mqn-link">🎓 Training</a>
             <a href="{{ route('gallery') }}" class="mqn-link {{ request()->routeIs('gallery') ? 'active' : '' }}">📸 Gallery</a>
+            <a href="{{ route('members.my-photos') }}" class="mqn-link {{ request()->routeIs('members.my-photos') ? 'active' : '' }}">🖼️ My Photos <span style="background:#C8102E;color:#fff;font-size:7px;font-weight:800;padding:1px 4px;border-radius:999px;vertical-align:middle;">NEW</span></a>
+
+            @if(auth()->user()->hasPermissionTo('approve photos') || auth()->user()->isAdmin())
+            <a href="{{ route('members.photo-approval.index') }}" class="mqn-link {{ request()->routeIs('members.photo-approval*') ? 'active' : '' }}">✅ Approve</a>
+            @endif
             <a href="{{ route('members.refer') }}" class="mqn-link {{ request()->routeIs('members.refer') ? 'active' : '' }}">📡 Invite</a>
             <a href="{{ route('members.activity') }}" class="mqn-link">📊 Activity</a>
             <a href="{{ route('member.availability') }}" class="mqn-link">🕐 Availability</a>
@@ -1287,137 +1311,6 @@ body {
             @endif
 
 
-            {{-- My Photos --}}
-            <div class="card span-2" id="myPhotosSection" style="border-top:3px solid var(--navy);scroll-margin-top:130px;">
-                <div class="card-head">
-                    <div class="card-head-left">
-                        <div class="card-head-icon">📸</div>
-                        <h2>My Photos</h2>
-                    </div>
-                    <a href="{{ route('gallery') }}" style="font-size:.78rem;color:var(--red);font-weight:bold;text-decoration:none;">View Gallery →</a>
-                </div>
-                <div class="card-body">
-
-                    <div id="photoSuccessBanner" style="background:#d1fae5;border-left:3px solid #059669;padding:.6rem 1rem;margin-bottom:1rem;font-size:.85rem;color:#065f46;font-weight:bold;border-radius:4px;display:{{ session('photo_success') ? 'block' : 'none' }};">
-                        ✓ {{ session('photo_success', '') }}
-                    </div>
-
-                    @if($errors->has('photo') || $errors->has('consent'))
-                        <div style="background:#fee2e2;border-left:3px solid #dc2626;padding:.6rem 1rem;margin-bottom:1rem;font-size:.85rem;color:#991b1b;border-radius:4px;">
-                            {{ $errors->first() }}
-                        </div>
-                    @endif
-
-                    {{-- Upload form --}}
-                    <div style="background:var(--navy-faint);border:1px solid var(--border-soft);border-radius:8px;padding:1.2rem;margin-bottom:1.5rem;">
-                        <div style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);margin-bottom:1rem;">📤 Upload a Photo</div>
-                        <form method="POST" action="{{ route('members.photos.store') }}" enctype="multipart/form-data">
-                            @csrf
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem;">
-                                <div>
-                                    <label style="display:block;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-mid);margin-bottom:.3rem;">Photos <span style="color:var(--red);">*</span></label>
-                                    <input type="file" name="photos[]" accept="image/jpeg,image/png,image/webp" multiple
-                                           style="width:100%;padding:.45rem .6rem;border:1px solid var(--border);border-radius:4px;font-size:.82rem;background:#fff;" required>
-                                    <div style="font-size:.7rem;color:var(--muted);margin-top:.25rem;">Max 32MB each · JPG, PNG or WebP · Select multiple files</div>
-                                </div>
-                                <div>
-                                    <label style="display:block;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-mid);margin-bottom:.3rem;">Caption</label>
-                                    <input type="text" name="caption" maxlength="500" placeholder="Describe the photo"
-                                           style="width:100%;padding:.45rem .6rem;border:1px solid var(--border);border-radius:4px;font-size:.82rem;">
-                                </div>
-                                <div>
-                                    <label style="display:block;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-mid);margin-bottom:.3rem;">Location</label>
-                                    <div style="display:flex;gap:.4rem;">
-                                        <input type="text" name="location" id="uploadLocationText" maxlength="200" placeholder="Where was this taken?"
-                                               style="flex:1;padding:.45rem .6rem;border:1px solid var(--border);border-radius:4px;font-size:.82rem;">
-                                        <button type="button" onclick="toggleUploadMap()" title="Pin on map" style="background:#e8eef5;color:var(--navy);border:1px solid var(--border);padding:.45rem .7rem;border-radius:4px;font-size:.82rem;cursor:pointer;white-space:nowrap;">📍 Map</button>
-                                    </div>
-                                    <input type="hidden" name="lat" id="uploadLat">
-                                    <input type="hidden" name="lng" id="uploadLng">
-                                    <div id="uploadMapWrap" style="display:none;margin-top:.5rem;border-radius:6px;overflow:hidden;border:1px solid var(--border);">
-                                        <div style="background:#e8eef5;padding:.35rem .75rem;font-size:.72rem;color:var(--navy);font-weight:600;">Click to place a pin for the photo location</div>
-                                        <div id="uploadMap" style="height:200px;"></div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label style="display:block;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-mid);margin-bottom:.3rem;">Date Taken</label>
-                                    <input type="date" name="taken_at"
-                                           style="width:100%;padding:.45rem .6rem;border:1px solid var(--border);border-radius:4px;font-size:.82rem;">
-                                </div>
-                            </div>
-                            <label style="display:flex;align-items:flex-start;gap:.6rem;cursor:pointer;margin-bottom:.85rem;">
-                                <input type="checkbox" name="consent" value="1" style="margin-top:2px;accent-color:var(--navy);width:15px;height:15px;flex-shrink:0;" required>
-                                <span style="font-size:.8rem;color:var(--text-mid);line-height:1.5;">
-                                    I consent to {{ \App\Helpers\RaynetSetting::groupName() }} storing and displaying this photo in the group gallery. I confirm I have the right to share this image and that it does not contain personal data of others without their consent.
-                                </span>
-                            </label>
-                            <button type="submit" id="photoUploadBtn" style="background:var(--red);color:#fff;border:none;padding:.6rem 1.4rem;border-radius:999px;font-size:.85rem;font-weight:bold;cursor:pointer;">
-                                📤 Upload Photo
-                            </button>
-                            <div id="uploadProgressWrap" style="display:none;margin-top:1rem;">
-                                <div style="font-size:.78rem;color:var(--text-mid);margin-bottom:.4rem;" id="uploadProgressLabel">Uploading…</div>
-                                <div style="background:var(--border);border-radius:999px;height:8px;overflow:hidden;">
-                                    <div id="uploadProgressBar" style="height:100%;background:var(--red);width:0%;transition:width .2s;border-radius:999px;"></div>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-
-                    {{-- My uploaded photos --}}
-                    @php $myPhotos = ($myPhotos ?? collect())->load('tags'); @endphp
-                    @if($myPhotos->isNotEmpty())
-                        <div style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);margin-bottom:.85rem;">Your Uploads ({{ $myPhotos->count() }})</div>
-                        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.85rem;">
-                            @foreach($myPhotos as $photo)
-                            <div style="background:#fff;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
-                                <div style="position:relative;aspect-ratio:4/3;background:#f0f0f0;overflow:hidden;">
-                                    <img src="{{ $photo->thumbUrl() }}" alt="" style="width:100%;height:100%;object-fit:cover;">
-                                    <div style="position:absolute;top:.35rem;left:.35rem;display:flex;flex-direction:column;gap:.2rem;">
-                                        @if($photo->status==='approved')
-                                            <span style="background:#059669;color:#fff;font-size:.62rem;font-weight:bold;padding:.15rem .4rem;border-radius:3px;">✓ Approved</span>
-                                        @elseif($photo->status==='rejected')
-                                            <span style="background:#dc2626;color:#fff;font-size:.62rem;font-weight:bold;padding:.15rem .4rem;border-radius:3px;">✕ Rejected</span>
-                                        @else
-                                            <span style="background:#f59e0b;color:#fff;font-size:.62rem;font-weight:bold;padding:.15rem .4rem;border-radius:3px;">⏳ Pending</span>
-                                        @endif
-                                        @if($photo->featured)
-                                            <span style="background:#854d0e;color:#fff;font-size:.62rem;font-weight:bold;padding:.15rem .4rem;border-radius:3px;">⭐ Featured</span>
-                                        @endif
-                                    </div>
-                                </div>
-                                <div style="padding:.6rem .7rem;">
-                                    <div style="font-size:.78rem;color:var(--text);font-weight:500;margin-bottom:.25rem;line-height:1.3;">{{ $photo->caption ?: '(No caption)' }}</div>
-                                    <div style="font-size:.7rem;color:var(--muted);margin-bottom:.5rem;">{{ $photo->created_at->format('d M Y') }}</div>
-                                    <div style="display:flex;gap:.35rem;">
-                                        <form method="POST" action="{{ route('members.photos.destroy', $photo) }}" onsubmit="return confirm('Delete this photo?')" style="flex:1;">
-                                            @csrf @method('DELETE')
-                                            <button type="submit" style="background:#fee2e2;color:#991b1b;border:none;padding:.25rem .6rem;border-radius:4px;font-size:.72rem;font-weight:bold;cursor:pointer;width:100%;">🗑 Delete</button>
-                                        </form>
-                                        @if($photo->exif_data)
-                                        <button onclick="showExif({{ $photo->id }}, {{ $photo->exif_data }})" style="background:#e8eef5;color:var(--navy);border:none;padding:.25rem .6rem;border-radius:4px;font-size:.72rem;font-weight:bold;cursor:pointer;">📷 EXIF</button>
-                                        @endif
-                                        <button onclick="openTagger({{ $photo->id }}, '{{ $photo->url() }}')" style="background:#fef3c7;color:#92400e;border:none;padding:.25rem .6rem;border-radius:4px;font-size:.72rem;font-weight:bold;cursor:pointer;">🏷 Tag</button>
-                                    </div>
-                                    {{-- Show existing tags --}}
-                                    @if($photo->tags && $photo->tags->count())
-                                    <div style="margin-top:.4rem;display:flex;flex-wrap:wrap;gap:.25rem;">
-                                        @foreach($photo->tags as $tag)
-                                        <span style="background:#e8eef5;color:var(--navy);font-size:.68rem;padding:.15rem .4rem;border-radius:3px;font-weight:600;">🏷 {{ strtoupper($tag->callsign) }}</span>
-                                        @endforeach
-                                    </div>
-                                    @endif
-                                </div>
-                            </div>
-                            @endforeach
-                        </div>
-                    @else
-                        <div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:.88rem;">
-                            <div style="font-size:2rem;margin-bottom:.5rem;opacity:.3;">📷</div>
-                            No photos uploaded yet.
-                        </div>
-                    @endif
-                </div>
-            </div>
         </div>{{-- /main-grid --}}
 
     </main>{{-- /hub-main --}}
@@ -1627,9 +1520,14 @@ function toggleUploadMap() {
                 fetch('https://nominatim.openstreetmap.org/reverse?lat=' + e.latlng.lat + '&lon=' + e.latlng.lng + '&format=json')
                 .then(function(r){return r.json();})
                 .then(function(d){
-                    if (d && d.display_name) {
-                        var short = d.address ? (d.address.city || d.address.town || d.address.village || d.address.county || '') : d.display_name;
-                        document.getElementById('uploadLocationText').value = short;
+                    if (d && d.address) {
+                        var a = d.address;
+                        var parts = [];
+                        if (a.road) parts.push(a.road);
+                        if (a.suburb) parts.push(a.suburb);
+                        if (a.city || a.town || a.village) parts.push(a.city || a.town || a.village);
+                        var loc = parts.length ? parts.join(', ') : d.display_name;
+                        document.getElementById('uploadLocationText').value = loc;
                     }
                 }).catch(function(){});
             });
@@ -1728,8 +1626,52 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.textContent = '📤 Upload Photo';
         });
 
-        var formData = new FormData(form);
-        xhr.send(formData);
+        // Sequential upload - send files one at a time
+        var fileInput = form.querySelector('input[type="file"]');
+        var files = Array.from(fileInput.files);
+        var total = files.length;
+        var done = 0; var failed = 0;
+        var caption  = form.querySelector('[name="caption"]') ? form.querySelector('[name="caption"]').value : '';
+        var location = form.querySelector('[name="location"]') ? form.querySelector('[name="location"]').value : '';
+        var taken_at = form.querySelector('[name="taken_at"]') ? form.querySelector('[name="taken_at"]').value : '';
+        var latVal = document.getElementById('uploadLat') ? document.getElementById('uploadLat').value : '';
+        var lngVal = document.getElementById('uploadLng') ? document.getElementById('uploadLng').value : '';
+
+        function uploadNextMember(index) {
+            if (index >= total) {
+                bar.style.width='100%'; bar.style.background='#059669';
+                label.textContent='✓ '+done+' photo'+(total>1?'s':'')+' uploaded!';
+                form.reset(); btn.disabled=false; btn.textContent='📤 Upload Photo';
+                // Photos saved as drafts - go to My Photos to review and submit
+                setTimeout(function(){ window.location.href='/members/my-photos'; }, 1500);
+                return;
+            }
+            var fd = new FormData();
+            fd.append('photos[]', files[index]);
+            fd.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+            if(caption) fd.append('caption', caption);
+            if(location) fd.append('location', location);
+            if(taken_at) fd.append('taken_at', taken_at);
+            if(latVal) fd.append('lat', latVal);
+            if(lngVal) fd.append('lng', lngVal);
+            fd.append('consent','1');
+            label.textContent='Uploading '+(index+1)+' of '+total+'…';
+            bar.style.width=Math.round(index/total*100)+'%';
+            xhr = new XMLHttpRequest();
+            xhr.open('POST', form.action);
+            xhr.setRequestHeader('X-Requested-With','XMLHttpRequest');
+            xhr.setRequestHeader('Accept','application/json');
+            xhr.setRequestHeader('X-CSRF-TOKEN', document.querySelector('meta[name="csrf-token"]').content);
+            xhr.upload.addEventListener('progress', function(ev){
+                if(ev.lengthComputable){var o=(index+ev.loaded/ev.total)/total*100;bar.style.width=Math.round(o)+'%';}
+            });
+            xhr.addEventListener('load', function(){ try{var r=JSON.parse(xhr.responseText);if(r.success)done++;}catch(e){failed++;} uploadNextMember(index+1); });
+            xhr.addEventListener('error', function(){ failed++; uploadNextMember(index+1); });
+            xhr.send(fd);
+        }
+        uploadNextMember(0);
+        return; // prevent default XHR send below
+        // xhr.send handled by sequential uploader above
     });
 });
 
@@ -1854,57 +1796,54 @@ function lookupAndTag() {
     var callsign = document.getElementById('taggerCallsign').value.trim().toUpperCase();
     if (!callsign || !taggerPendingX) return;
 
-    var btn = document.querySelector('#taggerForm button');
     var result = document.getElementById('taggerLookupResult');
-    result.textContent = '⏳ Looking up ' + callsign + '…';
+    result.style.color = '#2d4a6b';
+    result.textContent = '⏳ Checking ' + callsign + '…';
 
-    // QRZ lookup first
-    fetch('/members/refer/lookup/' + encodeURIComponent(callsign))
-    .then(function(r){ return r.json(); })
-    .then(function(qrz) {
-        var name = (qrz && qrz.name) ? qrz.name : callsign;
-        result.textContent = '✓ Found: ' + name + ' — saving tag…';
-
-        // Save tag
-        return fetch('/members/photos/' + taggerPhotoId + '/tags', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json',
-            },
-            body: JSON.stringify({
-                callsign: callsign,
-                x_pct: parseFloat(taggerPendingX),
-                y_pct: parseFloat(taggerPendingY),
-            })
+    // Directly try to save the tag — controller checks membership
+    fetch('/members/photos/' + taggerPhotoId + '/tags', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+            callsign: callsign,
+            x_pct: parseFloat(taggerPendingX),
+            y_pct: parseFloat(taggerPendingY),
+        })
+    })
+    .then(function(r) {
+        return r.json().then(function(data) {
+            return { status: r.status, data: data };
         });
     })
-    .then(function(r){ return r.json(); })
-    .then(function(data) {
-        if (data.success) {
-            // Add dot to image
+    .then(function(res) {
+        if (res.data.success) {
             var dot = document.createElement('div');
             dot.style.cssText = 'position:absolute;width:24px;height:24px;border-radius:50%;background:rgba(200,16,46,.85);border:2px solid #fff;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:bold;cursor:default;';
             dot.style.left = taggerPendingX + '%';
             dot.style.top  = taggerPendingY + '%';
-            dot.title = (data.name || data.callsign);
+            dot.title = res.data.name || res.data.callsign;
             document.getElementById('taggerDots').appendChild(dot);
 
             document.getElementById('taggerPendingDot').style.display = 'none';
             document.getElementById('taggerForm').style.display = 'none';
             document.getElementById('taggerCallsign').value = '';
-            result.textContent = '';
             taggerPendingX = null; taggerPendingY = null;
 
-            if (data.is_member) {
-                result.textContent = '✓ Tagged ' + data.name + ' and notified by email.';
-            }
+            result.style.color = '#059669';
+            result.textContent = '✓ Tagged ' + (res.data.name || res.data.callsign) + ' — they have been notified by email.';
+        } else {
+            result.style.color = '#dc2626';
+            result.textContent = '✗ ' + (res.data.message || 'Could not add tag.');
         }
     })
     .catch(function(err) {
-        result.textContent = 'Failed to save tag. Please try again.';
+        result.style.color = '#dc2626';
+        result.textContent = '✗ Failed to save tag. Please try again.';
     });
 }
 </script>

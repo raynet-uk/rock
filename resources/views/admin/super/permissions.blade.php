@@ -392,4 +392,35 @@ function updateCount(roleId) {
     if (numEl)  numEl.textContent  = checked;
 }
 </script>
+
+<div style="max-width:900px;margin:2rem auto 0;padding:0 1rem;">
+    <div style="font-size:1rem;font-weight:700;color:#003366;margin-bottom:.5rem;padding-bottom:.5rem;border-bottom:2px solid #003366;">📸 Photo Permissions — Per User</div>
+    <p style="font-size:.82rem;color:#6b7f96;margin-bottom:1rem;line-height:1.5;">Grant individual members permission to approve or feature photos, regardless of their role. Admins always have both automatically.</p>
+    @php $photoUsers = \App\Models\User::role(['member','committee','admin','super-admin'])->orderBy('name')->get(); @endphp
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+        <div style="background:#1e0040;padding:.6rem 1rem;display:grid;grid-template-columns:1fr 160px 160px;gap:.5rem;">
+            <div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:rgba(233,213,255,.5);">Member</div>
+            <div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:rgba(233,213,255,.5);text-align:center;">Approve Photos</div>
+            <div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:rgba(233,213,255,.5);text-align:center;">Feature Photos</div>
+        </div>
+        @foreach($photoUsers as $pu)
+        @php $hasApprove=$pu->hasPermissionTo('approve photos'); $hasFeature=$pu->hasPermissionTo('feature photos'); $puIsAdmin=$pu->isAdmin(); @endphp
+        <div style="display:grid;grid-template-columns:1fr 160px 160px;gap:.5rem;align-items:center;padding:.65rem 1rem;border-top:1px solid #f3f4f6;{{ $loop->even ? 'background:#fafafa;' : '' }}">
+            <div>
+                <div style="font-size:.85rem;font-weight:600;color:#003366;">{{ $pu->name }}</div>
+                <div style="font-size:.72rem;color:#6b7f96;">@if($pu->callsign)<span style="font-family:monospace;">{{ strtoupper($pu->callsign) }}</span> · @endif{{ $pu->roles->pluck('name')->implode(', ') }}</div>
+            </div>
+            <div style="text-align:center;">
+                @if($puIsAdmin)<span style="font-size:.72rem;color:#059669;font-weight:bold;">✓ Admin</span>
+                @else<form method="POST" action="{{ route('admin.super.admin.super.permissions.user-toggle') }}">@csrf<input type="hidden" name="user_id" value="{{ $pu->id }}"><input type="hidden" name="permission" value="approve photos"><button type="submit" style="background:{{ $hasApprove ? '#d1fae5' : '#f3f4f6' }};color:{{ $hasApprove ? '#065f46' : '#6b7f96' }};border:1px solid {{ $hasApprove ? '#6ee7b7' : '#e5e7eb' }};padding:.3rem .9rem;border-radius:999px;font-size:.75rem;font-weight:bold;cursor:pointer;width:100%;">{{ $hasApprove ? '✓ Granted' : '+ Grant' }}</button></form>@endif
+            </div>
+            <div style="text-align:center;">
+                @if($puIsAdmin)<span style="font-size:.72rem;color:#059669;font-weight:bold;">✓ Admin</span>
+                @else<form method="POST" action="{{ route('admin.super.admin.super.permissions.user-toggle') }}">@csrf<input type="hidden" name="user_id" value="{{ $pu->id }}"><input type="hidden" name="permission" value="feature photos"><button type="submit" style="background:{{ $hasFeature ? '#fef3c7' : '#f3f4f6' }};color:{{ $hasFeature ? '#92400e' : '#6b7f96' }};border:1px solid {{ $hasFeature ? '#fcd34d' : '#e5e7eb' }};padding:.3rem .9rem;border-radius:999px;font-size:.75rem;font-weight:bold;cursor:pointer;width:100%;">{{ $hasFeature ? '⭐ Granted' : '+ Grant' }}</button></form>@endif
+            </div>
+        </div>
+        @endforeach
+    </div>
+</div>
+
 @endsection

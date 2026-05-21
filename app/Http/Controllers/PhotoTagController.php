@@ -63,7 +63,7 @@ class PhotoTagController extends Controller {
                     'tagger'    => auth()->user(),
                     'groupName' => $groupName,
                     'taggedUrl' => route('members.photos.tagged'),
-                    'removeUrl' => route('members.photos.tags.remove-self', $tag),
+                    'removeUrl' => route('members.photos.tags.remove-self-get', $tag),
                 ], function($m) use ($user, $groupName) {
                     $m->to($user->email, $user->name)
                       ->subject("You've been tagged in a photo — {$groupName}");
@@ -92,7 +92,7 @@ class PhotoTagController extends Controller {
                     ->with(['photo.user'])
                     ->orderByDesc('created_at')
                     ->get();
-        $photos = $tags->map->photo->filter(fn($p) => $p && $p->status === 'approved')->unique('id');
+        $photos = $tags->map->photo->filter(fn($p) => $p !== null)->unique('id');
         return view('pages.my-tagged-photos', compact('photos', 'tags'));
     }
 

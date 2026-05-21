@@ -28,6 +28,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // TESTING ONLY — redirect all photo emails to test address
+        if (app()->environment('production') && config('mail.test_override')) {
+            \Illuminate\Support\Facades\Mail::alwaysTo(config('mail.test_override'));
+        }
+
         // Share temp admin status with all views
         \Illuminate\Support\Facades\View::composer('*', function ($view) {
             if (auth()->check()) {

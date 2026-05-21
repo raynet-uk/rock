@@ -22,6 +22,28 @@
 .gal-meta{font-size:.75rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:.5rem;}
 .gal-chip{display:inline-flex;align-items:center;gap:.25rem;padding:.15rem .5rem;background:var(--grey);border-radius:999px;font-size:.72rem;font-weight:600;}
 .gal-empty{text-align:center;padding:4rem 1rem;color:var(--muted);}
+/* View toggles */
+.view-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:.75rem;}
+.view-filters{display:flex;gap:.4rem;flex-wrap:wrap;}
+.view-filter{padding:.35rem .85rem;border-radius:999px;font-size:.78rem;font-weight:600;border:1px solid var(--grey-mid);color:var(--muted);cursor:pointer;background:#fff;transition:all .15s;}
+.view-filter:hover{border-color:var(--navy);color:var(--navy);}
+.view-filter.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+.view-toggles{display:flex;gap:.3rem;}
+.view-toggle{padding:.35rem .6rem;border-radius:6px;border:1px solid var(--grey-mid);background:#fff;cursor:pointer;font-size:.9rem;transition:all .15s;color:var(--muted);}
+.view-toggle:hover{border-color:var(--navy);color:var(--navy);}
+.view-toggle.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+/* Masonry */
+.gal-grid-masonry{columns:3 280px;gap:1.2rem;}
+.gal-grid-masonry .gal-card{break-inside:avoid;margin-bottom:1.2rem;}
+.gal-grid-masonry .gal-img-wrap{padding-top:0;height:auto;}
+.gal-grid-masonry .gal-img-wrap img{position:static;width:100%;height:auto;}
+/* List view */
+.gal-grid-list{display:flex;flex-direction:column;gap:.75rem;}
+.gal-grid-list .gal-card{display:flex;flex-direction:row;border-radius:8px;}
+.gal-grid-list .gal-img-wrap{padding-top:0;width:140px;min-width:140px;height:100px;flex-shrink:0;border-radius:8px 0 0 8px;}
+.gal-grid-list .gal-img-wrap img{position:static;width:140px;height:100px;object-fit:cover;}
+.gal-grid-list .gal-card-body{padding:.75rem 1rem;flex:1;display:flex;flex-direction:column;justify-content:center;}
+@media(max-width:480px){.gal-grid-list .gal-img-wrap{width:90px;min-width:90px;height:70px;}.gal-grid-list .gal-img-wrap img{width:90px;height:70px;}}
 
 /* Lightbox */
 .lb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;align-items:center;justify-content:center;}
@@ -58,15 +80,34 @@
         <p class="gal-desc">Photos from our operations, training exercises and events.</p>
     </div>
 
-    @if($photos->isEmpty())
+    {{-- View toolbar --}}
+    <div class="view-toolbar">
+        <div class="view-filters">
+            <button class="view-filter active" onclick="filterPhotos('all', this)">All</button>
+            <button class="view-filter" onclick="filterPhotos('featured', this)">⭐ Featured</button>
+            <button class="view-filter" onclick="filterPhotos('location', this)">📍 With Location</button>
+            <button class="view-filter" onclick="filterPhotos('tagged', this)">🏷 Tagged</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:.75rem;">
+            <span style="font-size:.78rem;color:var(--muted);">{{ $publicPhotos->total() }} photos</span>
+            <div class="view-toggles">
+                <button class="view-toggle active" onclick="setView('grid', this)" title="Grid">⊞ Grid</button>
+                <button class="view-toggle" onclick="setView('masonry', this)" title="Masonry">▦ Masonry</button>
+                <button class="view-toggle" onclick="setView('list', this)" title="List">☰ List</button>
+                <button class="view-toggle" onclick="setView('map', this)" title="Map">🗺 Map</button>
+            </div>
+        </div>
+    </div>
+
+    @if($publicPhotos->isEmpty())
         <div class="gal-empty">
             <div style="font-size:3rem;margin-bottom:1rem;opacity:.3;">📷</div>
             <p>No photos yet. Check back soon.</p>
         </div>
     @else
-        <div class="gal-grid">
-            @foreach($photos as $photo)
-            <div class="gal-card" onclick="openLightbox({{ $loop->index }})">
+        <div class="gal-grid" id="galGrid">
+            @foreach($publicPhotos as $photo)
+            <div class="gal-card" onclick="openLightbox({{ $loop->index }})" data-featured="{{ $photo->featured ? 1 : 0 }}" data-location="{{ $photo->location ? 1 : 0 }}" data-tagged="{{ $photo->tags->count() ? 1 : 0 }}">
                 <div class="gal-img-wrap">
                     <img src="{{ $photo->thumbUrl() }}" alt="{{ $photo->caption ?? 'RAYNET photo' }}" loading="lazy">
                     @if($photo->featured)
@@ -87,8 +128,77 @@
             </div>
             @endforeach
         </div>
-        <div style="margin-top:2rem;display:flex;justify-content:center;">{{ $photos->links() }}</div>
+        <div style="margin-top:2rem;display:flex;justify-content:center;">{{ $publicPhotos->links('pagination::tailwind') }}</div>
     @endif
+</div>
+
+
+@auth
+@if($membersPhotos && $membersPhotos->isNotEmpty())
+<div class="gal-wrap" style="padding-top:0;">
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem;padding:1rem 1.25rem;background:#e8eef5;border:1px solid #c7d9ef;border-left:4px solid #003366;border-radius:6px;">
+        <span style="font-size:1.25rem;">🔒</span>
+        <div>
+            <div style="font-size:.9rem;font-weight:700;color:#003366;">Members Only Photos</div>
+            <div style="font-size:.78rem;color:#6b7f96;">These photos are approved for members but awaiting admin approval before appearing publicly.</div>
+        </div>
+    </div>
+    <div class="gal-grid">
+        @foreach($membersPhotos as $photo)
+        <div class="gal-card" onclick="openMembersLightbox({{ $loop->index }})">
+            <div class="gal-img-wrap">
+                <img src="{{ $photo->thumbUrl() }}" alt="{{ $photo->caption ?? 'RAYNET photo' }}" loading="lazy">
+                <div style="position:absolute;top:.5rem;left:.5rem;background:rgba(0,51,102,.85);color:#fff;font-size:.68rem;font-weight:bold;padding:.2rem .5rem;border-radius:4px;">🔒 Members</div>
+            </div>
+            <div class="gal-card-body">
+                @if($photo->caption)<div class="gal-caption">{{ $photo->caption }}</div>@endif
+                <div class="gal-meta">
+                    @if($photo->callsign)<span class="gal-chip">📻 {{ strtoupper($photo->callsign) }}</span>@endif
+                    @if($photo->location)<span class="gal-chip">📍 {{ $photo->location }}</span>@endif
+                    @if($photo->taken_at)<span class="gal-chip">📅 {{ $photo->taken_at->format('d M Y') }}</span>@endif
+                </div>
+            </div>
+        </div>
+        @endforeach
+    </div>
+    <div style="margin-top:1.5rem;display:flex;justify-content:center;">{{ $membersPhotos->links() }}</div>
+</div>
+
+@php
+$membersPhotosJson = $membersPhotos->map(function($p) {
+    return [
+        'url'      => $p->url(),
+        'caption'  => $p->caption,
+        'location' => $p->location,
+        'callsign' => $p->callsign,
+        'taken_at' => $p->taken_at?->format('d M Y'),
+        'tags'     => $p->tags->map(fn($t) => ['callsign'=>$t->callsign,'name'=>$t->name,'x'=>(float)$t->x_pct,'y'=>(float)$t->y_pct])->values(),
+        'lat'      => null,
+        'lng'      => null,
+    ];
+})->values();
+@endphp
+<script>
+var membersPhotosData = {!! json_encode($membersPhotosJson) !!};
+var membersLbCurrent = 0;
+function openMembersLightbox(i) {
+    membersLbCurrent = i;
+    // Reuse same lightbox but with members data
+    var p = membersPhotosData[i];
+    document.getElementById('lbImg').src = p.url;
+    document.getElementById('lbCaption').textContent = (p.caption || '') + ' 🔒 Members Only';
+    document.getElementById('lbTagsWrap').style.display = 'none';
+    document.getElementById('lbMapWrap').style.display = 'none';
+    document.getElementById('lbOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+</script>
+@endif
+@endauth
+
+{{-- Map View --}}
+<div id="galMapView" style="display:none;margin-bottom:2rem;">
+    <div id="galMap" style="height:520px;border-radius:10px;border:1px solid var(--grey-mid);overflow:hidden;"></div>
 </div>
 
 {{-- Lightbox --}}
@@ -120,10 +230,11 @@
 
 <script>
 @php
-$photosJson = $photos->map(function($p) {
+$photosJson = $publicPhotos->map(function($p) {
     $exif = $p->exif_data ? json_decode($p->exif_data, true) : [];
-    $lat = null; $lng = null;
-    if (!empty($exif['GPSLatitude']) && !empty($exif['GPSLongitude'])) {
+    $lat = $p->lat ? (float)$p->lat : null;
+    $lng = $p->lng ? (float)$p->lng : null;
+    if (!$lat && !empty($exif['GPSLatitude']) && !empty($exif['GPSLongitude'])) {
         $parseDeg = function($str) {
             $parts = array_map('trim', explode(',', $str));
             return (float)$parts[0] + ((float)($parts[1]??0))/60 + ((float)($parts[2]??0))/3600;
@@ -149,6 +260,7 @@ var photosData = {!! json_encode($photosJson) !!};
 
 var current = 0;
 var lbMap = null;
+var galMap = null;
 
 function openLightbox(i) {
     current = i;
@@ -250,5 +362,146 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'ArrowLeft')  navLb(-1);
     if (e.key === 'ArrowRight') navLb(1);
 });
+
+// View switching
+var currentView = localStorage.getItem('gal_view') || 'grid';
+var titleMap = {grid:'Grid', masonry:'Masonry', list:'List', map:'Map'};
+setView(currentView, document.querySelector('.view-toggle[title="' + (titleMap[currentView]||'Grid') + '"]'), true);
+
+function setView(view, btn, silent) {
+    currentView = view;
+    if (!silent) localStorage.setItem('gal_view', view);
+    var grid = document.getElementById('galGrid');
+    var mapView = document.getElementById('galMapView');
+
+    document.querySelectorAll('.view-toggle').forEach(function(b){ b.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+
+    if (view === 'map') {
+        if (grid) grid.style.display = 'none';
+        if (mapView) mapView.style.display = 'block';
+        initGalMap();
+    } else {
+        if (grid) {
+            grid.style.display = '';
+            grid.className = view === 'masonry' ? 'gal-grid-masonry' : view === 'list' ? 'gal-grid-list' : 'gal-grid';
+        }
+        if (mapView) mapView.style.display = 'none';
+    }
+}
+
+function initGalMap() {
+    if (galMap) { setTimeout(function(){ galMap.invalidateSize(); }, 100); return; }
+
+    galMap = L.map('galMap').setView([53.5, -2.5], 7);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+    }).addTo(galMap);
+
+    // Group photos by location
+    var locationGroups = {};
+
+    photosData.forEach(function(p, idx) {
+        if (!p.lat || !p.lng) return;
+        var key = p.lat.toFixed(4) + ',' + p.lng.toFixed(4);
+        if (!locationGroups[key]) {
+            locationGroups[key] = { lat: p.lat, lng: p.lng, photos: [] };
+        }
+        locationGroups[key].photos.push({ idx: idx, photo: p });
+    });
+
+    // Also geocode location text for photos without coordinates
+    var geocodeQueue = [];
+    photosData.forEach(function(p, idx) {
+        if (!p.lat && !p.lng && p.location) {
+            geocodeQueue.push({ idx: idx, photo: p });
+        }
+    });
+
+    // Add markers for coordinate-based photos
+    Object.values(locationGroups).forEach(function(group) {
+        addMapMarker(group.lat, group.lng, group.photos);
+    });
+
+    // Geocode remaining locations sequentially
+    var geocodeIndex = 0;
+    function geocodeNext() {
+        if (geocodeIndex >= geocodeQueue.length) return;
+        var item = geocodeQueue[geocodeIndex++];
+        fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(item.photo.location) + '&format=json&limit=1', {
+            headers: {'Accept-Language': 'en'}
+        }).then(function(r){ return r.json(); }).then(function(d) {
+            if (d && d[0]) {
+                var lat = parseFloat(d[0].lat);
+                var lng = parseFloat(d[0].lon);
+                var key = lat.toFixed(4) + ',' + lng.toFixed(4);
+                if (!locationGroups[key]) {
+                    locationGroups[key] = { lat: lat, lng: lng, photos: [] };
+                    addMapMarker(lat, lng, [{ idx: item.idx, photo: item.photo }]);
+                }
+            }
+            setTimeout(geocodeNext, 300);
+        }).catch(function(){ setTimeout(geocodeNext, 300); });
+    }
+    geocodeNext();
+
+    // Fit bounds if markers exist
+    setTimeout(function() {
+        var markers = [];
+        Object.values(locationGroups).forEach(function(g) { markers.push([g.lat, g.lng]); });
+        if (markers.length > 0) {
+            try { galMap.fitBounds(markers, {padding: [30, 30], maxZoom: 13}); } catch(e) {}
+        }
+    }, 500);
+}
+
+function addMapMarker(lat, lng, photos) {
+    var count = photos.length;
+    var icon = L.divIcon({
+        html: '<div style="background:#003366;color:#fff;border:2px solid #fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;box-shadow:0 2px 6px rgba(0,0,0,.3);">' + count + '</div>',
+        className: '',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+    });
+    var marker = L.marker([lat, lng], { icon: icon }).addTo(galMap);
+
+    // Build popup
+    var cols = photos.length === 1 ? 1 : 2;
+    var popupWidth = photos.length === 1 ? 180 : 280;
+    var popupHtml = '<div style="width:' + popupWidth + 'px;">';
+    if (photos[0].photo.location) {
+        popupHtml += '<div style="font-size:11px;font-weight:700;color:#003366;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #e5e7eb;padding-bottom:4px;">📍 ' + photos[0].photo.location + '</div>';
+    }
+    if (photos.length > 1) {
+        popupHtml += '<div style="font-size:10px;color:#6b7f96;margin-bottom:6px;">' + photos.length + ' photos at this location</div>';
+    }
+    popupHtml += '<div style="display:grid;grid-template-columns:repeat(' + cols + ',1fr);gap:4px;max-height:240px;overflow-y:auto;">';
+    photos.forEach(function(item) {
+        popupHtml += '<div onclick="openLightbox(' + item.idx + ')" style="cursor:pointer;border-radius:4px;overflow:hidden;">';
+        popupHtml += '<img src="' + item.photo.thumb + '" style="width:100%;aspect-ratio:4/3;object-fit:cover;display:block;">';
+        if (item.photo.caption) popupHtml += '<div style="font-size:9px;color:#555;padding:2px 3px;line-height:1.3;background:#f9f9f9;">' + item.photo.caption.substring(0,40) + (item.photo.caption.length>40?'…':'') + '</div>';
+        popupHtml += '</div>';
+    });
+    popupHtml += '</div>';
+    if (photos.length > 4) {
+        popupHtml += '<div style="text-align:center;font-size:10px;color:#6b7f96;margin-top:4px;">Scroll to see all ' + photos.length + ' photos</div>';
+    }
+    popupHtml += '</div>';
+
+    marker.bindPopup(popupHtml, { maxWidth: popupWidth + 20, minWidth: popupWidth, maxHeight: 320 });
+}
+
+// Filtering
+function filterPhotos(type, btn) {
+    document.querySelectorAll('.view-filter').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    document.querySelectorAll('.gal-card').forEach(function(card) {
+        var show = true;
+        if (type === 'featured')  show = card.dataset.featured === '1';
+        if (type === 'location')  show = card.dataset.location === '1';
+        if (type === 'tagged')    show = card.dataset.tagged   === '1';
+        card.style.display = show ? '' : 'none';
+    });
+}
 </script>
 @endsection

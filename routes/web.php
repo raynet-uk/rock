@@ -375,12 +375,44 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/dismiss-broadcast', [AdminMessageController::class, 'dismissBroadcast']) ->name('message.dismiss-broadcast');
 
     Route::get('/my-tagged-photos',                      [\App\Http\Controllers\PhotoTagController::class, 'myTagged'])  ->name('members.photos.tagged');
+    Route::get('/members/photos/tags/{tag}/remove',    [\App\Http\Controllers\PhotoTagController::class, 'removeSelf'])->name('members.photos.tags.remove-self-get');
     Route::delete('/members/photos/tags/{tag}/remove',   [\App\Http\Controllers\PhotoTagController::class, 'removeSelf'])->name('members.photos.tags.remove-self');
     Route::post('/members/photos/{photo}/tags',           [\App\Http\Controllers\PhotoTagController::class, 'store'])  ->name('members.photos.tags.store');
     Route::delete('/members/photos/{photo}/tags/{tag}',   [\App\Http\Controllers\PhotoTagController::class, 'destroy'])->name('members.photos.tags.destroy');
+    Route::get('/members/albums',                          [\App\Http\Controllers\MemberAlbumController::class, 'index'])         ->name('members.albums.index');
+    Route::post('/members/albums',                         [\App\Http\Controllers\MemberAlbumController::class, 'store'])          ->name('members.albums.store');
+    Route::patch('/members/albums/{album}',                [\App\Http\Controllers\MemberAlbumController::class, 'update'])         ->name('members.albums.update');
+    Route::delete('/members/albums/{album}',               [\App\Http\Controllers\MemberAlbumController::class, 'destroy'])        ->name('members.albums.destroy');
+    Route::post('/members/albums/{album}/assign',          [\App\Http\Controllers\MemberAlbumController::class, 'assignPhoto'])    ->name('members.albums.assign');
+    Route::post('/members/albums/{album}/remove-photo',    [\App\Http\Controllers\MemberAlbumController::class, 'removePhoto'])    ->name('members.albums.remove-photo');
+    Route::post('/members/albums/{album}/cover',           [\App\Http\Controllers\MemberAlbumController::class, 'setCover'])       ->name('members.albums.cover');
+    Route::get('/members/albums/{album}/photos', function(\App\Models\Album $album) {
+        abort_if($album->user_id !== auth()->id(), 403);
+        return response()->json($album->photos->map(fn($p) => [
+            'id'       => $p->id,
+            'thumb'    => $p->thumbUrl(),
+            'caption'  => $p->caption,
+            'is_cover' => $album->cover_photo_id == $p->id,
+        ]));
+    })->name('members.albums.photos');
+    Route::post('/members/albums/{album}/submit',          [\App\Http\Controllers\MemberAlbumController::class, 'submit'])         ->name('members.albums.submit');
+    Route::post('/members/albums/submit-unassigned',       [\App\Http\Controllers\MemberAlbumController::class, 'submitUnassigned'])->name('members.albums.submit-unassigned');
+    Route::get('/members/my-photos', function() {
+        $myPhotos = \App\Models\Photo::where('user_id', auth()->id())->orderByDesc('created_at')->get();
+        return view('members.my-photos', compact('myPhotos'));
+    })->name('members.my-photos');
+    Route::get('/members/photos/{photo}/url',     [\App\Http\Controllers\MemberPhotoController::class, 'getUrl'])  ->name('members.photos.url');
+    Route::post('/members/photos/{photo}/rotate',  [\App\Http\Controllers\MemberPhotoController::class, 'rotate']) ->name('members.photos.rotate');
+    Route::post('/members/photos/{photo}/submit', [\App\Http\Controllers\MemberPhotoController::class, 'submitForApproval'])->name('members.photos.submit');
+    Route::post('/members/photos/notify', [\App\Http\Controllers\MemberPhotoController::class, 'notifyApprovers'])->name('members.photos.notify');
     Route::post('/members/photos',           [\App\Http\Controllers\MemberPhotoController::class, 'store'])  ->name('members.photos.store');
     Route::patch('/members/photos/{photo}',  [\App\Http\Controllers\MemberPhotoController::class, 'update'])->name('members.photos.update');
     Route::delete('/members/photos/{photo}', [\App\Http\Controllers\MemberPhotoController::class, 'destroy'])->name('members.photos.destroy');
+    Route::get('/members/photo-approval',                    [\App\Http\Controllers\MemberPhotoApprovalController::class, 'index'])        ->name('members.photo-approval.index');
+    Route::post('/members/photo-approval/{photo}/approve',  [\App\Http\Controllers\MemberPhotoApprovalController::class, 'approve'])       ->name('members.photo-approval.approve');
+    Route::post('/members/photo-approval/{photo}/public',   [\App\Http\Controllers\MemberPhotoApprovalController::class, 'publicApprove']) ->name('members.photo-approval.public-approve');
+    Route::post('/members/photo-approval/{photo}/reject',   [\App\Http\Controllers\MemberPhotoApprovalController::class, 'reject'])        ->name('members.photo-approval.reject');
+    Route::post('/members/photo-approval/{photo}/feature',  [\App\Http\Controllers\MemberPhotoApprovalController::class, 'feature'])       ->name('members.photo-approval.feature');
     Route::get('/members/refer',                   [\App\Http\Controllers\MemberReferralController::class, 'show'])  ->name('members.refer');
     Route::post('/members/refer',                  [\App\Http\Controllers\MemberReferralController::class, 'send'])  ->name('members.refer.send');
     Route::get('/members/refer/lookup/{callsign}', [\App\Http\Controllers\MemberReferralController::class, 'lookup'])->name('members.refer.lookup');
@@ -718,6 +750,9 @@ Route::prefix('admin')->group(function () {
                 Route::post('/super-admins/{userId}/grant',  [\App\Http\Controllers\Admin\SuperAdminController::class, 'grantSuperAdmin']) ->name('super-admins.grant');
                 Route::post('/super-admins/{userId}/revoke', [\App\Http\Controllers\Admin\SuperAdminController::class, 'revokeSuperAdmin'])->name('super-admins.revoke');
                 Route::get('gallery',                        [\App\Http\Controllers\Admin\GalleryAdminController::class, 'index'])  ->name('admin.gallery.index');
+                Route::post('gallery/{photo}/revoke-l1',      [\App\Http\Controllers\Admin\GalleryAdminController::class, 'revokeL1'])     ->name('admin.gallery.revoke-l1');
+                Route::post('gallery/{photo}/revoke-l2',      [\App\Http\Controllers\Admin\GalleryAdminController::class, 'revokeL2'])     ->name('admin.gallery.revoke-l2');
+                Route::post('gallery/{photo}/public-approve', [\App\Http\Controllers\Admin\GalleryAdminController::class, 'publicApprove'])->name('admin.gallery.public-approve');
                 Route::post('gallery/{photo}/approve', [\App\Http\Controllers\Admin\GalleryAdminController::class, 'approve'])->name('admin.gallery.approve');
                 Route::post('gallery/{photo}/reject',  [\App\Http\Controllers\Admin\GalleryAdminController::class, 'reject']) ->name('admin.gallery.reject');
                 Route::post('gallery/{photo}/feature', [\App\Http\Controllers\Admin\GalleryAdminController::class, 'feature'])->name('admin.gallery.feature');
@@ -730,6 +765,7 @@ Route::prefix('admin')->group(function () {
                 Route::get   ('permissions',              [PermissionController::class, 'index']           )->name('permissions.index');
                 Route::patch ('permissions/role/{role}',  [PermissionController::class, 'updateRole']      )->name('permissions.role');
                 Route::post  ('permissions/create',       [PermissionController::class, 'createPermission'])->name('permissions.create');
+                Route::post('permissions/user-toggle',  [\App\Http\Controllers\Admin\PermissionController::class, 'toggleUserPermission'])->name('admin.super.permissions.user-toggle');
                 Route::delete('permissions/{permission}', [PermissionController::class, 'deletePermission'])->name('permissions.delete');
                 Route::get('operations', fn() => view('admin.super.operations'))->name('operations');
                 Route::post('maintenance/whitelist/add',    [\App\Http\Controllers\Admin\SuperAdminController::class, 'whitelistAdd']   )->name('maintenance.whitelist.add');
