@@ -100,6 +100,32 @@ Route::get('/', function () {
     ]);
 })->name('home');
 
+// Event Support Pack
+Route::middleware(['auth'])->group(function() {
+    Route::get('/event-pack',                                    [\App\Http\Controllers\EventSupportPackController::class, 'index'])           ->name('event-pack.index');
+    Route::get('/event-pack/create',                             [\App\Http\Controllers\EventSupportPackController::class, 'create'])          ->name('event-pack.create');
+    Route::post('/event-pack',                                   [\App\Http\Controllers\EventSupportPackController::class, 'store'])           ->name('event-pack.store');
+    Route::get('/event-pack/{eventSupportPack}',                 [\App\Http\Controllers\EventSupportPackController::class, 'show'])            ->name('event-pack.show');
+    Route::patch('/event-pack/{eventSupportPack}',               [\App\Http\Controllers\EventSupportPackController::class, 'update'])          ->name('event-pack.update');
+    Route::post('/event-pack/{eventSupportPack}/submit',         [\App\Http\Controllers\EventSupportPackController::class, 'submit'])          ->name('event-pack.submit');
+    Route::post('/event-pack/{eventSupportPack}/approve',        [\App\Http\Controllers\EventSupportPackController::class, 'approve'])         ->name('event-pack.approve');
+    Route::post('/event-pack/{eventSupportPack}/escalate',       [\App\Http\Controllers\EventSupportPackController::class, 'escalate'])        ->name('event-pack.escalate');
+    Route::post('/event-pack/{eventSupportPack}/return',         [\App\Http\Controllers\EventSupportPackController::class, 'return_for_correction'])->name('event-pack.return');
+    Route::post('/event-pack/{eventSupportPack}/clone',          [\App\Http\Controllers\EventSupportPackController::class, 'clone'])           ->name('event-pack.clone');
+    Route::get('/event-pack/{eventSupportPack}/pdf/{type?}',     [\App\Http\Controllers\EventSupportPackController::class, 'generatePdf'])     ->name('event-pack.pdf');
+    Route::post('/event-pack/{eventSupportPack}/posts',          [\App\Http\Controllers\EventSupportPackController::class, 'storePost'])       ->name('event-pack.posts.store');
+    Route::delete('/event-pack/posts/{post}',                    [\App\Http\Controllers\EventSupportPackController::class, 'destroyPost'])     ->name('event-pack.posts.destroy');
+    Route::post('/event-pack/{eventSupportPack}/operators',      [\App\Http\Controllers\EventSupportPackController::class, 'storeOperator'])   ->name('event-pack.operators.store');
+    Route::delete('/event-pack/operators/{operator}',            [\App\Http\Controllers\EventSupportPackController::class, 'destroyOperator']) ->name('event-pack.operators.destroy');
+});
+
+Route::get('/risk-assessment',              [\App\Http\Controllers\RiskAssessmentController::class, 'index'])      ->name('risk-assessment.index');
+Route::get('/risk-assessment/create',        [\App\Http\Controllers\RiskAssessmentController::class, 'create'])     ->name('risk-assessment.create');
+Route::post('/risk-assessment',              [\App\Http\Controllers\RiskAssessmentController::class, 'store'])       ->name('risk-assessment.store');
+Route::get('/risk-assessment/{riskAssessment}',          [\App\Http\Controllers\RiskAssessmentController::class, 'show'])        ->name('risk-assessment.show')->middleware('auth');
+Route::get('/risk-assessment/{riskAssessment}/pdf',      [\App\Http\Controllers\RiskAssessmentController::class, 'generatePdf'])->name('risk-assessment.pdf')->middleware('auth');
+Route::post('/risk-assessment/{riskAssessment}/approve', [\App\Http\Controllers\RiskAssessmentController::class, 'approve'])    ->name('risk-assessment.approve')->middleware('auth');
+
 Route::get('/gallery', [\App\Http\Controllers\GalleryController::class, 'index'])->name('gallery');
 Route::view('/about',         'pages.about')->name('about');
 Route::view('/event-support', 'pages.event-support')->name('event-support');

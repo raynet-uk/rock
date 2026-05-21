@@ -842,6 +842,13 @@ body {
         </a>
         @endforeach
 
+        <div class="sidebar-section-label" style="margin-top:.5rem;">Operations</div>
+        <a href="{{ route('event-pack.index') }}" class="sidebar-link {{ request()->routeIs('event-pack*') ? 'active' : '' }}">
+            <span class="sidebar-icon">📋</span> Event Support Packs
+        </a>
+        <a href="{{ route('risk-assessment.index') }}" class="sidebar-link {{ request()->routeIs('risk-assessment*') ? 'active' : '' }}">
+            <span class="sidebar-icon">⚠️</span> Risk Assessments
+        </a>
         <div class="sidebar-section-label" style="margin-top:.5rem;">Recruit</div>
         <a href="{{ route('members.refer') }}" class="sidebar-link {{ request()->routeIs('members.refer') ? 'active' : '' }}">
             <span class="sidebar-icon">📡</span> Invite Someone to Join
