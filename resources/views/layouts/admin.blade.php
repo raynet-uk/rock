@@ -239,6 +239,7 @@
                 <div class="sb-subnav" id="grp-events-sub">
                     <a href="{{ route('admin.events') }}" class="sb-subitem {{ $currentRoute === 'admin.events' ? 'active' : '' }}">All Events</a>
                     <a href="{{ route('admin.event-types') }}" class="sb-subitem {{ $currentRoute === 'admin.event-types' ? 'active' : '' }}">Event Types</a>
+                    <a href="{{ route('admin.events.net-status') }}" class="sb-subitem {{ $currentRoute === 'admin.events.net-status' ? 'active' : '' }}">📻 Net Status</a>
                     <a href="{{ route('calendar') }}" class="sb-subitem" target="_blank">Public Calendar ↗</a>
                 </div>
             </div>

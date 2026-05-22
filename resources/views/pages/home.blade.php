@@ -232,7 +232,7 @@ body {
         </div>
     </section>
 
-    <div class="section-head">
+<div class="section-head">
         <div>
             <h2>Upcoming & Recent Activity</h2>
             <p>Snapshot of {{ \App\Helpers\RaynetSetting::groupName() }} deployments and upcoming support.</p>
@@ -299,6 +299,115 @@ body {
             </div>
         </div>
     </div>
+
+
+    {{-- Live Net Strapline --}}
+    @if(!empty($netData))
+    @php
+        $netStart = $netData['start_time'] ?? '';
+        $netEnd   = $netData['end_time']   ?? '';
+        $hideAfterEnd = false;
+        if ($netEnd) {
+            try {
+                $endToday = \Carbon\Carbon::today()->setTimeFromTimeString($netEnd);
+                if (\Carbon\Carbon::now()->gt($endToday)) { $hideAfterEnd = true; }
+            } catch(\Exception $e) {}
+        }
+        $isAuth = auth()->check();
+    @endphp
+    @if(!$hideAfterEnd)
+    <div id="netBanner" style="position:relative;overflow:hidden;background:#0a0a1a;border-top:1px solid #1a1a3e;border-bottom:1px solid #1a1a3e;">
+        <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(200,16,46,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(200,16,46,.04) 1px,transparent 1px);background-size:32px 32px;pointer-events:none;"></div>
+        <div style="position:absolute;top:-40px;left:15%;width:300px;height:120px;background:radial-gradient(ellipse,rgba(200,16,46,.25) 0%,transparent 70%);pointer-events:none;"></div>
+        <div style="position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(200,16,46,.05),transparent);animation:nScan 4s ease-in-out infinite;pointer-events:none;"></div>
+        <div style="max-width:1200px;margin:0 auto;padding:1rem 1.5rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;">
+            {{-- Pulse badge --}}
+            <div style="display:flex;align-items:center;gap:.5rem;flex-shrink:0;">
+                <div style="position:relative;width:12px;height:12px;">
+                    <span style="position:absolute;inset:0;background:#C8102E;border-radius:50%;animation:nPing 1.5s ease-in-out infinite;opacity:.6;"></span>
+                    <span style="position:absolute;inset:1px;background:#ff1a3a;border-radius:50%;"></span>
+                </div>
+                <span id="netStatusLabel" style="font-size:.65rem;font-weight:900;text-transform:uppercase;letter-spacing:.2em;color:#ff4466;">Live Net</span>
+            </div>
+            <div style="width:1px;height:36px;background:linear-gradient(to bottom,transparent,rgba(200,16,46,.5),transparent);flex-shrink:0;"></div>
+            {{-- Callsign + frequency --}}
+            <div style="flex:1;min-width:0;">
+                <div style="display:flex;align-items:baseline;gap:.75rem;flex-wrap:wrap;">
+                    <span style="font-size:1.15rem;font-weight:900;color:#fff;letter-spacing:.02em;font-family:monospace;">{{ strtoupper($netData['callsign']) }}</span>
+                    @if($isAuth && !empty($netData['frequency']))
+                    <span style="font-size:.95rem;font-weight:700;color:#C8102E;font-family:monospace;background:rgba(200,16,46,.1);border:1px solid rgba(200,16,46,.3);padding:.1rem .5rem;border-radius:4px;">{{ $netData['frequency'] }}</span>
+                    @endif
+                </div>
+                @if(!empty($netData['description']))
+                <div style="font-size:.82rem;color:rgba(255,255,255,.55);margin-top:.2rem;">{{ $netData['description'] }}</div>
+                @endif
+                <div id="netTimerDisplay" style="margin-top:.3rem;display:none;">
+                    <span id="netTimerBadge" style="font-size:.72rem;font-weight:800;padding:.2rem .6rem;border-radius:999px;font-family:monospace;"></span>
+                </div>
+            </div>
+            {{-- Right: times, controller, group --}}
+            <div style="display:flex;align-items:center;gap:1.25rem;flex-shrink:0;flex-wrap:wrap;">
+                @if($netStart)
+                <div style="text-align:center;">
+                    <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.35);margin-bottom:.15rem;">Net Time</div>
+                    <div style="font-size:.85rem;font-weight:800;color:rgba(255,255,255,.85);font-family:monospace;">
+                        {{ \Carbon\Carbon::createFromTimeString($netStart)->format('H:i') }}@if($netEnd) &ndash; {{ \Carbon\Carbon::createFromTimeString($netEnd)->format('H:i') }}@endif
+                    </div>
+                </div>
+                <div style="width:1px;height:28px;background:rgba(255,255,255,.1);"></div>
+                @endif
+                @if($isAuth && !empty($netData['controller']))
+                <div style="text-align:center;">
+                    <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.35);margin-bottom:.15rem;">Controller</div>
+                    <div style="font-size:.9rem;font-weight:800;color:#fff;font-family:monospace;letter-spacing:.05em;">{{ strtoupper($netData['controller']) }}</div>
+                </div>
+                <div style="width:1px;height:28px;background:rgba(255,255,255,.1);"></div>
+                @endif
+                <div style="text-align:center;">
+                    <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.35);margin-bottom:.15rem;">Group</div>
+                    <div style="font-size:.78rem;font-weight:700;color:rgba(255,255,255,.7);">{{ \App\Helpers\RaynetSetting::groupName() }}</div>
+                </div>
+                <a href="{{ route('members') }}" style="background:linear-gradient(135deg,#C8102E,#8b0000);color:#fff;font-size:.75rem;font-weight:800;padding:.4rem .9rem;border-radius:999px;text-decoration:none;letter-spacing:.05em;border:1px solid rgba(200,16,46,.4);white-space:nowrap;">Join Net →</a>
+            </div>
+        </div>
+        @verbatim
+        <style>
+        @keyframes nPing{0%,100%{transform:scale(1);opacity:.6;}50%{transform:scale(2.2);opacity:0;}}
+        @keyframes nScan{0%{left:-50%;}100%{left:150%;}}
+        </style>
+        @endverbatim
+    </div>
+    <script>
+    (function(){
+        var s='{{ $netStart }}', e='{{ $netEnd }}';
+        function pt(t){if(!t)return null;var p=t.split(':'),n=new Date();return new Date(n.getFullYear(),n.getMonth(),n.getDate(),+p[0],+p[1],0);}
+        function fmt(ms){var sec=Math.floor(Math.abs(ms)/1000),h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),x=sec%60;return h>0?h+'h '+('0'+m).slice(-2)+'m '+('0'+x).slice(-2)+'s':('0'+m).slice(-2)+'m '+('0'+x).slice(-2)+'s';}
+        function tick(){
+            var now=new Date(),start=pt(s),end=pt(e);
+            var banner=document.getElementById('netBanner'),disp=document.getElementById('netTimerDisplay'),badge=document.getElementById('netTimerBadge'),lbl=document.getElementById('netStatusLabel');
+            if(!banner)return;
+            if(end&&now>end){banner.style.display='none';return;}
+            if(!start||!disp||!badge)return;
+            var diff=now-start,pre=start-now;
+            if(diff>=0){
+                disp.style.display='block';
+                badge.style.cssText='font-size:.72rem;font-weight:800;padding:.2rem .6rem;border-radius:999px;font-family:monospace;background:rgba(200,16,46,.2);border:1px solid rgba(200,16,46,.5);color:#ff6688;';
+                badge.textContent='⏱ On Air '+fmt(diff);
+                if(lbl)lbl.textContent='Live Now';
+            } else if(pre<=90*60*1000){
+                disp.style.display='block';
+                badge.style.cssText='font-size:.72rem;font-weight:800;padding:.2rem .6rem;border-radius:999px;font-family:monospace;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);color:#fbbf24;';
+                badge.textContent='⏳ Starting in '+fmt(pre);
+                if(lbl){lbl.textContent='Starting Soon';lbl.style.color='#fbbf24';}
+            } else {
+                disp.style.display='none';
+            }
+        }
+        tick();setInterval(tick,1000);
+    })();
+    </script>
+    @endif
+    @endif
 
     <div class="section-head">
         <div>

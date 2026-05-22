@@ -92,11 +92,21 @@ Route::get('/', function () {
     $upcoming = Event::where('starts_at', '>=', $today)->orderBy('starts_at')->get();
     $alertStatus = AlertStatus::query()->first();
     $featuredPhotos = \App\Models\Photo::where('status','approved')->where('featured',true)->orderByDesc('created_at')->take(6)->get();
+    $netActive = \App\Models\Setting::get('net_active','0') === '1';
+    $netData = $netActive ? [
+        'callsign'    => \App\Models\Setting::get('net_callsign',''),
+        'frequency'   => \App\Models\Setting::get('net_frequency',''),
+        'controller'  => \App\Models\Setting::get('net_controller',''),
+        'description' => \App\Models\Setting::get('net_description',''),
+        'start_time'  => \App\Models\Setting::get('net_start_time',''),
+        'end_time'    => \App\Models\Setting::get('net_end_time',''),
+    ] : null;
     return view('pages.home', [
         'featuredPhotos' => $featuredPhotos,
         'nextEvent'   => $upcoming->first(),
         'upcomingEvents' => $upcoming->slice(1),
         'alertStatus' => $alertStatus,
+        'netData'     => $netData,
     ]);
 })->name('home');
 
@@ -873,7 +883,9 @@ Route::middleware('admin')->group(function () {
     Route::get('/admin/settings/telegram-test', [\App\Http\Controllers\Admin\AdminSettingsController::class, 'telegramTest'])->name('admin.settings.telegram-test');
 
     // ── Events ────────────────────────────────────────────────────────────
-    Route::get('/admin/events',            [EventAdminController::class, 'index'])         ->name('admin.events');
+    Route::get('/admin/events/net-status',      [EventAdminController::class, 'netStatus'])    ->name('admin.events.net-status');
+    Route::post('/admin/events/net-status',     [EventAdminController::class, 'updateNetStatus'])->name('admin.events.net-status.update');
+        Route::get('/admin/events',            [EventAdminController::class, 'index'])         ->name('admin.events');
     Route::post('/admin/events/{event}/availability-request', [EventAdminController::class, 'sendAvailabilityRequest'])->name('admin.events.availability-request');
     Route::post('/admin/events',           [EventAdminController::class, 'store'])         ->name('admin.events.store');
     Route::get('/admin/events/export/csv', [EventAdminController::class, 'exportCsv'])     ->name('admin.events.export.csv');

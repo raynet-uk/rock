@@ -2,6 +2,7 @@
 namespace App\Services;
 
 use App\Models\EventSupportPack;
+use App\Services\BriefingEngine;
 
 class EventPackPdfService {
     private EventSupportPack $pack;
@@ -250,11 +251,220 @@ class EventPackPdfService {
         }
         $p->SetAutoPageBreak(true, 15);
 
-        // Section H: Further controls required
+        // Section H: Auto-Generated Briefings and Checklists
+        $risks = $this->pack->risks->map(fn($r) => $r->toArray())->toArray();
+        $artefacts = BriefingEngine::generate($risks, $this->pack->toArray());
+        $allBriefings  = $artefacts['briefings'];
+        $allChecklists = $artefacts['checklists'];
+
+        if (!empty($allBriefings) || !empty($allChecklists)) {
+            $p->AddPage();
+            $this->sectionHead('H. Generated Briefings and Checklists');
+            $p->SetFont('Arial','I',8);
+            $p->SetTextColor(107,127,150);
+            $p->Cell(0,5,$this->u('Auto-generated from risk controls. Review before use.'),0,1,'L',false);
+            $p->SetTextColor(0,0,0);
+            $p->Ln(2);
+        }
+
+        foreach ($allBriefings as $brief) {
+            if ($p->GetY() > 230) $p->AddPage();
+
+            // Header bar
+            $p->SetFillColor(0,51,102);
+            $p->SetTextColor(255,255,255);
+            $p->SetFont('Arial','B',10);
+            $p->Cell(0,8,$this->u($brief['ref'].' — '.$brief['title']),0,1,'L',true);
+            $p->SetTextColor(0,0,0);
+
+            // Trigger and audience
+            $p->SetFont('Arial','I',8);
+            $p->SetFillColor(232,238,245);
+            $p->Cell(0,5,$this->u('Generated because: '.$brief['trigger'].'  Audience: '.($brief['audience']??'All operators')),0,1,'L',true);
+            $p->Ln(2);
+
+            // Body
+            $p->SetFont('Arial','',9);
+            $p->SetFillColor(255,255,255);
+            if (!empty($brief['body'])) {
+                $p->MultiCell(0,5,$this->u($brief['body']),0,'L',true);
+                $p->Ln(2);
+            }
+
+            // Checklist items (minimum expectations)
+            if (!empty($brief['checklist_items'])) {
+                $p->SetFont('Arial','B',8);
+                $p->Cell(0,5,$this->u('Minimum expectations:'),0,1,'L',false);
+                $p->SetFont('Arial','',9);
+                foreach ($brief['checklist_items'] as $item) {
+                    $p->Cell(0,5,$this->u(html_entity_decode('&#9744;',ENT_HTML5,'UTF-8').' '.$item),0,1,'L',false);
+                }
+                $p->Ln(2);
+            }
+
+            // If section
+            if (!empty($brief['if_section'])) {
+                $p->SetFont('Arial','B',8);
+                $p->Cell(0,5,$this->u($brief['if_section']['label']),0,1,'L',false);
+                $p->SetFont('Arial','',9);
+                foreach ($brief['if_section']['items'] as $item) {
+                    $p->Cell(0,5,$this->u('    '.$item),0,1,'L',false);
+                }
+                $p->Ln(2);
+            }
+
+            // Do not
+            if (!empty($brief['do_not'])) {
+                $p->SetFont('Arial','B',8);
+                $p->Cell(0,5,$this->u('Do not:'),0,1,'L',false);
+                $p->SetFont('Arial','',9);
+                foreach ($brief['do_not'] as $item) {
+                    $p->Cell(0,5,$this->u('    '.$item),0,1,'L',false);
+                }
+                $p->Ln(2);
+            }
+
+            // Instructions
+            if (!empty($brief['instructions'])) {
+                $p->SetFont('Arial','',9);
+                foreach ($brief['instructions'] as $instr) {
+                    if (trim($instr)) $p->MultiCell(0,5,$this->u($instr),0,'L',false);
+                }
+                $p->Ln(2);
+            }
+
+            // Escalation
+            if (!empty($brief['escalation'])) {
+                $p->SetFillColor(254,226,226);
+                $p->SetTextColor(153,27,27);
+                $p->SetFont('Arial','B',8);
+                $p->MultiCell(0,5,$this->u('Escalation: '.$brief['escalation']),1,'L',true);
+                $p->SetTextColor(0,0,0);
+                $p->Ln(2);
+            }
+
+            // Confirm
+            if (!empty($brief['confirm'])) {
+                $p->SetFont('Arial','B',8);
+                $p->Cell(0,5,$this->u('Confirm:'),0,1,'L',false);
+                $p->SetFont('Arial','',9);
+                foreach ($brief['confirm'] as $conf) {
+                    $p->Cell(0,5,$this->u(html_entity_decode('&#9744;',ENT_HTML5,'UTF-8').' '.$conf),0,1,'L',false);
+                }
+            }
+
+            $p->Ln(5);
+            // Separator line
+            $p->SetDrawColor(200,200,200);
+            $p->Line($p->GetX(), $p->GetY(), $p->GetX()+180, $p->GetY());
+            $p->SetDrawColor(0,0,0);
+            $p->Ln(4);
+        }
+
+        foreach ($allChecklists as $cl) {
+            if ($p->GetY() > 220) $p->AddPage();
+
+            // Header
+            $p->SetFillColor(51,65,85);
+            $p->SetTextColor(255,255,255);
+            $p->SetFont('Arial','B',10);
+            $p->Cell(0,8,$this->u($cl['ref'].' — '.$cl['title']),0,1,'L',true);
+            $p->SetTextColor(0,0,0);
+
+            // Trigger
+            $p->SetFont('Arial','I',8);
+            $p->SetFillColor(232,238,245);
+            $p->Cell(0,5,$this->u('Generated because: '.$cl['trigger']),0,1,'L',true);
+            if (!empty($cl['audience'])) {
+                $p->Cell(0,5,$this->u('Audience: '.$cl['audience']),0,1,'L',true);
+            }
+            $p->Ln(2);
+
+            // Frequency
+            if (!empty($cl['frequency'])) {
+                $p->SetFillColor(254,243,199);
+                $p->SetTextColor(146,64,14);
+                $p->SetFont('Arial','B',8);
+                $p->Cell(0,5,$this->u('Frequency: '.$cl['frequency']),1,1,'L',true);
+                $p->SetTextColor(0,0,0);
+                $p->Ln(2);
+            }
+
+            // Sections
+            $sections = $cl['sections'] ?? ($cl['checks'] ? ['Checks' => $cl['checks']] : []);
+            foreach ($sections as $secTitle => $items) {
+                $p->SetFillColor(232,238,245);
+                $p->SetFont('Arial','B',9);
+                $p->Cell(0,5,$this->u($secTitle.':'),0,1,'L',true);
+                $p->SetFont('Arial','',9);
+                $p->SetFillColor(255,255,255);
+                foreach ((array)$items as $item) {
+                    if (trim($item)) $p->Cell(0,5,$this->u(html_entity_decode('&#9744;',ENT_HTML5,'UTF-8').' '.$item),0,1,'L',false);
+                }
+                $p->Ln(2);
+            }
+
+            // Stop if
+            if (!empty($cl['stop_if'])) {
+                $p->SetFillColor(254,226,226);
+                $p->SetTextColor(153,27,27);
+                $p->SetFont('Arial','B',8);
+                $p->Cell(0,5,$this->u('Stop immediately if:'),0,1,'L',true);
+                $p->SetFont('Arial','',9);
+                foreach ($cl['stop_if'] as $s) {
+                    $p->Cell(0,5,$this->u('    '.$s),0,1,'L',false);
+                }
+                $p->SetTextColor(0,0,0);
+                $p->Ln(2);
+            }
+
+            // Escalate if
+            if (!empty($cl['escalate_if'])) {
+                $p->SetFillColor(254,226,226);
+                $p->SetTextColor(153,27,27);
+                $p->SetFont('Arial','B',8);
+                $p->Cell(0,5,$this->u('Escalate if:'),0,1,'L',true);
+                $p->SetFont('Arial','',9);
+                foreach ($cl['escalate_if'] as $esc) {
+                    $p->Cell(0,5,$this->u('    '.$esc),0,1,'L',false);
+                }
+                $p->SetTextColor(0,0,0);
+                $p->Ln(2);
+            }
+
+            // Actions
+            if (!empty($cl['actions'])) {
+                $p->SetFont('Arial','B',8);
+                $p->Cell(0,5,$this->u('Actions:'),0,1,'L',false);
+                $p->SetFont('Arial','',9);
+                foreach ($cl['actions'] as $a) {
+                    $p->Cell(0,5,$this->u('    '.$a),0,1,'L',false);
+                }
+                $p->Ln(2);
+            }
+
+            // Sign off
+            if (!empty($cl['sign_off'])) {
+                $p->SetFont('Arial','',9);
+                $p->Ln(2);
+                foreach ($cl['sign_off'] as $sf) {
+                    $p->Cell(70,7,$this->u($sf.': _________________________'),1,0,'L',false);
+                }
+                $p->Ln();
+            }
+
+            $p->Ln(5);
+            $p->SetDrawColor(200,200,200);
+            $p->Line($p->GetX(), $p->GetY(), $p->GetX()+180, $p->GetY());
+            $p->SetDrawColor(0,0,0);
+            $p->Ln(4);
+        }
+
+        // Section J: Further controls required
         $highRisks = $this->pack->risks->where('residual','High');
         if ($highRisks->count() > 0) {
             $p->Ln(3);
-            $this->sectionHead('H. Further Controls Required');
+            \$this->sectionHead('J. Further Controls Required');
             $p->SetFillColor(254,226,226);
             $p->SetFont('Arial','',9);
             $p->SetTextColor(153,27,27);
@@ -266,7 +476,7 @@ class EventPackPdfService {
         }
 
         // Section I: Approval block
-        $this->sectionHead('I. Approval Block');
+        \$this->sectionHead('K. Approval Block');
         $p->SetFillColor(255,255,255);
         $p->SetFont('Arial','',9);
         $statusStr = ucfirst($this->pack->status).($this->pack->approved_at?' | Approved: '.$this->pack->approved_at->format('d M Y H:i'):'');
