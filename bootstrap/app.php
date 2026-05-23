@@ -27,6 +27,10 @@ return Application::configure(
         'oauth/logout',
         'api/cms/*',
         'telegram/webhook',
+        'admin/events/station-log',
+        'admin/events/net-status',
+        'admin/events/station-log/archive-and-clear',
+        'admin/events/station-log/clear',
     ]);
     $middleware->alias([
         // Standard auth aliases
@@ -45,6 +49,7 @@ return Application::configure(
         // Install wizard
         'not.installed' => \App\Http\Middleware\NotInstalled::class,
         'block.page.editor' => \App\Http\Middleware\BlockPageEditor::class,
+        'offline.token'     => \App\Http\Middleware\OfflineTokenOrAdmin::class,
     ]);
 })->withExceptions(function (Exceptions $exceptions) {
     //

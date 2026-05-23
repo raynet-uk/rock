@@ -446,5 +446,172 @@ document.querySelectorAll('.sb-subitem.active').forEach(el=>{
 });
 </script>
 @stack('scripts')
+<div id="raynet-offline-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;
+  background:#1e293b;color:#fff;font-size:.78rem;font-weight:700;padding:.5rem 1rem;
+  display:none;align-items:center;gap:.75rem;border-top:2px solid #C8102E;">
+  <span id="offline-indicator" style="display:flex;align-items:center;gap:.4rem;">
+    <span id="offline-dot" style="width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;"></span>
+    <span id="offline-label">Online</span>
+  </span>
+  <span id="offline-queue-info" style="color:rgba(255,255,255,.6);display:none;">
+    · <span id="offline-queue-count">0</span> actions queued
+  </span>
+  <button id="offline-sync-btn" onclick="raynetSyncNow()" style="display:none;
+    background:#C8102E;color:#fff;border:none;border-radius:5px;padding:.25rem .65rem;
+    font-size:.72rem;font-weight:700;cursor:pointer;">⟳ Sync Now</button>
+  <span id="offline-token-info" style="margin-left:auto;color:rgba(255,255,255,.5);font-size:.7rem;"></span>
+  <button id="offline-token-refresh" onclick="raynetRefreshToken()" style="
+    background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);
+    border-radius:5px;padding:.2rem .55rem;font-size:.7rem;font-weight:700;cursor:pointer;">
+    🔑 Refresh Token
+  </button>
+</div>
+
+<script>
+// ── RAYNET-OS Offline Manager ──────────────────────────────────────────────
+(function(){
+  var SW_URL   = '/net-control-sw.js';
+  var TOKEN_KEY = 'raynet_offline_token';
+  var TOKEN_EXP = 'raynet_offline_expires';
+  var queueCount = 0;
+  var isOnline   = navigator.onLine;
+
+  // Register service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register(SW_URL, {scope:'/'}).then(function(reg){
+      console.log('RAYNET-OS SW registered');
+      // Request background sync permission
+      if (reg.sync) reg.sync.register('net-control-sync').catch(function(){});
+    }).catch(function(e){ console.warn('SW registration failed:', e); });
+
+    // Listen for messages from SW
+    navigator.serviceWorker.addEventListener('message', function(e) {
+      var d = e.data;
+      if (!d) return;
+      if (d.type === 'SYNC_STATUS')    updateBar(d.online, d.queued || 0);
+      if (d.type === 'SYNC_COMPLETE')  onSyncComplete(d);
+      if (d.type === 'AUTH_FAILED')    showAuthFailed(d.message);
+    });
+  }
+
+  // Fetch and store offline token while online
+  function fetchToken() {
+    if (!navigator.onLine) return;
+    fetch('/admin/net-control/offline-token', {cache:'no-store'})
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){
+      if (!d || !d.token) return;
+      localStorage.setItem(TOKEN_KEY, d.token);
+      localStorage.setItem(TOKEN_EXP, d.expires_at);
+      // Store in SW IndexedDB too
+      sendToSW({type:'STORE_TOKEN', token: d.token, expires_at: d.expires_at});
+      updateTokenInfo(d.expires_at);
+      console.log('RAYNET-OS: offline token refreshed, expires', new Date(d.expires_at*1000).toLocaleTimeString());
+    }).catch(function(){});
+  }
+
+  function sendToSW(msg) {
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage(msg);
+    }
+  }
+
+  function updateTokenInfo(expiresAt) {
+    var el = document.getElementById('offline-token-info');
+    if (!el || !expiresAt) return;
+    var exp = new Date(expiresAt * 1000);
+    el.textContent = 'Token valid until ' + exp.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  }
+
+  function updateBar(online, queued) {
+    isOnline   = online;
+    queueCount = queued;
+    var bar    = document.getElementById('raynet-offline-bar');
+    var dot    = document.getElementById('offline-dot');
+    var lbl    = document.getElementById('offline-label');
+    var qInfo  = document.getElementById('offline-queue-info');
+    var qCount = document.getElementById('offline-queue-count');
+    var syncBtn = document.getElementById('offline-sync-btn');
+
+    if (!bar) return;
+    bar.style.display = 'flex';
+
+    if (online && queued === 0) {
+      dot.style.background = '#22c55e';
+      lbl.textContent = 'Online';
+      qInfo.style.display = 'none';
+      syncBtn.style.display = 'none';
+    } else if (!online) {
+      dot.style.background = '#C8102E';
+      lbl.textContent = 'Offline';
+      if (queued > 0) {
+        qInfo.style.display = '';
+        qCount.textContent = queued;
+        syncBtn.style.display = '';
+      }
+    } else if (online && queued > 0) {
+      dot.style.background = '#fbbf24';
+      lbl.textContent = 'Syncing...';
+      qInfo.style.display = '';
+      qCount.textContent = queued;
+      syncBtn.style.display = '';
+      // Auto-sync
+      setTimeout(raynetSyncNow, 1000);
+    }
+  }
+
+  function onSyncComplete(d) {
+    var lbl = document.getElementById('offline-label');
+    if (lbl) lbl.textContent = d.remaining > 0 ? 'Partial sync (' + d.remaining + ' remaining)' : 'Synced ✓';
+    if (d.remaining === 0) {
+      setTimeout(function(){
+        var bar = document.getElementById('raynet-offline-bar');
+        if (bar && isOnline) bar.style.display = 'none';
+      }, 3000);
+    }
+  }
+
+  function showAuthFailed(msg) {
+    var lbl = document.getElementById('offline-label');
+    if (lbl) { lbl.textContent = '⚠ Auth expired'; lbl.style.color = '#fbbf24'; }
+    alert('RAYNET-OS: ' + msg);
+  }
+
+  // Public API
+  window.raynetSyncNow = function() {
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({type:'SYNC_NOW'});
+    }
+  };
+
+  window.raynetRefreshToken = function() {
+    fetchToken();
+    var btn = document.getElementById('offline-token-refresh');
+    if (btn) { btn.textContent = '✓ Refreshed'; setTimeout(function(){ btn.textContent = '🔑 Refresh Token'; }, 2000); }
+  };
+
+  // Online/offline events
+  window.addEventListener('online',  function(){ updateBar(true,  queueCount); setTimeout(raynetSyncNow, 500); });
+  window.addEventListener('offline', function(){ updateBar(false, queueCount); });
+
+  // Init
+  document.addEventListener('DOMContentLoaded', function(){
+    // Always show bar on net control page
+    var isNetControl = window.location.pathname.includes('/admin/events/net-status');
+    var bar = document.getElementById('raynet-offline-bar');
+    if (bar && isNetControl) bar.style.display = 'flex';
+
+    fetchToken();
+    // Refresh token every 10 hours
+    setInterval(fetchToken, 36000000);
+
+    // Show stored token expiry
+    var exp = localStorage.getItem(TOKEN_EXP);
+    if (exp) updateTokenInfo(parseInt(exp));
+
+    updateBar(navigator.onLine, 0);
+  });
+})();
+</script>
 </body>
 </html>

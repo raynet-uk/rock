@@ -1115,6 +1115,11 @@ Route::prefix('admin/temporary-guests')->name('admin.temporary-guests.')->middle
     Route::post  ('/{user}/reinstate', [TemporaryGuestController::class, 'reinstate']) ->name('reinstate');
 });
 
+// Offline token issuance — requires active admin session
+Route::middleware(['web','auth','admin'])->get('/admin/net-control/offline-token', [
+    \App\Http\Controllers\OfflineTokenController::class, 'issue'
+])->name('admin.net-control.offline-token');
+
 // Public net status JSON — used by homepage banner polling
 Route::get('/net-status-json', function () {
     $active = \App\Models\Setting::get('net_active', '0') === '1';
@@ -1190,8 +1195,12 @@ Route::middleware(['web','auth','admin'])->prefix('admin/events')->name('admin.e
     })->name('station-log.logging-status');
     Route::get('/station-log/qrz-photo', [\App\Http\Controllers\EventAdminController::class, 'stationLogQrzPhoto'])->name('station-log.qrz-photo');
     Route::get('/station-log/qrz',         [\App\Http\Controllers\EventAdminController::class, 'stationLogQrz'])    ->name('station-log.qrz');
-    Route::post('/station-log',           [\App\Http\Controllers\EventAdminController::class, 'stationLogStore'])  ->name('station-log.store');
-    Route::post('/station-log/archive-and-clear', [\App\Http\Controllers\EventAdminController::class, 'stationLogArchiveAndClear'])->name('station-log.archive-and-clear');
+    // These routes accept EITHER a valid session OR an offline Bearer token
+    Route::middleware(['offline.token'])->group(function () {
+        Route::post('/station-log',                   [\App\Http\Controllers\EventAdminController::class, 'stationLogStore'])         ->name('station-log.store');
+        Route::post('/station-log/archive-and-clear', [\App\Http\Controllers\EventAdminController::class, 'stationLogArchiveAndClear'])->name('station-log.archive-and-clear');
+        Route::post('/station-log/clear',             [\App\Http\Controllers\EventAdminController::class, 'stationLogClear'])          ->name('station-log.clear');
+    });
     Route::get('/net-log-history/{id}',     [\App\Http\Controllers\EventAdminController::class, 'netLogHistoryShow'])   ->name('net-log-history.show');
     Route::get('/net-log-history/{id}/adif', [\App\Http\Controllers\EventAdminController::class, 'netLogHistoryAdif'])   ->name('net-log-history.adif');
     Route::get('/net-log-history/{id}/pdf',  [\App\Http\Controllers\EventAdminController::class, 'netLogHistoryPdf'])    ->name('net-log-history.pdf');

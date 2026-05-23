@@ -910,6 +910,10 @@ function pickCtrl(callsign) {
 var _ciQrzData = {};
 var _ciInviteCallsign = '';
 
+function isOfflineMode() {
+    return !navigator.onLine;
+}
+
 function logCheckin() {
     var cs    = document.getElementById('ciCallsign').value.trim().toUpperCase();
     var rep   = document.getElementById('ciReport').value.trim();
@@ -917,6 +921,13 @@ function logCheckin() {
     var err   = document.getElementById('ciError');
     if (!cs) { err.textContent = 'Callsign is required'; err.style.display=''; return; }
     err.style.display = 'none';
+
+    // Offline mode — skip all online checks, log directly
+    if (isOfflineMode()) {
+        doLogCheckin(cs, rep, notes, err);
+        return;
+    }
+
     fetch('/admin/events/station-log/logging-status', {cache:'no-store',
         headers:{'Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content}
     })
@@ -955,6 +966,18 @@ function doLogCheckin(cs, rep, notes, err) {
 
 function qrzLookup(cs) {
     if (!cs || cs.length < 3) { hideQrzCard(); return; }
+
+    // Offline mode — skip QRZ, show manual entry hint
+    if (isOfflineMode()) {
+        hideQrzCard();
+        var nameEl = document.getElementById('ciQrzName');
+        if (nameEl) {
+            nameEl.textContent = '📴 Offline — name will be looked up on sync';
+            nameEl.style.color = '#fbbf24';
+        }
+        return;
+    }
+
     fetch('/admin/events/station-log/qrz?callsign=' + encodeURIComponent(cs), {
         headers: {'X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content, 'Accept':'application/json'}
     })
@@ -1411,6 +1434,20 @@ function loadLog() {
 }
 
 function updateStatusBanner() {
+    // Offline mode — show offline banner and keep form fully enabled
+    if (isOfflineMode()) {
+        var banner    = document.getElementById('ciStatusBanner');
+        var formCard  = document.getElementById('ciFormCard');
+        var submitBtn = document.getElementById('ciSubmitBtn');
+        if (banner) {
+            banner.style.cssText = 'border-radius:10px;padding:.75rem 1rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:.75rem;font-size:.82rem;font-weight:700;background:#1e293b;color:#fbbf24;';
+            banner.innerHTML = '<span style="font-size:1rem;">📴</span> <strong style="margin:0 .2rem;">Offline mode</strong> — entries will sync when connection is restored';
+        }
+        if (formCard) formCard.style.opacity = '1';
+        if (submitBtn) submitBtn.disabled = false;
+        return;
+    }
+
     fetch('/net-status-json', {cache:'no-store'})
     .then(function(r){ return r.json(); })
     .then(function(d){
@@ -1441,6 +1478,10 @@ document.addEventListener('DOMContentLoaded', function(){
     updateStatusBanner();
     loadLog();
     setInterval(function(){ updateStatusBanner(); loadLog(); }, 10000);
+
+    // Re-run banner check when connectivity changes
+    window.addEventListener('online',  function(){ updateStatusBanner(); });
+    window.addEventListener('offline', function(){ updateStatusBanner(); });
 
     // Delegated handlers for rows and remove buttons
     var ciLog = document.getElementById('ciLog');
