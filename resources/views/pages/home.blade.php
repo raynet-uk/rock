@@ -399,10 +399,9 @@ body {
                 <div class="net-vdiv"></div>
                 @endif
                 <div class="net-meta" id="netCtrlWrap" style="display:none;overflow:visible;position:relative;padding:2px 6px;">
-                    <svg id="ctrlRing" viewBox="0 0 60 60" width="60" height="60" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;display:none;opacity:.85;">
-                        <circle cx="30" cy="30" r="26" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="2.5"/>
-                        <circle id="ctrlRingArc" cx="30" cy="30" r="26" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-dasharray="163.4" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 30 30)" style="transition:stroke .6s;"/>
-                    </svg>
+                    <div id="ctrlRing" style="display:none;position:absolute;bottom:0;left:4px;right:4px;height:2px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden;">
+                        <div id="ctrlRingArc" style="height:100%;width:100%;background:#22c55e;transform-origin:left;transition:background .6s;border-radius:2px;"></div>
+                    </div>
                     <div class="net-meta-label">Controller</div>
                     <div style="position:relative;min-height:1.1em;">
                         <div class="net-meta-value" id="netCtrlDisplay" style="position:relative;z-index:1;"></div>
@@ -574,7 +573,6 @@ body {
             var ring = document.getElementById('ctrlRing');
             var arc  = document.getElementById('ctrlRingArc');
             if (!ring || !arc) return;
-            var circ = 163.4;
             _ringInterval = setInterval(function() {
                 var now     = new Date();
                 var nowSecs = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
@@ -584,8 +582,9 @@ body {
                 if (rem <= 0) { stopRing(); return; }
                 if (rem <= 60) {
                     ring.style.display = '';
-                    arc.style.strokeDashoffset = circ * (1 - rem/60);
-                    arc.style.stroke = rem <= 10 ? '#ff4444' : rem <= 30 ? '#fbbf24' : '#22c55e';
+                    // Width drains from 100% to 0% over 60 seconds
+                    arc.style.width  = (rem / 60 * 100) + '%';
+                    arc.style.background = rem <= 10 ? '#ff4444' : rem <= 30 ? '#fbbf24' : '#22c55e';
                 } else {
                     ring.style.display = 'none';
                 }
