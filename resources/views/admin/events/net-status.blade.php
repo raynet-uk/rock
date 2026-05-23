@@ -1526,7 +1526,7 @@ function importOfflineQueue() {
         var e = q[i];
         fetch('{{ route("admin.events.station-log.store") }}', {
             method: 'POST',
-            headers: {'Content-Type':'application/json','X-CSRF-TOKEN': csrf},
+            headers: {'Content-Type':'application/json','X-CSRF-TOKEN': csrf, 'X-Offline-Replay': '1'},
             body: JSON.stringify({callsign: e.callsign, signal_report: e.signal_report, notes: e.notes})
         })
         .then(function(r){ return r.json(); })
