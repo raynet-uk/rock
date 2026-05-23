@@ -603,6 +603,7 @@ class EventAdminController extends Controller
             'net_announcement'      => \App\Models\Setting::get('net_announcement', ''),
             'net_controller'        => \App\Models\Setting::get('net_controller', ''),
             'net_controller_slots'  => \App\Models\Setting::get('net_controller_slots', '[]'),
+            'net_station_logging'   => \App\Models\Setting::get('net_station_logging', '0'),
             'net_band'              => \App\Models\Setting::get('net_band', ''),
             'net_priority'          => \App\Models\Setting::get('net_priority', 'routine'),
             'net_start_time'        => \App\Models\Setting::get('net_start_time', ''),
@@ -653,14 +654,11 @@ class EventAdminController extends Controller
         \App\Models\Setting::set('net_active', $request->has('net_active') ? '1' : '0');
 
         $fields = ['net_callsign','net_frequency','net_band','net_description','net_announcement','net_priority','net_start_time','net_end_time'];
+        \App\Models\Setting::set('net_station_logging', $request->has('net_station_logging') ? '1' : '0');
         foreach ($fields as $key) {
             \App\Models\Setting::set($key, $request->input($key, ''));
         }
 
-        // DEBUG — log everything received
-        \Log::info('NET STATUS POST', ['all' => $request->all(), 'json_field' => $request->input('net_controller_slots_json')]);
-        // DEBUG — log everything received
-        \Log::info('NET STATUS POST', ['all' => $request->all(), 'json_field' => $request->input('net_controller_slots_json')]);
         // Save controller time slots — submitted as a single JSON string
         $slotsJson = $request->input('net_controller_slots_json', '[]');
         $rawSlots  = json_decode($slotsJson, true);
@@ -685,6 +683,30 @@ class EventAdminController extends Controller
     }
 
 
+    public function stationLogQrz(\Illuminate\Http\Request $request)
+    {
+        $cs = strtoupper(trim($request->query('callsign', '')));
+        if (!$cs) return response()->json(['name' => null]);
+        // Try local member first
+        $user = \App\Models\User::whereRaw('UPPER(callsign) = ?', [$cs])->first();
+        if ($user) {
+            return response()->json(['name' => $user->name, 'location' => null, 'source' => 'local']);
+        }
+        try {
+            $qrz  = app(\App\Services\QrzService::class);
+            $data = $qrz->lookup($cs);
+            if ($data && !empty($data['name'])) {
+                return response()->json([
+                    'name'     => $data['name_fmt'] ?? $data['name'],
+                    'location' => $data['city'] ?? null,
+                    'photo'    => $data['image_url'] ?? null,
+                    'source'   => 'qrz',
+                ]);
+            }
+        } catch (\Throwable $e) {}
+        return response()->json(['name' => null]);
+    }
+
     public function stationLogIndex()
     {
         $stations = \App\Models\NetStationLog::orderByDesc('checked_in_at')->get();
@@ -693,6 +715,9 @@ class EventAdminController extends Controller
 
     public function stationLogStore(\Illuminate\Http\Request $request)
     {
+        if (\App\Models\Setting::get('net_station_logging','0') !== '1') {
+            return response()->json(['success' => false, 'error' => 'Station logging is not enabled']);
+        }
         $request->validate(['callsign' => 'required|string|max:20']);
         $cs   = strtoupper(trim($request->callsign));
         // Enrich from QRZ or local user

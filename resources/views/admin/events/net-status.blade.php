@@ -185,6 +185,10 @@ input:checked+.slider:before{transform:translateX(24px);}
         <div><div class="toggle-label">Net Active</div><div class="toggle-sub">Show the live net banner on the homepage</div></div>
         <label class="toggle-switch"><input type="checkbox" name="net_active" value="1" id="netActiveToggle" {{ ($settings['net_active']??'0')==='1'?'checked':'' }}><span class="slider"></span></label>
       </div>
+      <div class="toggle-row">
+        <div><div class="toggle-label">Station Logging</div><div class="toggle-sub">Enable the station check-in log and show counter on the banner</div></div>
+        <label class="toggle-switch"><input type="checkbox" name="net_station_logging" value="1" {{ ($settings['net_station_logging']??'0')==='1'?'checked':'' }}><span class="slider"></span></label>
+      </div>
       <div class="grid-2">
         <div class="field"><label class="label">Callsign</label><input type="text" name="net_callsign" class="input" value="{{ $settings['net_callsign']??'' }}" id="fCallsign"></div>
         <div class="field"><label class="label">Frequency</label><input type="text" name="net_frequency" class="input" value="{{ $settings['net_frequency']??'' }}" id="fFreq"></div>
@@ -385,33 +389,60 @@ input:checked+.slider:before{transform:translateX(24px);}
   </div>
 </div>
 <div class="tab-pane" id="tab-checkins">
-  <div class="nc-card">
-    <div class="nc-card-title">📻 Station Log</div>
-    <div style="display:flex;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;align-items:flex-end;">
-      <div style="flex:1;min-width:160px;">
-        <label class="label">Callsign</label>
-        <input type="text" id="ciCallsign" class="input" placeholder="e.g. G4BDS" style="text-transform:uppercase;" maxlength="20">
-      </div>
-      <div style="flex:1;min-width:100px;">
-        <label class="label">Signal Report</label>
-        <input type="text" id="ciReport" class="input" placeholder="59" maxlength="10">
-      </div>
-      <div style="flex:2;min-width:160px;">
-        <label class="label">Notes</label>
-        <input type="text" id="ciNotes" class="input" placeholder="Optional">
-      </div>
-      <button onclick="logCheckin()" class="btn btn-primary" style="white-space:nowrap;">+ Log Station</button>
-    </div>
-    <div id="ciError" style="color:#C8102E;font-size:.8rem;margin-bottom:.75rem;display:none;"></div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;">
-      <div style="font-size:.8rem;font-weight:700;color:var(--muted);">
-        <span id="ciCount">0</span> stations logged
-      </div>
-      <button onclick="clearLog()" class="btn btn-ghost btn-sm" style="color:#C8102E;font-size:.75rem;">Clear All</button>
-    </div>
-    <div id="ciLog" style="display:flex;flex-direction:column;gap:.4rem;max-height:400px;overflow-y:auto;"></div>
+
+  {{-- Status banner --}}
+  <div id="ciStatusBanner" style="border-radius:10px;padding:.75rem 1rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:.75rem;font-size:.82rem;font-weight:700;">
   </div>
+
+  {{-- Entry form --}}
+  <div class="nc-card" id="ciFormCard">
+    <div class="nc-card-title" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>📻 Log a Station</span>
+      <span id="ciLiveCount" style="font-size:.8rem;font-weight:700;color:var(--muted);">0 stations</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 2fr auto;gap:.75rem;align-items:start;margin-bottom:.5rem;">
+      <div>
+        <label class="label">Callsign *</label>
+        <input type="text" id="ciCallsign" class="input" placeholder="e.g. G4BDS"
+               style="text-transform:uppercase;font-family:monospace;font-weight:800;font-size:.95rem;"
+               maxlength="20" autocomplete="off">
+        <div id="ciQrzName" style="font-size:.71rem;margin-top:.3rem;min-height:.85rem;font-weight:600;transition:color .2s;padding-left:2px;"></div>
+      </div>
+      <div>
+        <label class="label">Signal Report</label>
+        <input type="text" id="ciReport" class="input" placeholder="59" maxlength="10"
+               style="font-family:monospace;font-weight:700;">
+      </div>
+      <div>
+        <label class="label">Notes</label>
+        <input type="text" id="ciNotes" class="input" placeholder="Optional notes">
+      </div>
+      <div style="padding-top:1.6rem;">
+        <button onclick="logCheckin()" id="ciSubmitBtn" class="btn btn-primary" style="white-space:nowrap;width:100%;">
+          + Log
+        </button>
+      </div>
+    </div>
+    <div id="ciError" style="color:#C8102E;font-size:.78rem;margin-top:.25rem;display:none;padding:.4rem .6rem;background:#fff1f2;border-radius:6px;border:1px solid #fecdd3;"></div>
+  </div>
+
+  {{-- Log table --}}
+  <div class="nc-card" style="padding:0;overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--border);">
+      <div style="font-weight:800;color:var(--navy);font-size:.95rem;">Station Log</div>
+      <button onclick="clearLog()" style="font-size:.75rem;font-weight:700;color:#C8102E;background:none;border:1px solid #fecdd3;border-radius:6px;padding:.25rem .65rem;cursor:pointer;">
+        Clear All
+      </button>
+    </div>
+    <div id="ciLog" style="min-height:80px;"></div>
+    <div id="ciEmpty" style="text-align:center;padding:2.5rem;color:var(--muted);font-size:.85rem;display:none;">
+      <div style="font-size:1.5rem;margin-bottom:.5rem;">📭</div>
+      No stations logged yet
+    </div>
+  </div>
+
 </div>
+
 
 
 {{-- 7-DAY MODAL --}}
@@ -783,15 +814,29 @@ function pickCtrl(callsign) {
 
 <script>
 function logCheckin() {
-    var cs  = document.getElementById('ciCallsign').value.trim().toUpperCase();
-    var rep = document.getElementById('ciReport').value.trim();
+    var cs    = document.getElementById('ciCallsign').value.trim().toUpperCase();
+    var rep   = document.getElementById('ciReport').value.trim();
     var notes = document.getElementById('ciNotes').value.trim();
-    var err = document.getElementById('ciError');
+    var err   = document.getElementById('ciError');
     if (!cs) { err.textContent = 'Callsign is required'; err.style.display=''; return; }
     err.style.display = 'none';
+    // Guard: check server-side setting before logging
+    fetch('/net-status-json', {cache:'no-store'})
+    .then(function(r){ return r.json(); })
+    .then(function(status){
+        if (!status.station_logging) {
+            err.textContent = 'Station logging is not enabled — turn it on in Live Status Control first';
+            err.style.display = '';
+            return;
+        }
+        doLogCheckin(cs, rep, notes, err);
+    });
+}
+
+function doLogCheckin(cs, rep, notes, err) {
     fetch('{{ route("admin.events.station-log.store") }}', {
         method: 'POST',
-        headers: {'Content-Type':'application/json','X-CSRF-TOKEN':'{{ csrf_token() }}'},
+        headers: {'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content},
         body: JSON.stringify({callsign:cs, signal_report:rep, notes:notes})
     })
     .then(function(r){ return r.json(); })
@@ -800,15 +845,41 @@ function logCheckin() {
             document.getElementById('ciCallsign').value = '';
             document.getElementById('ciReport').value   = '';
             document.getElementById('ciNotes').value    = '';
+            document.getElementById('ciQrzName').textContent = '';
             loadLog();
+        } else if (d.error) {
+            err.textContent = d.error;
+            err.style.display = '';
         }
     });
+}
+
+function qrzLookup(cs) {
+    if (!cs || cs.length < 3) return;
+    var nameEl = document.getElementById('ciQrzName');
+    if (nameEl) { nameEl.textContent = '⏳ looking up...'; nameEl.style.color='var(--muted)'; }
+    fetch('/admin/events/station-log/qrz?callsign=' + encodeURIComponent(cs), {
+        headers: {'X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content, 'Accept':'application/json'}
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if (nameEl) {
+            if (d.name) {
+                nameEl.textContent = d.name + (d.location ? ' · ' + d.location : '');
+                nameEl.style.color = '#059669';
+            } else {
+                nameEl.textContent = 'Not found on QRZ';
+                nameEl.style.color = 'var(--muted)';
+            }
+        }
+    })
+    .catch(function(){ if(nameEl) nameEl.textContent = ''; });
 }
 
 function removeCheckin(id) {
     fetch('{{ url("admin/events/station-log") }}/' + id, {
         method: 'DELETE',
-        headers: {'X-CSRF-TOKEN':'{{ csrf_token() }}'}
+        headers: {'X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content}
     }).then(function(){ loadLog(); });
 }
 
@@ -816,7 +887,7 @@ function clearLog() {
     if (!confirm('Clear all logged stations?')) return;
     fetch('{{ route("admin.events.station-log.clear") }}', {
         method: 'POST',
-        headers: {'X-CSRF-TOKEN':'{{ csrf_token() }}'}
+        headers: {'X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content}
     }).then(function(){ loadLog(); });
 }
 
@@ -824,35 +895,86 @@ function loadLog() {
     fetch('{{ route("admin.events.station-log.index") }}')
     .then(function(r){ return r.json(); })
     .then(function(data){
-        var log = document.getElementById('ciLog');
-        var cnt = document.getElementById('ciCount');
+        var log   = document.getElementById('ciLog');
+        var empty = document.getElementById('ciEmpty');
+        var cnt   = document.getElementById('ciLiveCount');
         if (!log) return;
-        cnt.textContent = data.length;
+        if (cnt) cnt.textContent = data.length + ' station' + (data.length !== 1 ? 's' : '');
         if (!data.length) {
-            log.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:.85rem;">No stations logged yet</div>';
+            log.innerHTML = '';
+            if (empty) empty.style.display = '';
             return;
         }
+        if (empty) empty.style.display = 'none';
         log.innerHTML = data.map(function(e, i) {
             var time = new Date(e.checked_in_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-            return '<div style="display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem;background:#f8fafc;border-radius:8px;border:1px solid #e5e7eb;">'
-                + '<div style="font-size:.7rem;font-weight:700;color:var(--muted);min-width:32px;text-align:center;">' + (i+1) + '</div>'
-                + '<div style="font-size:.82rem;font-weight:800;font-family:monospace;color:var(--navy);min-width:80px;">' + e.callsign + '</div>'
-                + (e.signal_report ? '<div style="font-size:.75rem;font-weight:700;color:#059669;min-width:30px;">' + e.signal_report + '</div>' : '<div style="min-width:30px;"></div>')
-                + '<div style="flex:1;font-size:.78rem;color:var(--muted);">' + (e.name || '') + (e.notes ? ' · ' + e.notes : '') + '</div>'
-                + '<div style="font-size:.7rem;color:var(--muted);">' + time + '</div>'
-                + '<button onclick="removeCheckin(' + e.id + ')" style="background:none;border:none;cursor:pointer;color:#C8102E;font-size:.9rem;padding:0 .25rem;">✕</button>'
+            var even = i % 2 === 0;
+            return '<div style="display:grid;grid-template-columns:2rem 6rem 4rem 1fr auto auto;gap:.6rem;align-items:center;'
+                + 'padding:.6rem 1.25rem;background:' + (even ? '#fff' : '#f9fafb') + ';border-bottom:1px solid #f1f5f9;">'
+                + '<div style="font-size:.68rem;font-weight:800;color:#cbd5e1;text-align:center;">' + (i+1) + '</div>'
+                + '<div style="font-size:.85rem;font-weight:900;font-family:monospace;color:var(--navy);">' + e.callsign + '</div>'
+                + '<div style="font-size:.75rem;font-weight:700;color:#059669;font-family:monospace;">' + (e.signal_report || '—') + '</div>'
+                + '<div style="font-size:.78rem;color:#64748b;">'
+                    + (e.name ? '<span style="font-weight:700;color:#334155;">' + escHtml(e.name) + '</span>' : '')
+                    + (e.notes ? '<span style="color:#94a3b8;"> · ' + escHtml(e.notes) + '</span>' : '')
+                + '</div>'
+                + '<div style="font-size:.7rem;color:#94a3b8;font-family:monospace;white-space:nowrap;">' + time + '</div>'
+                + '<button onclick="removeCheckin(' + e.id + ')" title="Remove" '
+                    + 'style="background:none;border:none;cursor:pointer;color:#fca5a5;font-size:.85rem;padding:0 .2rem;line-height:1;transition:color .15s;" '
+                    + 'onmouseover="this.style.color='#C8102E'" onmouseout="this.style.color='#fca5a5'">✕</button>'
                 + '</div>';
         }).join('');
     });
 }
 
-// Load on tab switch and auto-refresh every 15s
+function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function updateStatusBanner() {
+    fetch('/net-status-json', {cache:'no-store'})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        var banner  = document.getElementById('ciStatusBanner');
+        var formCard = document.getElementById('ciFormCard');
+        var submitBtn = document.getElementById('ciSubmitBtn');
+        if (!banner) return;
+        if (!d.active) {
+            banner.style.background = '#f1f5f9';
+            banner.style.color      = '#64748b';
+            banner.innerHTML = '<span style="font-size:1rem;">⚫</span> Net is not currently active';
+            if (formCard) formCard.style.opacity = '.5';
+            if (submitBtn) submitBtn.disabled = true;
+        } else if (!d.station_logging) {
+            banner.style.background = '#fff7ed';
+            banner.style.color      = '#c2410c';
+            banner.innerHTML = '<span style="font-size:1rem;">⚠️</span> Station logging is <strong>disabled</strong> — enable it in the Live Status Control tab to log stations';
+            if (formCard) formCard.style.opacity = '.5';
+            if (submitBtn) submitBtn.disabled = true;
+        } else {
+            banner.style.background = '#f0fdf4';
+            banner.style.color      = '#15803d';
+            banner.innerHTML = '<span style="font-size:1rem;">🟢</span> Station logging is <strong>active</strong> — type a callsign and press Enter to log';
+            if (formCard) formCard.style.opacity = '1';
+            if (submitBtn) submitBtn.disabled = false;
+        }
+    });
+}
+
+// Load on tab switch and auto-refresh every 10s
 document.addEventListener('DOMContentLoaded', function(){
+    updateStatusBanner();
     loadLog();
-    setInterval(loadLog, 15000);
-    // Allow Enter key on callsign field
+    setInterval(function(){ updateStatusBanner(); loadLog(); }, 10000);
     var ci = document.getElementById('ciCallsign');
-    if (ci) ci.addEventListener('keydown', function(e){ if(e.key==='Enter') logCheckin(); });
+    if (ci) {
+        ci.addEventListener('keydown', function(e){ if(e.key==='Enter') logCheckin(); });
+        ci.addEventListener('blur', function(){ qrzLookup(ci.value.trim().toUpperCase()); });
+        ci.addEventListener('input', function(){
+            var el = document.getElementById('ciQrzName');
+            if (el) el.textContent = '';
+        });
+    }
 });
 </script>
 

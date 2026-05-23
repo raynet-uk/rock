@@ -433,7 +433,7 @@ body {
                 })();
                 </script>
                 @endif
-                <div id="netCheckinWrap" style="display:flex;flex-direction:column;align-items:center;gap:.1rem;">
+                <div id="netCheckinWrap" style="display:none;flex-direction:column;align-items:center;gap:.1rem;overflow:hidden;transition:max-width .5s cubic-bezier(.22,1,.36,1),opacity .4s ease;max-width:0;opacity:0;">
                     <div style="font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.35);">On Net</div>
                     <div id="netCheckinCount" style="font-size:1.1rem;font-weight:900;color:rgba(255,255,255,.9);font-family:monospace;line-height:1;">0</div>
                     <div style="font-size:.58rem;color:rgba(255,255,255,.3);font-weight:600;letter-spacing:.05em;">stations</div>
@@ -906,17 +906,44 @@ body {
                         ctrlSlideIn(fresh, slotTo, info);
                     }
                     // Update check-in counter
+                    var wrap    = document.getElementById('netCheckinWrap');
                     var countEl = document.getElementById('netCheckinCount');
-                    if (countEl && typeof d.checkins !== 'undefined') {
+                    var logging = !!d.station_logging;
+
+                    if (wrap) {
+                        var wasVisible = wrap.style.maxWidth !== '0' && wrap.style.maxWidth !== '';
+                        if (logging && !wasVisible) {
+                            // Animate in
+                            wrap.style.display   = 'flex';
+                            wrap.style.maxWidth  = '0';
+                            wrap.style.opacity   = '0';
+                            void wrap.offsetWidth;
+                            wrap.style.maxWidth  = '120px';
+                            wrap.style.opacity   = '1';
+                        } else if (!logging && wasVisible) {
+                            // Animate out
+                            wrap.style.maxWidth = '0';
+                            wrap.style.opacity  = '0';
+                            setTimeout(function(){ wrap.style.display = 'none'; }, 520);
+                        }
+                    }
+
+                    if (countEl && logging && typeof d.checkins !== 'undefined') {
                         var newCount = parseInt(d.checkins) || 0;
-                        var oldCount = parseInt(countEl.textContent) || 0;
+                        var oldCount = parseInt(countEl.dataset.prev !== undefined ? countEl.dataset.prev : countEl.textContent) || 0;
                         if (newCount !== oldCount) {
-                            countEl.textContent = newCount;
-                            countEl.style.animation = 'none';
-                            void countEl.offsetWidth;
-                            countEl.style.color = '#22c55e';
-                            countEl.style.animation = 'badgeFadeIn .4s ease forwards';
-                            setTimeout(function(){ countEl.style.color = ''; }, 1500);
+                            countEl.dataset.prev = newCount;
+                            countEl.textContent  = newCount;
+                            countEl.style.transition = 'color .3s';
+                            if (newCount > oldCount) {
+                                // Added — green flash then back to white
+                                countEl.style.color = '#22c55e';
+                                setTimeout(function(){ countEl.style.color = 'rgba(255,255,255,.9)'; }, 900);
+                            } else {
+                                // Removed — blue flash then back to white
+                                countEl.style.color = '#60a5fa';
+                                setTimeout(function(){ countEl.style.color = 'rgba(255,255,255,.9)'; }, 900);
+                            }
                         }
                     }
                     scheduleSlots(d.slots || []);
@@ -925,7 +952,7 @@ body {
         }
 
         pollCtrl();
-        setInterval(pollCtrl, 300000);
+        setInterval(pollCtrl, 10000);
     })();
     </script>
     @endif
