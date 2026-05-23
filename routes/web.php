@@ -1185,6 +1185,9 @@ Route::get('/net-status-json', function () {
 // Net station log routes
 Route::middleware(['web','auth','admin'])->prefix('admin/events')->name('admin.events.')->group(function () {
     Route::get('/station-log',            [\App\Http\Controllers\EventAdminController::class, 'stationLogIndex'])  ->name('station-log.index');
+    Route::get('/station-log/logging-status', function() {
+        return response()->json(['enabled' => \App\Models\Setting::get('net_station_logging','0') === '1']);
+    })->name('station-log.logging-status');
     Route::get('/station-log/qrz',         [\App\Http\Controllers\EventAdminController::class, 'stationLogQrz'])    ->name('station-log.qrz');
     Route::post('/station-log',           [\App\Http\Controllers\EventAdminController::class, 'stationLogStore'])  ->name('station-log.store');
     Route::delete('/station-log/{id}',    [\App\Http\Controllers\EventAdminController::class, 'stationLogDestroy'])->name('station-log.destroy');

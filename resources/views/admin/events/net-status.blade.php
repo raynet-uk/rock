@@ -820,15 +820,21 @@ function logCheckin() {
     var err   = document.getElementById('ciError');
     if (!cs) { err.textContent = 'Callsign is required'; err.style.display=''; return; }
     err.style.display = 'none';
-    // Guard: check server-side setting before logging
-    fetch('/net-status-json', {cache:'no-store'})
+    // Guard: check server-side setting directly
+    fetch('/admin/events/station-log/logging-status', {cache:'no-store',
+        headers:{'Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content}
+    })
     .then(function(r){ return r.json(); })
     .then(function(status){
-        if (!status.station_logging) {
+        if (!status.enabled) {
             err.textContent = 'Station logging is not enabled — turn it on in Live Status Control first';
             err.style.display = '';
             return;
         }
+        doLogCheckin(cs, rep, notes, err);
+    })
+    .catch(function(){
+        // If check fails, attempt anyway and let server decide
         doLogCheckin(cs, rep, notes, err);
     });
 }
@@ -919,9 +925,8 @@ function loadLog() {
                     + (e.notes ? '<span style="color:#94a3b8;"> · ' + escHtml(e.notes) + '</span>' : '')
                 + '</div>'
                 + '<div style="font-size:.7rem;color:#94a3b8;font-family:monospace;white-space:nowrap;">' + time + '</div>'
-                + '<button onclick="removeCheckin(' + e.id + ')" title="Remove" '
-                    + 'style="background:none;border:none;cursor:pointer;color:#fca5a5;font-size:.85rem;padding:0 .2rem;line-height:1;transition:color .15s;" '
-                    + 'onmouseover="this.style.color='#C8102E'" onmouseout="this.style.color='#fca5a5'">✕</button>'
+                + '<button data-remove="' + e.id + '" title="Remove" '
+                    + 'style="background:none;border:none;cursor:pointer;color:#fca5a5;font-size:.85rem;padding:0 .2rem;line-height:1;transition:color .15s;" >✕</button>'
                 + '</div>';
         }).join('');
     });
@@ -966,6 +971,22 @@ document.addEventListener('DOMContentLoaded', function(){
     updateStatusBanner();
     loadLog();
     setInterval(function(){ updateStatusBanner(); loadLog(); }, 10000);
+    // Delegated remove button handler — avoids quote nesting in JS strings
+    var ciLog = document.getElementById('ciLog');
+    if (ciLog) {
+        ciLog.addEventListener('click', function(e) {
+            var btn = e.target.closest('[data-remove]');
+            if (btn) removeCheckin(parseInt(btn.dataset.remove));
+        });
+        ciLog.addEventListener('mouseover', function(e) {
+            var btn = e.target.closest('[data-remove]');
+            if (btn) btn.style.color = '#C8102E';
+        });
+        ciLog.addEventListener('mouseout', function(e) {
+            var btn = e.target.closest('[data-remove]');
+            if (btn) btn.style.color = '#fca5a5';
+        });
+    }
     var ci = document.getElementById('ciCallsign');
     if (ci) {
         ci.addEventListener('keydown', function(e){ if(e.key==='Enter') logCheckin(); });
