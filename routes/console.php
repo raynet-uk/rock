@@ -83,3 +83,9 @@ Schedule::command('rsgb:refresh-news')
 Schedule::command('rsgb:refresh-region')
     ->everyThirtyMinutes()
     ->withoutOverlapping();
+
+// Auto-activate/deactivate nets based on schedule
+Schedule::command('net:run-scheduler')
+    ->everyMinute()
+    ->timezone('Europe/London')
+    ->withoutOverlapping();

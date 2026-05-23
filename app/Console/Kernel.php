@@ -1,5 +1,6 @@
 protected function schedule(Schedule $schedule): void
 {
+    $schedule->command('net:run-scheduler')->everyMinute();
     $schedule->command('rsgb:refresh-news')
         ->everyMinute()
         // ->withoutOverlapping()          // optional but good

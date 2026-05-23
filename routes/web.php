@@ -93,14 +93,68 @@ Route::get('/', function () {
     $alertStatus = AlertStatus::query()->first();
     $featuredPhotos = \App\Models\Photo::where('status','approved')->where('featured',true)->orderByDesc('created_at')->take(6)->get();
     $netActive = \App\Models\Setting::get('net_active','0') === '1';
-    $netData = $netActive ? [
-        'callsign'    => \App\Models\Setting::get('net_callsign',''),
-        'frequency'   => \App\Models\Setting::get('net_frequency',''),
-        'controller'  => \App\Models\Setting::get('net_controller',''),
-        'description' => \App\Models\Setting::get('net_description',''),
-        'start_time'  => \App\Models\Setting::get('net_start_time',''),
-        'end_time'    => \App\Models\Setting::get('net_end_time',''),
-    ] : null;
+    if ($netActive) {
+        $netStartTime = \App\Models\Setting::get('net_start_time','');
+        $netEndTime   = \App\Models\Setting::get('net_end_time','');
+        $now = \Carbon\Carbon::now()->timezone('Europe/London');
+        $nowTs = $now->timestamp;
+
+        $startTs = null;
+        $endTs   = null;
+        if ($netStartTime) {
+            $startCandidate = \Carbon\Carbon::createFromFormat('H:i', $netStartTime, 'Europe/London')
+                                ->setDate($now->year, $now->month, $now->day);
+            $endCandidate   = $netEndTime
+                ? \Carbon\Carbon::createFromFormat('H:i', $netEndTime, 'Europe/London')
+                                ->setDate($now->year, $now->month, $now->day)
+                : null;
+            if ($endCandidate && $endCandidate->lte($startCandidate)) $endCandidate->addDay();
+            $windowOpen = $startCandidate->copy()->subMinutes(90);
+            if ($nowTs >= $windowOpen->timestamp && (!$endCandidate || $nowTs < $endCandidate->timestamp)) {
+                $startTs = $startCandidate->timestamp;
+                $endTs   = $endCandidate ? $endCandidate->timestamp : null;
+            } else {
+                $startTomorrow  = $startCandidate->copy()->addDay();
+                $endTomorrow    = $endCandidate ? $endCandidate->copy()->addDay() : null;
+                $windowTomorrow = $startTomorrow->copy()->subMinutes(90);
+                if ($nowTs >= $windowTomorrow->timestamp && (!$endTomorrow || $nowTs < $endTomorrow->timestamp)) {
+                    $startTs = $startTomorrow->timestamp;
+                    $endTs   = $endTomorrow ? $endTomorrow->timestamp : null;
+                }
+            }
+        }
+
+        // Resolve active controller from time slots
+        $nowTime    = \Carbon\Carbon::now('Europe/London')->format('H:i');
+        $ctrlSlots  = json_decode(\App\Models\Setting::get('net_controller_slots','[]'), true) ?? [];
+        $activeController = count($ctrlSlots) ? '' : \App\Models\Setting::get('net_controller','');
+        foreach ($ctrlSlots as $slot) {
+            if (!empty($slot['callsign']) && !empty($slot['from']) && !empty($slot['to'])) {
+                if ($nowTime >= $slot['from'] && $nowTime < $slot['to']) {
+                    $activeController = strtoupper($slot['callsign']);
+                    break;
+                }
+            }
+        }
+
+        $netData = [
+            'callsign'         => \App\Models\Setting::get('net_callsign',''),
+            'frequency'        => \App\Models\Setting::get('net_frequency',''),
+            'controller'       => $activeController,
+            'controller_slots' => $ctrlSlots,
+            'description'      => \App\Models\Setting::get('net_description',''),
+            'announcement'     => \App\Models\Setting::get('net_announcement',''),
+            'band'             => \App\Models\Setting::get('net_band',''),
+            'priority'         => \App\Models\Setting::get('net_priority','routine'),
+            'start_time'       => $netStartTime,
+            'end_time'         => $netEndTime,
+            'start_ts'         => $startTs ?? $nowTs,
+            'end_ts'           => $endTs   ?? 0,
+            'now_ts'           => $nowTs,
+        ];
+    } else {
+        $netData = null;
+    }
     return view('pages.home', [
         'featuredPhotos' => $featuredPhotos,
         'nextEvent'   => $upcoming->first(),
@@ -885,6 +939,12 @@ Route::middleware('admin')->group(function () {
     // ── Events ────────────────────────────────────────────────────────────
     Route::get('/admin/events/net-status',      [EventAdminController::class, 'netStatus'])    ->name('admin.events.net-status');
     Route::post('/admin/events/net-status',     [EventAdminController::class, 'updateNetStatus'])->name('admin.events.net-status.update');
+    Route::post('/admin/events/net-schedule',   [EventAdminController::class, 'storeNetSchedule'])->name('admin.events.net-schedule.store');
+    Route::patch('/admin/events/net-schedule/{schedule}', [EventAdminController::class, 'updateNetSchedule'])->name('admin.events.net-schedule.update');
+    Route::delete('/admin/events/net-schedule/{schedule}',[EventAdminController::class, 'destroyNetSchedule'])->name('admin.events.net-schedule.destroy');
+    Route::post('/admin/events/net-schedule/{schedule}/clone',[EventAdminController::class, 'cloneNetSchedule'])->name('admin.events.net-schedule.clone');
+    Route::post('/admin/events/net-schedule/{schedule}/toggle',[EventAdminController::class, 'toggleNetSchedule'])->name('admin.events.net-schedule.toggle');
+    Route::post('/admin/events/net-status',     [EventAdminController::class, 'updateNetStatus'])->name('admin.events.net-status.update');
         Route::get('/admin/events',            [EventAdminController::class, 'index'])         ->name('admin.events');
     Route::post('/admin/events/{event}/availability-request', [EventAdminController::class, 'sendAvailabilityRequest'])->name('admin.events.availability-request');
     Route::post('/admin/events',           [EventAdminController::class, 'store'])         ->name('admin.events.store');
@@ -1054,3 +1114,51 @@ Route::prefix('admin/temporary-guests')->name('admin.temporary-guests.')->middle
     Route::post  ('/{user}/disable',   [TemporaryGuestController::class, 'disable'])   ->name('disable');
     Route::post  ('/{user}/reinstate', [TemporaryGuestController::class, 'reinstate']) ->name('reinstate');
 });
+
+// Public net status JSON — used by homepage banner polling
+Route::get('/net-status-json', function () {
+    $active = \App\Models\Setting::get('net_active', '0') === '1';
+    if (!$active) {
+        return response()->json(['active' => false, 'controller' => '', 'callsign' => '', 'frequency' => '', 'announcement' => '']);
+    }
+    $nowTime = \Carbon\Carbon::now('Europe/London')->format('H:i');
+    $slots   = json_decode(\App\Models\Setting::get('net_controller_slots', '[]'), true) ?? [];
+    $controller = count($slots) ? '' : \App\Models\Setting::get('net_controller', '');
+    $nextChange = null;
+    foreach ($slots as &$slot) {
+        if (!empty($slot['callsign']) && !empty($slot['from']) && !empty($slot['to'])) {
+            if ($nowTime >= $slot['from'] && $nowTime < $slot['to']) {
+                $controller = strtoupper($slot['callsign']);
+            }
+            if ($slot['from'] > $nowTime) {
+                $mins = (strtotime($slot['from']) - strtotime($nowTime)) / 60;
+                if ($nextChange === null || $mins < $nextChange) $nextChange = (int)$mins;
+            }
+            if ($slot['to'] > $nowTime) {
+                $mins = (strtotime($slot['to']) - strtotime($nowTime)) / 60;
+                if ($nextChange === null || $mins < $nextChange) $nextChange = (int)$mins;
+            }
+            $cs   = strtoupper($slot['callsign']);
+            $user = \App\Models\User::whereRaw('UPPER(callsign) = ?', [$cs])->first();
+            $slot['info'] = $user ? ['name' => $user->name, 'title' => $user->operator_title ?? null] : null;
+        }
+    }
+    unset($slot);
+    $currentCtrlInfo = null;
+    if ($controller) {
+        $user = \App\Models\User::whereRaw('UPPER(callsign) = ?', [strtoupper($controller)])->first();
+        $currentCtrlInfo = $user ? ['name' => $user->name, 'title' => $user->operator_title ?? null] : null;
+    }
+    return response()->json([
+        'active'          => true,
+        'controller'      => $controller,
+        'controller_info' => $currentCtrlInfo,
+        'callsign'        => strtoupper(\App\Models\Setting::get('net_callsign', '')),
+        'frequency'       => \App\Models\Setting::get('net_frequency', ''),
+        'announcement'    => \App\Models\Setting::get('net_announcement', ''),
+        'priority'        => \App\Models\Setting::get('net_priority', 'routine'),
+        'next_change'     => $nextChange,
+        'slots'           => $slots,
+        'now'             => $nowTime,
+    ]);
+})->middleware('throttle:60,1');

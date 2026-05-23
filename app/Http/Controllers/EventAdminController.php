@@ -593,23 +593,94 @@ class EventAdminController extends Controller
         ]);
     }
     public function netStatus() {
+        $schedules = \App\Models\NetSchedule::orderBy('start_time')->get();
+        $sessions  = \Illuminate\Support\Facades\DB::table('net_sessions')->latest()->limit(10)->get();
         $settings = [
-            'net_active'      => \App\Models\Setting::get('net_active', '0'),
-            'net_callsign'    => \App\Models\Setting::get('net_callsign', ''),
-            'net_frequency'   => \App\Models\Setting::get('net_frequency', ''),
-            'net_description' => \App\Models\Setting::get('net_description', ''),
-            'net_controller'  => \App\Models\Setting::get('net_controller', ''),
-            'net_start_time'  => \App\Models\Setting::get('net_start_time', ''),
-            'net_end_time'    => \App\Models\Setting::get('net_end_time', ''),
+            'net_active'            => \App\Models\Setting::get('net_active', '0'),
+            'net_callsign'          => \App\Models\Setting::get('net_callsign', ''),
+            'net_frequency'         => \App\Models\Setting::get('net_frequency', ''),
+            'net_description'       => \App\Models\Setting::get('net_description', ''),
+            'net_announcement'      => \App\Models\Setting::get('net_announcement', ''),
+            'net_controller'        => \App\Models\Setting::get('net_controller', ''),
+            'net_controller_slots'  => \App\Models\Setting::get('net_controller_slots', '[]'),
+            'net_band'              => \App\Models\Setting::get('net_band', ''),
+            'net_priority'          => \App\Models\Setting::get('net_priority', 'routine'),
+            'net_start_time'        => \App\Models\Setting::get('net_start_time', ''),
+            'net_end_time'          => \App\Models\Setting::get('net_end_time', ''),
         ];
-        return view('admin.events.net-status', compact('settings'));
+        return view('admin.events.net-status', compact('settings', 'schedules', 'sessions'));
+    }
+
+    public function storeNetSchedule(\Illuminate\Http\Request $request) {
+        $request->validate(['name'=>'required|string|max:100','callsign'=>'required|string|max:30','frequency'=>'nullable|string|max:30','controller'=>'nullable|string|max:30','description'=>'nullable|string','days_of_week'=>'required|array|min:1','start_time'=>'required|date_format:H:i','end_time'=>'required|date_format:H:i',]);
+        \App\Models\NetSchedule::create(['name'=>$request->name,'callsign'=>strtoupper($request->callsign),'frequency'=>$request->frequency,'band'=>$request->band,'controller'=>$request->controller ? strtoupper($request->controller) : null,'controller_slots'=>$request->controller_slots ?? [],'description'=>$request->description,'announcement'=>$request->announcement,'days_of_week'=>$request->days_of_week,'repeat_type'=>$request->repeat_type ?? 'weekly','priority'=>$request->priority ?? 'routine','start_time'=>$request->start_time,'end_time'=>$request->end_time,'auto_activate'=>$request->boolean('auto_activate'),'is_active'=>true,]);
+        return back()->with('success', 'Schedule created.');
+    }
+
+
+    public function updateNetSchedule(\Illuminate\Http\Request $request, $id) {
+        $s = \App\Models\NetSchedule::findOrFail($id);
+        $request->validate(['name'=>'required|string|max:100','callsign'=>'required|string|max:30','frequency'=>'nullable|string|max:30','controller'=>'nullable|string|max:30','description'=>'nullable|string','days_of_week'=>'required|array|min:1','start_time'=>'required|date_format:H:i','end_time'=>'required|date_format:H:i']);
+        $s->update(['name'=>$request->name,'callsign'=>strtoupper($request->callsign),'frequency'=>$request->frequency,'band'=>$request->band,'controller'=>$request->controller ? strtoupper($request->controller) : null,'controller_slots'=>$request->controller_slots ?? [],'description'=>$request->description,'announcement'=>$request->announcement,'days_of_week'=>$request->days_of_week,'repeat_type'=>$request->repeat_type ?? 'weekly','priority'=>$request->priority ?? 'routine','start_time'=>$request->start_time,'end_time'=>$request->end_time,'auto_activate'=>$request->boolean('auto_activate'),'is_active'=>$request->boolean('is_active')]);
+        return back()->with('success', 'Schedule updated.');
+    }
+
+    public function destroyNetSchedule($id) {
+        \App\Models\NetSchedule::findOrFail($id)->delete();
+        return back()->with('success', 'Schedule deleted.');
+    }
+
+    public function toggleNetSchedule($id) {
+        $s = \App\Models\NetSchedule::findOrFail($id);
+        $s->update(['is_active' => !$s->is_active]);
+        return back()->with('success', 'Schedule ' . ($s->is_active ? 'enabled' : 'disabled') . '.');
+    }
+
+
+    public function cloneNetSchedule(\Illuminate\Http\Request $request, $id) {
+        $request->validate(['name'=>'required|string|max:100','days_of_week'=>'required|array|min:1']);
+        $orig = \App\Models\NetSchedule::findOrFail($id);
+        $clone = $orig->replicate();
+        $clone->name = $request->name;
+        $clone->days_of_week = $request->days_of_week;
+        $clone->is_active = false;
+        $clone->save();
+        return back()->with('success', 'Schedule cloned successfully.');
     }
 
     public function updateNetStatus(\Illuminate\Http\Request $request) {
-        $fields = ['net_active','net_callsign','net_frequency','net_description','net_controller','net_start_time','net_end_time'];
+        // Checkbox only submits when checked — handle explicitly
+        \App\Models\Setting::set('net_active', $request->has('net_active') ? '1' : '0');
+
+        $fields = ['net_callsign','net_frequency','net_band','net_description','net_announcement','net_priority','net_start_time','net_end_time'];
         foreach ($fields as $key) {
             \App\Models\Setting::set($key, $request->input($key, ''));
         }
+
+        // DEBUG — log everything received
+        \Log::info('NET STATUS POST', ['all' => $request->all(), 'json_field' => $request->input('net_controller_slots_json')]);
+        // DEBUG — log everything received
+        \Log::info('NET STATUS POST', ['all' => $request->all(), 'json_field' => $request->input('net_controller_slots_json')]);
+        // Save controller time slots — submitted as a single JSON string
+        $slotsJson = $request->input('net_controller_slots_json', '[]');
+        $rawSlots  = json_decode($slotsJson, true);
+        $slots     = is_array($rawSlots)
+            ? array_values(array_filter($rawSlots, fn($s) => !empty($s['callsign'])))
+            : [];
+        \App\Models\Setting::set('net_controller_slots', json_encode($slots));
+
+        // Derive net_controller from the currently active time slot only
+        // If slots exist but none is active right now, store empty — endpoint computes live
+        $nowTime = \Carbon\Carbon::now('Europe/London')->format('H:i');
+        $activeCtrl = '';
+        foreach ($slots as $slot) {
+            if (!empty($slot['from']) && !empty($slot['to']) && $nowTime >= $slot['from'] && $nowTime < $slot['to']) {
+                $activeCtrl = strtoupper($slot['callsign']);
+                break;
+            }
+        }
+        \App\Models\Setting::set('net_controller', $activeCtrl);
+
         return back()->with('success', 'Net status updated.');
     }
 

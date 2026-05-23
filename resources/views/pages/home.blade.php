@@ -304,15 +304,37 @@ body {
     {{-- Live Net Strapline --}}
     @if(!empty($netData))
     @php
-        $netStart = $netData['start_time'] ?? '';
-        $netEnd   = $netData['end_time']   ?? '';
-        $hideAfterEnd = false;
-        if ($netEnd) {
-            try {
-                $endToday = \Carbon\Carbon::today()->setTimeFromTimeString($netEnd);
-                if (\Carbon\Carbon::now()->gt($endToday)) { $hideAfterEnd = true; }
-            } catch(\Exception $e) {}
+        $bandMeta = \App\Models\NetSchedule::$bands[$netData['band'] ?? ''] ?? null;
+        $priorityMeta = \App\Models\NetSchedule::$priorities[$netData['priority'] ?? 'routine'] ?? \App\Models\NetSchedule::$priorities['routine'];
+        $isEmergency = ($netData['priority'] ?? 'routine') === 'emergency';
+        $isUrgent    = ($netData['priority'] ?? 'routine') === 'urgent';
+        // Resolve active controller from time slots
+        // If slots defined, only show a controller when one is currently time-active
+        $nowTime = \Carbon\Carbon::now('Europe/London')->format('H:i');
+        $ctrlSlots = $netData['controller_slots'] ?? [];
+        $activeController = count($ctrlSlots) ? '' : ($netData['controller'] ?? '');
+        foreach ($ctrlSlots as $slot) {
+            if (!empty($slot['callsign']) && !empty($slot['from']) && !empty($slot['to'])) {
+                if ($nowTime >= $slot['from'] && $nowTime < $slot['to']) {
+                    $activeController = strtoupper($slot['callsign']);
+                    break;
+                }
+            }
         }
+    @endphp
+    @if(!empty($netData['announcement']))
+    <div style="background:{{ $isEmergency ? '#7f1d1d' : ($isUrgent ? '#78350f' : '#0f172a') }};border-bottom:1px solid {{ $priorityMeta['colour'] }};padding:.5rem 1rem;text-align:center;">
+        <span style="font-size:.78rem;font-weight:800;color:{{ $priorityMeta['colour'] }};letter-spacing:.05em;text-transform:uppercase;">📢 {{ $netData['announcement'] }}</span>
+    </div>
+    @endif
+    {{-- Original banner starts --}}
+    @php
+        $netStart    = $netData['start_time'] ?? '';
+        $netEnd      = $netData['end_time']   ?? '';
+        $netStartTs  = $netData['start_ts']   ?? 0;
+        $netEndTs    = $netData['end_ts']      ?? 0;
+        // Hide banner if net end timestamp has already passed
+        $hideAfterEnd = $netEndTs && now()->timestamp >= $netEndTs;
         $isAuth = auth()->check();
     @endphp
     @if(!$hideAfterEnd)
@@ -320,90 +342,479 @@ body {
         <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(200,16,46,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(200,16,46,.04) 1px,transparent 1px);background-size:32px 32px;pointer-events:none;"></div>
         <div style="position:absolute;top:-40px;left:15%;width:300px;height:120px;background:radial-gradient(ellipse,rgba(200,16,46,.25) 0%,transparent 70%);pointer-events:none;"></div>
         <div style="position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(200,16,46,.05),transparent);animation:nScan 4s ease-in-out infinite;pointer-events:none;"></div>
-        <div style="max-width:1200px;margin:0 auto;padding:1rem 1.5rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;">
-            {{-- Pulse badge --}}
-            <div style="display:flex;align-items:center;gap:.5rem;flex-shrink:0;">
-                <div style="position:relative;width:12px;height:12px;">
+        <style>
+        .net-inner{max-width:1200px;margin:0 auto;padding:.85rem 1rem;display:grid;grid-template-columns:auto 1px 1fr auto;align-items:center;gap:1rem;}
+        .net-divider{width:1px;height:32px;background:linear-gradient(to bottom,transparent,rgba(200,16,46,.5),transparent);}
+        .net-right{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;justify-content:flex-end;}
+        .net-meta{text-align:center;}
+        .net-meta-label{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.35);margin-bottom:.1rem;}
+        .net-meta-value{font-size:.85rem;font-weight:800;color:rgba(255,255,255,.85);font-family:monospace;}
+        .net-vdiv{width:1px;height:24px;background:rgba(255,255,255,.1);}
+        .net-join{background:linear-gradient(135deg,#C8102E,#8b0000);color:#fff;font-size:.75rem;font-weight:800;padding:.4rem .85rem;border-radius:999px;text-decoration:none;letter-spacing:.05em;border:1px solid rgba(200,16,46,.4);white-space:nowrap;}
+        @media(max-width:640px){
+            .net-inner{grid-template-columns:1fr;gap:.6rem;}
+            .net-divider{display:none;}
+            .net-right{justify-content:flex-start;gap:.75rem;}
+            .net-vdiv{display:none;}
+        }
+        </style>
+        <div class="net-inner">
+            {{-- Badge --}}
+            <div style="display:flex;align-items:center;gap:.5rem;">
+                <div style="position:relative;width:11px;height:11px;flex-shrink:0;">
                     <span style="position:absolute;inset:0;background:#C8102E;border-radius:50%;animation:nPing 1.5s ease-in-out infinite;opacity:.6;"></span>
                     <span style="position:absolute;inset:1px;background:#ff1a3a;border-radius:50%;"></span>
                 </div>
-                <span id="netStatusLabel" style="font-size:.65rem;font-weight:900;text-transform:uppercase;letter-spacing:.2em;color:#ff4466;">Live Net</span>
+                <span id="netStatusLabel" style="font-size:.62rem;font-weight:900;text-transform:uppercase;letter-spacing:.2em;color:#ff4466;white-space:nowrap;">Live Net</span>
             </div>
-            <div style="width:1px;height:36px;background:linear-gradient(to bottom,transparent,rgba(200,16,46,.5),transparent);flex-shrink:0;"></div>
-            {{-- Callsign + frequency --}}
-            <div style="flex:1;min-width:0;">
-                <div style="display:flex;align-items:baseline;gap:.75rem;flex-wrap:wrap;">
-                    <span style="font-size:1.15rem;font-weight:900;color:#fff;letter-spacing:.02em;font-family:monospace;">{{ strtoupper($netData['callsign']) }}</span>
-                    @if($isAuth && !empty($netData['frequency']))
-                    <span style="font-size:.95rem;font-weight:700;color:#C8102E;font-family:monospace;background:rgba(200,16,46,.1);border:1px solid rgba(200,16,46,.3);padding:.1rem .5rem;border-radius:4px;">{{ $netData['frequency'] }}</span>
+            {{-- Divider --}}
+            <div class="net-divider"></div>
+            {{-- Callsign + info --}}
+            <div style="min-width:0;">
+                <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;">
+                    <span style="font-size:1.05rem;font-weight:900;color:#fff;font-family:monospace;">{{ strtoupper($netData['callsign']) }}</span>
+                    @auth
+                    @if(!empty($bandMeta))
+                    <span style="font-size:.72rem;font-weight:900;color:{{ $bandMeta['colour'] }};background:{{ $bandMeta['bg'] }};border:1px solid {{ $bandMeta['border'] }};padding:.15rem .5rem;border-radius:4px;font-family:monospace;letter-spacing:.05em;">{{ $bandMeta['label'] }}</span>
                     @endif
+                    @if(!empty($netData['frequency']))
+                    <span style="font-size:.88rem;font-weight:700;color:#C8102E;font-family:monospace;background:rgba(200,16,46,.1);border:1px solid rgba(200,16,46,.3);padding:.1rem .45rem;border-radius:4px;">{{ $netData['frequency'] }}</span>
+                    @endif
+                    @endauth
                 </div>
                 @if(!empty($netData['description']))
-                <div style="font-size:.82rem;color:rgba(255,255,255,.55);margin-top:.2rem;">{{ $netData['description'] }}</div>
+                <div style="font-size:.79rem;color:rgba(255,255,255,.5);margin-top:.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ $netData['description'] }}</div>
                 @endif
-                <div id="netTimerDisplay" style="margin-top:.3rem;display:none;">
-                    <span id="netTimerBadge" style="font-size:.72rem;font-weight:800;padding:.2rem .6rem;border-radius:999px;font-family:monospace;"></span>
+                <div id="netTimerDisplay" style="margin-top:.25rem;display:none;">
+                    <span id="netTimerBadge" style="font-size:.7rem;font-weight:800;padding:.15rem .55rem;border-radius:999px;font-family:monospace;"></span>
                 </div>
             </div>
-            {{-- Right: times, controller, group --}}
-            <div style="display:flex;align-items:center;gap:1.25rem;flex-shrink:0;flex-wrap:wrap;">
+            {{-- Right side --}}
+            <div class="net-right">
                 @if($netStart)
-                <div style="text-align:center;">
-                    <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.35);margin-bottom:.15rem;">Net Time</div>
-                    <div style="font-size:.85rem;font-weight:800;color:rgba(255,255,255,.85);font-family:monospace;">
-                        {{ \Carbon\Carbon::createFromTimeString($netStart)->format('H:i') }}@if($netEnd) &ndash; {{ \Carbon\Carbon::createFromTimeString($netEnd)->format('H:i') }}@endif
+                <div class="net-meta">
+                    <div class="net-meta-label">Net Time</div>
+                    <div class="net-meta-value">{{ \Carbon\Carbon::createFromTimeString($netStart)->format('H:i') }}@if($netEnd)&ndash;{{ \Carbon\Carbon::createFromTimeString($netEnd)->format('H:i') }}@endif</div>
+                </div>
+                <div class="net-vdiv"></div>
+                @endif
+                <div class="net-meta" id="netCtrlWrap" style="display:none;overflow:visible;position:relative;padding:2px 6px;">
+                    <svg id="ctrlRing" viewBox="0 0 60 60" width="60" height="60" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;display:none;opacity:.85;">
+                        <circle cx="30" cy="30" r="26" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="2.5"/>
+                        <circle id="ctrlRingArc" cx="30" cy="30" r="26" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-dasharray="163.4" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 30 30)" style="transition:stroke .6s;"/>
+                    </svg>
+                    <div class="net-meta-label">Controller</div>
+                    <div style="position:relative;min-height:1.1em;">
+                        <div class="net-meta-value" id="netCtrlDisplay" style="position:relative;z-index:1;"></div>
+                        <div id="netCtrlGhost" style="position:absolute;top:0;left:0;right:0;font-size:.85rem;font-weight:800;font-family:monospace;color:rgba(255,255,255,.85);pointer-events:none;opacity:0;text-align:center;white-space:nowrap;"></div>
                     </div>
+                    <div id="netCtrlName" style="font-size:.6rem;color:rgba(255,255,255,.4);font-weight:600;letter-spacing:.03em;margin-top:.12rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;"></div>
                 </div>
-                <div style="width:1px;height:28px;background:rgba(255,255,255,.1);"></div>
+                <div class="net-vdiv" id="netCtrlDivider" style="display:none;"></div>
+                @if(!empty($activeController))
+                <script>
+                (function(){
+                    var w = document.getElementById('netCtrlWrap');
+                    var d = document.getElementById('netCtrlDivider');
+                    var el = document.getElementById('netCtrlDisplay');
+                    if (w && el) {
+                        el.textContent = '{{ strtoupper($activeController) }}';
+                        w.style.display = '';
+                        if (d) d.style.display = '';
+                    }
+                })();
+                </script>
                 @endif
-                @if($isAuth && !empty($netData['controller']))
-                <div style="text-align:center;">
-                    <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.35);margin-bottom:.15rem;">Controller</div>
-                    <div style="font-size:.9rem;font-weight:800;color:#fff;font-family:monospace;letter-spacing:.05em;">{{ strtoupper($netData['controller']) }}</div>
-                </div>
-                <div style="width:1px;height:28px;background:rgba(255,255,255,.1);"></div>
-                @endif
-                <div style="text-align:center;">
-                    <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.35);margin-bottom:.15rem;">Group</div>
-                    <div style="font-size:.78rem;font-weight:700;color:rgba(255,255,255,.7);">{{ \App\Helpers\RaynetSetting::groupName() }}</div>
-                </div>
-                <a href="{{ route('members') }}" style="background:linear-gradient(135deg,#C8102E,#8b0000);color:#fff;font-size:.75rem;font-weight:800;padding:.4rem .9rem;border-radius:999px;text-decoration:none;letter-spacing:.05em;border:1px solid rgba(200,16,46,.4);white-space:nowrap;">Join Net →</a>
+                <a href="{{ route('members') }}" class="net-join">Join Net →</a>
             </div>
         </div>
         @verbatim
         <style>
         @keyframes nPing{0%,100%{transform:scale(1);opacity:.6;}50%{transform:scale(2.2);opacity:0;}}
         @keyframes nScan{0%{left:-50%;}100%{left:150%;}}
+        @keyframes ctrlRedPulse{0%,100%{color:#ff4444;opacity:1;}50%{color:#ff0000;opacity:.4;}}
+        @keyframes ctrlGreenBlink{0%,100%{color:#22c55e;opacity:1;}50%{opacity:.15;}}
+        @keyframes ctrlSlideIn{0%{max-width:0;opacity:0;transform:translateX(18px);}100%{max-width:200px;opacity:1;transform:translateX(0);}}
+        @keyframes badgeFadeOut{0%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(-8px) scale(.92);}}
+        @keyframes badgeFadeIn{0%{opacity:0;transform:translateY(8px) scale(.92);}100%{opacity:1;transform:translateY(0) scale(1);}}
+        @keyframes lblFlash{0%,100%{opacity:1;}40%{opacity:0;}}
+        @keyframes ghostDrift{0%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(-20px) scale(.9);}}
+        @keyframes emergencyHeartbeat{0%,100%{opacity:1;}14%{opacity:.7;}28%{opacity:1;}42%{opacity:.75;}56%{opacity:1;}}
+        @keyframes urgentPulse{0%,100%{opacity:1;}50%{opacity:.86;}}
+        @keyframes flashFade{0%{opacity:.75;}50%{opacity:.6;}100%{opacity:0;}}
         </style>
         @endverbatim
     </div>
     <script>
     (function(){
-        var s='{{ $netStart }}', e='{{ $netEnd }}';
-        function pt(t){if(!t)return null;var p=t.split(':'),n=new Date();return new Date(n.getFullYear(),n.getMonth(),n.getDate(),+p[0],+p[1],0);}
-        function fmt(ms){var sec=Math.floor(Math.abs(ms)/1000),h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),x=sec%60;return h>0?h+'h '+('0'+m).slice(-2)+'m '+('0'+x).slice(-2)+'s':('0'+m).slice(-2)+'m '+('0'+x).slice(-2)+'s';}
+        // Unix timestamps injected from PHP (seconds) — no string parsing, no timezone bugs
+        var startTs = {{ $netData['start_ts'] ?? 0 }};
+        var endTs   = {{ $netData['end_ts']   ?? 0 }};
+
+        function fmt(sec){
+            sec = Math.abs(Math.floor(sec));
+            var h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;
+            return h>0
+                ? h+'h '+('0'+m).slice(-2)+'m '+('0'+s).slice(-2)+'s'
+                : ('0'+m).slice(-2)+'m '+('0'+s).slice(-2)+'s';
+        }
+
+        var _netState = 'unknown'; // track state to detect transitions
+
+        function animateBadgeTransition(badge, lbl, newText, newBadgeCss, newLblText, newLblColor) {
+            // Phase 1: fade current badge out upward
+            badge.style.animation = 'none';
+            void badge.offsetWidth;
+            badge.style.animation = 'badgeFadeOut 0.35s ease forwards';
+            if (lbl) {
+                lbl.style.animation = 'none';
+                void lbl.offsetWidth;
+                lbl.style.animation = 'lblFlash 0.35s ease forwards';
+            }
+            setTimeout(function() {
+                // Phase 2: swap content and fade in downward
+                badge.style.cssText = newBadgeCss;
+                badge.textContent   = newText;
+                badge.style.animation = 'badgeFadeIn 0.4s cubic-bezier(.22,1,.36,1) forwards';
+                if (lbl) {
+                    lbl.textContent   = newLblText;
+                    lbl.style.color   = newLblColor;
+                    lbl.style.animation = 'badgeFadeIn 0.4s cubic-bezier(.22,1,.36,1) forwards';
+                }
+            }, 370);
+        }
+
         function tick(){
-            var now=new Date(),start=pt(s),end=pt(e);
-            var banner=document.getElementById('netBanner'),disp=document.getElementById('netTimerDisplay'),badge=document.getElementById('netTimerBadge'),lbl=document.getElementById('netStatusLabel');
-            if(!banner)return;
-            if(end&&now>end){banner.style.display='none';return;}
-            if(!start||!disp||!badge)return;
-            var diff=now-start,pre=start-now;
-            if(diff>=0){
-                disp.style.display='block';
-                badge.style.cssText='font-size:.72rem;font-weight:800;padding:.2rem .6rem;border-radius:999px;font-family:monospace;background:rgba(200,16,46,.2);border:1px solid rgba(200,16,46,.5);color:#ff6688;';
-                badge.textContent='⏱ On Air '+fmt(diff);
-                if(lbl)lbl.textContent='Live Now';
-            } else if(pre<=90*60*1000){
-                disp.style.display='block';
-                badge.style.cssText='font-size:.72rem;font-weight:800;padding:.2rem .6rem;border-radius:999px;font-family:monospace;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);color:#fbbf24;';
-                badge.textContent='⏳ Starting in '+fmt(pre);
-                if(lbl){lbl.textContent='Starting Soon';lbl.style.color='#fbbf24';}
+            var now     = Math.floor(Date.now()/1000);
+            var banner  = document.getElementById('netBanner');
+            var disp    = document.getElementById('netTimerDisplay');
+            var badge   = document.getElementById('netTimerBadge');
+            var lbl     = document.getElementById('netStatusLabel');
+            if (!banner) return;
+
+            // Hide banner once net has ended
+            if (endTs && now >= endTs) {
+                banner.style.animation = 'none';
+                void banner.offsetWidth;
+                banner.style.animation = 'badgeFadeOut 0.5s ease forwards';
+                setTimeout(function(){ banner.style.display = 'none'; }, 520);
+                return;
+            }
+
+            var secsToStart = startTs - now;
+            var secsOnAir   = now - startTs;
+
+            if (secsToStart <= 0) {
+                // ── NET IS LIVE ──
+                disp.style.display = 'block';
+                if (_netState !== 'live') {
+                    // Transition animation — was Starting Soon, now Live
+                    animateBadgeTransition(
+                        badge, lbl,
+                        '⏱ On Air ' + (startTs > 0 ? fmt(secsOnAir) : '—'),
+                        'font-size:.72rem;font-weight:800;padding:.2rem .6rem;border-radius:999px;font-family:monospace;background:rgba(200,16,46,.2);border:1px solid rgba(200,16,46,.5);color:#ff6688;',
+                        'Live Now', '#ff4466'
+                    );
+                    _netState = 'live';
+                } else {
+                    // Already live — just update the counter text quietly
+                    badge.textContent = '⏱ On Air ' + (startTs > 0 ? fmt(secsOnAir) : '—');
+                }
+
+            } else if (secsToStart <= 90*60) {
+                // ── STARTING SOON ──
+                disp.style.display = 'block';
+                if (_netState !== 'soon') {
+                    animateBadgeTransition(
+                        badge, lbl,
+                        '⏳ Starting in ' + fmt(secsToStart),
+                        'font-size:.72rem;font-weight:800;padding:.2rem .6rem;border-radius:999px;font-family:monospace;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);color:#fbbf24;',
+                        'Starting Soon', '#fbbf24'
+                    );
+                    _netState = 'soon';
+                } else {
+                    badge.textContent = '⏳ Starting in ' + fmt(secsToStart);
+                }
+
             } else {
-                disp.style.display='none';
+                disp.style.display = 'none';
+                _netState = 'hidden';
             }
         }
-        tick();setInterval(tick,1000);
+
+        tick();
+        setInterval(tick, 1000);
+
+        // ── Controller live-polling + precision slot scheduler ──
+        var _lastCtrl     = ((document.getElementById('netCtrlDisplay') || {}).textContent || '').trim();
+        var _slotTimers   = [];
+        var _ringInterval = null;
+        var _lastPriority = null;
+
+        // ── Ghost: old callsign drifts up and fades on handover ──
+        function ghostOldCtrl() {
+            var ghost = document.getElementById('netCtrlGhost');
+            var disp  = document.getElementById('netCtrlDisplay');
+            if (!ghost || !disp || !disp.textContent.trim()) return;
+            ghost.textContent = disp.textContent;
+            ghost.style.cssText = 'position:absolute;top:0;left:0;right:0;font-size:.85rem;font-weight:800;font-family:monospace;color:rgba(255,255,255,.85);pointer-events:none;text-align:center;white-space:nowrap;opacity:1;animation:ghostDrift .85s ease forwards;z-index:2;';
+            setTimeout(function(){ ghost.style.opacity='0'; ghost.textContent=''; }, 900);
+        }
+
+        // ── Ring: SVG countdown arc, shows last 60s of a slot ──
+        function stopRing() {
+            if (_ringInterval) { clearInterval(_ringInterval); _ringInterval = null; }
+            var ring = document.getElementById('ctrlRing');
+            if (ring) ring.style.display = 'none';
+        }
+
+        function startRing(toTimeStr) {
+            stopRing();
+            if (!toTimeStr) return;
+            var ring = document.getElementById('ctrlRing');
+            var arc  = document.getElementById('ctrlRingArc');
+            if (!ring || !arc) return;
+            var circ = 163.4;
+            _ringInterval = setInterval(function() {
+                var now     = new Date();
+                var nowSecs = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
+                var p       = toTimeStr.split(':');
+                var toSecs  = parseInt(p[0])*3600 + parseInt(p[1])*60;
+                var rem     = toSecs - nowSecs;
+                if (rem <= 0) { stopRing(); return; }
+                if (rem <= 60) {
+                    ring.style.display = '';
+                    arc.style.strokeDashoffset = circ * (1 - rem/60);
+                    arc.style.stroke = rem <= 10 ? '#ff4444' : rem <= 30 ? '#fbbf24' : '#22c55e';
+                } else {
+                    ring.style.display = 'none';
+                }
+            }, 1000);
+        }
+
+        // ── Name: fade in controller's name + title below callsign ──
+        function showCtrlName(info) {
+            var el = document.getElementById('netCtrlName');
+            if (!el) return;
+            if (info && info.name) {
+                el.textContent = info.name + (info.title ? ' \u00b7 ' + info.title : '');
+                el.style.animation = 'none';
+                void el.offsetWidth;
+                el.style.animation = 'badgeFadeIn .5s ease forwards';
+            } else {
+                el.textContent = '';
+            }
+        }
+
+        // ── Priority: emergency heartbeat / urgent pulse / full-screen flash ──
+        function applyPriority(priority) {
+            if (priority === _lastPriority) return;
+            var prev    = _lastPriority;
+            _lastPriority = priority;
+            var banner  = document.getElementById('netBanner');
+            var overlay = document.getElementById('netEmergencyOverlay');
+            var flash   = document.getElementById('netEmergencyFlash');
+            if (banner)  banner.style.animation  = '';
+            if (overlay) { overlay.style.animation = ''; overlay.style.display = 'none'; }
+            if (priority === 'emergency') {
+                if (prev && prev !== 'emergency' && flash) {
+                    flash.style.display = '';
+                    flash.style.animation = 'none';
+                    void flash.offsetWidth;
+                    flash.style.animation = 'flashFade .9s ease forwards';
+                    setTimeout(function(){ flash.style.display='none'; }, 950);
+                }
+                if (banner)  banner.style.animation  = 'emergencyHeartbeat 1.8s ease-in-out infinite';
+                if (overlay) { overlay.style.display=''; overlay.style.background='rgba(200,16,46,.13)'; overlay.style.animation='emergencyHeartbeat 1.8s ease-in-out infinite'; }
+            } else if (priority === 'urgent') {
+                if (banner)  banner.style.animation  = 'urgentPulse 2.8s ease-in-out infinite';
+                if (overlay) { overlay.style.display=''; overlay.style.background='rgba(245,158,11,.09)'; overlay.style.animation='urgentPulse 2.8s ease-in-out infinite'; }
+            }
+        }
+
+        // ── Slide controller in (first appearance or handover) ──
+        function ctrlSlideIn(callsign, slotTo, info) {
+            var el      = document.getElementById('netCtrlDisplay');
+            var wrap    = document.getElementById('netCtrlWrap');
+            var divider = document.getElementById('netCtrlDivider');
+            if (!el) return;
+            if (_lastCtrl && _lastCtrl !== callsign) {
+                ghostOldCtrl();
+                stopRing();
+                setTimeout(function() {
+                    el.style.animation = 'none';
+                    el.textContent = callsign;
+                    el.style.color = '#22c55e';
+                    void el.offsetWidth;
+                    el.style.animation = 'ctrlGreenBlink 300ms ease-in-out 5';
+                    setTimeout(function(){ el.style.animation='none'; el.style.color=''; }, 1600);
+                    showCtrlName(info);
+                    startRing(slotTo);
+                }, 460);
+            } else if (!_lastCtrl) {
+                el.textContent = callsign;
+                showCtrlName(info);
+                if (wrap) { wrap.style.display=''; wrap.style.animation='none'; void wrap.offsetWidth; wrap.style.animation='ctrlSlideIn .5s cubic-bezier(.22,1,.36,1) forwards'; }
+                if (divider) divider.style.display = '';
+                el.style.color = '#22c55e';
+                setTimeout(function(){ el.style.color=''; }, 1800);
+                startRing(slotTo);
+            }
+            _lastCtrl = callsign;
+        }
+
+        // ── Slide controller out (last slot ended) ──
+        function ctrlSlideOut() {
+            var el      = document.getElementById('netCtrlDisplay');
+            var wrap    = document.getElementById('netCtrlWrap');
+            var divider = document.getElementById('netCtrlDivider');
+            var nameEl  = document.getElementById('netCtrlName');
+            if (!wrap || wrap.style.display === 'none') return;
+            stopRing();
+            ghostOldCtrl();
+            setTimeout(function() {
+                if (wrap) { wrap.style.animation='none'; void wrap.offsetWidth; wrap.style.animation='ctrlSlideIn .4s cubic-bezier(.22,1,.36,1) reverse forwards'; }
+                if (divider) divider.style.display = 'none';
+                setTimeout(function(){
+                    if (wrap)   wrap.style.display   = 'none';
+                    if (el)     el.textContent        = '';
+                    if (nameEl) nameEl.textContent    = '';
+                    _lastCtrl = '';
+                }, 450);
+            }, 420);
+        }
+
+        // ── Warning text (upcoming / handover) ──
+        function ctrlShowWarning(text, color) {
+            var el   = document.getElementById('netCtrlDisplay');
+            var wrap = document.getElementById('netCtrlWrap');
+            var div  = document.getElementById('netCtrlDivider');
+            if (!el) return;
+            if (!wrap || wrap.style.display === 'none') {
+                el.textContent = text; el.style.color = color;
+                if (wrap) { wrap.style.display=''; wrap.style.animation='none'; void wrap.offsetWidth; wrap.style.animation='ctrlSlideIn .5s cubic-bezier(.22,1,.36,1) forwards'; }
+                if (div) div.style.display = '';
+            } else {
+                el.style.animation = 'none'; void el.offsetWidth;
+                el.style.color = color; el.textContent = text;
+                el.style.animation = 'ctrlGreenBlink 500ms ease-in-out 6';
+            }
+        }
+
+        // ── Schedule all slot boundary timers precisely ──
+        function animateCtrlChange(el, newVal) {
+            el.style.animation = 'none';
+            el.style.color = '#ff4444';
+            void el.offsetWidth;
+            el.style.animation = 'ctrlRedPulse 350ms ease-in-out 3';
+            setTimeout(function () {
+                el.style.animation = 'none';
+                el.textContent = newVal;
+                el.style.color = '#22c55e';
+                void el.offsetWidth;
+                el.style.animation = 'ctrlGreenBlink 300ms ease-in-out 5';
+                setTimeout(function () {
+                    el.style.animation = 'none';
+                    el.style.color = '';
+                }, 1600);
+            }, 1100);
+        }
+
+        function scheduleSlots(slots) {
+            _slotTimers.forEach(function(t){ clearTimeout(t); });
+            _slotTimers = [];
+            if (!slots || !slots.length) return;
+            var now     = new Date();
+            var nowSecs = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
+            var startsAt   = {};
+            var handoverAt = {};
+            slots.forEach(function(s) { if (s.from && s.callsign) startsAt[s.from] = s; });
+            slots.forEach(function(s) { if (s.to && startsAt[s.to]) handoverAt[s.to] = true; });
+
+            slots.forEach(function(slot) {
+                if (!slot.callsign || !slot.from || !slot.to) return;
+                var fp    = slot.from.split(':'), tp = slot.to.split(':');
+                var fromS = parseInt(fp[0])*3600 + parseInt(fp[1])*60;
+                var toS   = parseInt(tp[0])*3600  + parseInt(tp[1])*60;
+                var cs    = slot.callsign.toUpperCase();
+                var nextSlot = startsAt[slot.to] || null;
+                var nextCs   = nextSlot ? nextSlot.callsign.toUpperCase() : null;
+                var info  = slot.info || null;
+                var isHandoverTarget = !!handoverAt[slot.from];
+
+                // 10s "starting soon" warning (skip if a handover covers this moment)
+                var dWarn = fromS - 10 - nowSecs;
+                if (dWarn > 0 && !isHandoverTarget) {
+                    (function(c){ _slotTimers.push(setTimeout(function(){ ctrlShowWarning('\u23f3 ' + c + ' starting soon', '#fbbf24'); }, dWarn*1000)); })(cs);
+                }
+
+                // Slide in at start
+                var dFrom = fromS - nowSecs;
+                if (dFrom > 0) {
+                    (function(c, to, inf){ _slotTimers.push(setTimeout(function(){ ctrlSlideIn(c, to, inf); }, dFrom*1000)); })(cs, slot.to, info);
+                } else if (dFrom > -300 && dFrom <= 0) {
+                    // Currently active — start ring for remaining time
+                    startRing(slot.to);
+                }
+
+                // 10s handover warning (A → B)
+                if (nextCs) {
+                    var dHover = toS - 10 - nowSecs;
+                    if (dHover > 0) {
+                        (function(cur, nxt){ _slotTimers.push(setTimeout(function(){
+                            var el = document.getElementById('netCtrlDisplay');
+                            if (!el) return;
+                            el.style.animation='none'; void el.offsetWidth;
+                            el.style.color='#fbbf24'; el.textContent = cur + ' \u2192 ' + nxt;
+                            el.style.animation='ctrlGreenBlink 600ms ease-in-out 8';
+                        }, dHover*1000)); })(cs, nextCs);
+                    } else if (dHover <= 0 && (toS - nowSecs) > 0) {
+                        // Already inside warning window
+                        var el = document.getElementById('netCtrlDisplay');
+                        if (el && el.textContent === cs) {
+                            el.style.color='#fbbf24'; el.textContent=cs+' \u2192 '+nextCs;
+                            el.style.animation='ctrlGreenBlink 600ms ease-in-out 8';
+                        }
+                    }
+                }
+
+                // Slide out at end (only if no next slot)
+                var dTo = toS - nowSecs;
+                if (dTo > 0 && !nextCs) {
+                    _slotTimers.push(setTimeout(function(){ ctrlSlideOut(); }, dTo*1000));
+                }
+            });
+        }
+
+        function pollCtrl() {
+            fetch('/net-status-json', { cache: 'no-store' })
+                .then(function(r){ return r.ok ? r.json() : null; })
+                .then(function(d) {
+                    if (!d) return;
+                    if (!d.active) {
+                        var banner = document.getElementById('netBanner');
+                        if (banner) banner.style.display = 'none';
+                        return;
+                    }
+                    applyPriority(d.priority || 'routine');
+                    var fresh = (d.controller || '').trim().toUpperCase();
+                    if (fresh && fresh !== _lastCtrl) {
+                        var slotTo = null, info = d.controller_info || null;
+                        (d.slots || []).forEach(function(s) {
+                            if (s.callsign && s.callsign.toUpperCase() === fresh) {
+                                slotTo = s.to;
+                                if (s.info) info = s.info;
+                            }
+                        });
+                        ctrlSlideIn(fresh, slotTo, info);
+                    }
+                    scheduleSlots(d.slots || []);
+                })
+                .catch(function(){});
+        }
+
+        pollCtrl();
+        setInterval(pollCtrl, 300000);
     })();
     </script>
     @endif
@@ -487,4 +898,6 @@ body {
     </div>
 </div>
 
+<div id="netEmergencyOverlay" style="display:none;position:fixed;inset:0;pointer-events:none;z-index:998;"></div>
+<div id="netEmergencyFlash" style="display:none;position:fixed;inset:0;background:#C8102E;pointer-events:none;z-index:999;opacity:0;"></div>
 @endsection
