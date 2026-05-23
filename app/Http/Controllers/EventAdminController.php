@@ -683,6 +683,25 @@ class EventAdminController extends Controller
     }
 
 
+    public function stationLogQrzPhoto(\Illuminate\Http\Request $request)
+    {
+        $cs  = strtoupper(trim($request->query('callsign', '')));
+        if (!$cs) abort(404);
+        try {
+            $qrz  = app(\App\Services\QrzService::class);
+            $data = $qrz->lookup($cs);
+            if ($data && !empty($data['image_url'])) {
+                $response = \Illuminate\Support\Facades\Http::timeout(8)->get($data['image_url']);
+                if ($response->successful()) {
+                    $type = $response->header('Content-Type') ?: 'image/jpeg';
+                    return response($response->body(), 200)->header('Content-Type', $type)
+                        ->header('Cache-Control', 'public, max-age=3600');
+                }
+            }
+        } catch (\Throwable $e) {}
+        abort(404);
+    }
+
     public function stationLogQrz(\Illuminate\Http\Request $request)
     {
         $cs = strtoupper(trim($request->query('callsign', '')));
@@ -830,19 +849,7 @@ class EventAdminController extends Controller
         $groupName = \App\Helpers\RaynetSetting::groupName();
         $netName   = \App\Models\Setting::get('net_callsign','NET');
         $date      = now()->format('d M Y H:i');
-
-        $html = view('admin.events.station-log-pdf', compact('stations','groupName','netName','date'))->render();
-
-        $dompdf = new \Dompdf\Dompdf();
-        $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4','landscape');
-        $dompdf->render();
-
-        $filename = 'station-log-' . now()->format('Y-m-d-Hi') . '.pdf';
-        return response($dompdf->output(), 200, [
-            'Content-Type'        => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-        ]);
+        return view('admin.events.station-log-pdf', compact('stations','groupName','netName','date'));
     }
 
 }

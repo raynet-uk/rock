@@ -1,83 +1,126 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Station Log — {{ $groupName }}</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 10px; color: #1e293b; background: #fff; }
-.header { background: #003366; color: #fff; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-.header h1 { font-size: 16px; font-weight: 900; letter-spacing: .03em; }
-.header .meta { font-size: 9px; color: rgba(255,255,255,.7); margin-top: 3px; }
-.badge { display: inline-block; padding: 2px 7px; border-radius: 999px; font-size: 8px; font-weight: 800; }
-.badge-full { background: #dcfce7; color: #15803d; }
-.badge-found { background: #dbeafe; color: #1d4ed8; }
-.badge-registered { background: #fef9c3; color: #a16207; }
-table { width: 100%; border-collapse: collapse; }
-thead tr { background: #003366; color: #fff; }
-thead th { padding: 8px 10px; text-align: left; font-size: 9px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
-tbody tr:nth-child(even) { background: #f8fafc; }
-tbody tr { border-bottom: 1px solid #e2e8f0; }
-td { padding: 7px 10px; vertical-align: middle; }
-.cs { font-family: monospace; font-weight: 900; font-size: 11px; color: #003366; }
-.name { font-weight: 700; color: #1e293b; }
-.muted { color: #94a3b8; font-size: 9px; }
-.sig { font-family: monospace; font-weight: 800; color: #059669; }
-.footer { margin-top: 16px; font-size: 8px; color: #94a3b8; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 8px; }
-.reg-yes { color: #15803d; font-weight: 800; }
-.reg-no { color: #94a3b8; }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,sans-serif;background:#f4f6f9;padding:1.5rem;}
+.no-print{margin-bottom:1.5rem;display:flex;gap:.75rem;align-items:center;}
+button{padding:.55rem 1.25rem;border:none;border-radius:8px;font-weight:700;font-size:.88rem;cursor:pointer;}
+.btn-export{background:#003366;color:#fff;}
+.btn-print{background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;}
+#pdfContent{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,.08);max-width:1100px;}
+.header{background:#003366;color:#fff;padding:1.25rem 1.5rem;display:flex;justify-content:space-between;align-items:flex-end;}
+.header h1{font-size:1.2rem;font-weight:900;letter-spacing:.02em;}
+.header .meta{font-size:.75rem;color:rgba(255,255,255,.65);margin-top:.25rem;}
+.header .badge{font-size:.8rem;font-weight:800;background:rgba(255,255,255,.15);padding:.25rem .75rem;border-radius:999px;}
+.table-head{display:grid;grid-template-columns:2rem 4rem 6rem 1fr 5rem 8rem 4.5rem 4rem 5rem;gap:.5rem;padding:.6rem 1.25rem;background:#f8fafc;border-bottom:2px solid #e2e8f0;}
+.th{font-size:.65rem;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;}
+.row{display:grid;grid-template-columns:2rem 4rem 6rem 1fr 5rem 8rem 4.5rem 4rem 5rem;gap:.5rem;padding:.6rem 1.25rem;border-bottom:1px solid #f1f5f9;align-items:center;}
+.row:nth-child(even){background:#f9fafb;}
+.num{font-size:.68rem;font-weight:800;color:#cbd5e1;text-align:center;}
+.time{font-size:.72rem;color:#94a3b8;font-family:monospace;}
+.cs{font-family:monospace;font-weight:900;font-size:.88rem;color:#003366;}
+.name{font-weight:700;color:#334155;font-size:.82rem;}
+.lic{font-size:.68rem;font-weight:800;padding:.1rem .45rem;border-radius:999px;background:#dcfce7;color:#15803d;display:inline-block;}
+.loc{font-size:.75rem;color:#64748b;}
+.grid{font-size:.75rem;color:#64748b;font-family:monospace;}
+.sig{font-family:monospace;font-weight:800;color:#059669;font-size:.82rem;}
+.mem-yes{font-size:.68rem;font-weight:800;padding:.1rem .45rem;border-radius:999px;background:#fef9c3;color:#a16207;display:inline-block;}
+.mem-no{font-size:.68rem;color:#cbd5e1;}
+.footer{padding:.75rem 1.25rem;font-size:.72rem;color:#94a3b8;border-top:1px solid #e2e8f0;text-align:center;background:#f8fafc;}
+@media print{
+  body{background:#fff;padding:0;}
+  .no-print{display:none!important;}
+  #pdfContent{box-shadow:none;border-radius:0;}
+}
 </style>
 </head>
 <body>
-<div class="header">
-  <div>
-    <div class="header h1">{{ $groupName }} — Station Log</div>
-    <div class="meta">Net: {{ $netName }} &nbsp;·&nbsp; Exported: {{ $date }} &nbsp;·&nbsp; {{ $stations->count() }} station{{ $stations->count() !== 1 ? 's' : '' }} logged</div>
-  </div>
+
+<div class="no-print">
+  <button class="btn-export" onclick="exportPDF()">⬇ Download PDF</button>
+  <button class="btn-print" onclick="window.print()">🖨 Print</button>
+  <a href="/admin/events/net-status" style="font-size:.82rem;color:#64748b;text-decoration:none;">← Back to Net Control</a>
 </div>
-<table>
-  <thead>
-    <tr>
-      <th style="width:28px;">#</th>
-      <th style="width:70px;">Time</th>
-      <th style="width:80px;">Callsign</th>
-      <th>Name</th>
-      <th style="width:70px;">Licence</th>
-      <th style="width:110px;">Location</th>
-      <th style="width:45px;">Grid</th>
-      <th style="width:40px;">Signal</th>
-      <th>Notes</th>
-      <th style="width:60px;">Member</th>
-    </tr>
-  </thead>
-  <tbody>
-  @foreach($stations as $i => $s)
+
+<div id="pdfContent">
+  <div class="header">
+    <div>
+      <div class="header h1">{{ $groupName }} — Station Log</div>
+      <div class="meta">Net: {{ $netName }} &nbsp;·&nbsp; Exported: {{ $date }}</div>
+    </div>
+    <div class="badge">{{ $stations->count() }} station{{ $stations->count() !== 1 ? 's' : '' }}</div>
+  </div>
+
+  <div class="table-head">
+    <div class="th">#</div>
+    <div class="th">Time</div>
+    <div class="th">Callsign</div>
+    <div class="th">Name</div>
+    <div class="th">Licence</div>
+    <div class="th">Location</div>
+    <div class="th">Grid</div>
+    <div class="th">Signal</div>
+    <div class="th">Member</div>
+  </div>
+
+  @forelse($stations as $i => $s)
     @php $qrz = is_array($s->qrz_data) ? $s->qrz_data : (json_decode($s->qrz_data ?? '{}', true) ?? []); @endphp
-    <tr>
-      <td class="muted" style="text-align:center;">{{ $i+1 }}</td>
-      <td class="muted">{{ $s->checked_in_at->format('H:i') }}</td>
-      <td class="cs">{{ $s->callsign }}</td>
-      <td><span class="name">{{ $s->name ?? '—' }}</span></td>
-      <td>
-        @if(!empty($qrz['licence_class']))
-          <span class="badge badge-full">{{ $qrz['licence_class'] }}</span>
-        @else —
-        @endif
-      </td>
-      <td class="muted">{{ $qrz['location'] ?? '—' }}</td>
-      <td class="muted" style="font-family:monospace;">{{ $qrz['grid'] ?? '—' }}</td>
-      <td class="sig">{{ $s->signal_report ?? '—' }}</td>
-      <td class="muted">{{ $s->notes ?? '' }}</td>
-      <td style="text-align:center;">
-        @if($s->is_registered)
-          <span class="reg-yes">✓</span>
-        @else
-          <span class="reg-no">—</span>
-        @endif
-      </td>
-    </tr>
-  @endforeach
-  </tbody>
-</table>
-<div class="footer">{{ $groupName }} · Generated by RAYNET-CMS · {{ $date }}</div>
+    <div class="row">
+      <div class="num">{{ $i+1 }}</div>
+      <div class="time">{{ $s->checked_in_at->format('H:i') }}</div>
+      <div class="cs">{{ $s->callsign }}</div>
+      <div class="name">{{ $s->name ?? '—' }}@if($s->notes) <span style="color:#94a3b8;font-weight:400;font-size:.75rem;"> · {{ $s->notes }}</span>@endif</div>
+      <div>@if(!empty($qrz['licence_class']))<span class="lic">{{ $qrz['licence_class'] }}</span>@else <span style="color:#cbd5e1;">—</span>@endif</div>
+      <div class="loc">{{ $qrz['location'] ?? '—' }}</div>
+      <div class="grid">{{ $qrz['grid'] ?? '—' }}</div>
+      <div class="sig">{{ $s->signal_report ?? '—' }}</div>
+      <div>@if($s->is_registered)<span class="mem-yes">✓ Member</span>@else<span class="mem-no">—</span>@endif</div>
+    </div>
+  @empty
+    <div style="text-align:center;padding:2rem;color:#94a3b8;">No stations logged</div>
+  @endforelse
+
+  <div class="footer">{{ $groupName }} · Generated by RAYNET-CMS · {{ $date }}</div>
+</div>
+
+<script>
+async function exportPDF() {
+    var btn = document.querySelector('.btn-export');
+    btn.textContent = '⏳ Generating...';
+    btn.disabled = true;
+    try {
+        var el     = document.getElementById('pdfContent');
+        var canvas = await html2canvas(el, {scale:1.8, useCORS:true, backgroundColor:'#ffffff', logging:false});
+        var imgData = canvas.toDataURL('image/png');
+        var { jsPDF } = window.jspdf;
+        var pdf = new jsPDF({orientation:'landscape', unit:'mm', format:'a4'});
+        var pW  = pdf.internal.pageSize.getWidth();
+        var pH  = pdf.internal.pageSize.getHeight();
+        var ratio = canvas.width / canvas.height;
+        var imgH  = pW / ratio;
+        var y = 0;
+        while (y < canvas.height) {
+            if (y > 0) pdf.addPage();
+            var pageCanvas = document.createElement('canvas');
+            pageCanvas.width  = canvas.width;
+            pageCanvas.height = Math.min(canvas.height - y, canvas.width / (pW / pH));
+            pageCanvas.getContext('2d').drawImage(canvas, 0, y, pageCanvas.width, pageCanvas.height, 0, 0, pageCanvas.width, pageCanvas.height);
+            pdf.addImage(pageCanvas.toDataURL('image/png'), 'PNG', 0, 0, pW, pH);
+            y += pageCanvas.height;
+        }
+        pdf.save('station-log-{{ now()->format("Y-m-d-Hi") }}.pdf');
+    } catch(e) {
+        alert('PDF generation failed: ' + e.message);
+    }
+    btn.textContent = '⬇ Download PDF';
+    btn.disabled = false;
+}
+</script>
 </body>
 </html>

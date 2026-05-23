@@ -1188,6 +1188,7 @@ Route::middleware(['web','auth','admin'])->prefix('admin/events')->name('admin.e
     Route::get('/station-log/logging-status', function() {
         return response()->json(['enabled' => \App\Models\Setting::get('net_station_logging','0') === '1']);
     })->name('station-log.logging-status');
+    Route::get('/station-log/qrz-photo', [\App\Http\Controllers\EventAdminController::class, 'stationLogQrzPhoto'])->name('station-log.qrz-photo');
     Route::get('/station-log/qrz',         [\App\Http\Controllers\EventAdminController::class, 'stationLogQrz'])    ->name('station-log.qrz');
     Route::post('/station-log',           [\App\Http\Controllers\EventAdminController::class, 'stationLogStore'])  ->name('station-log.store');
     Route::post('/station-log/invite',     [\App\Http\Controllers\EventAdminController::class, 'stationLogInvite'])  ->name('station-log.invite');

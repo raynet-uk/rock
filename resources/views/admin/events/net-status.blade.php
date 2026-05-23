@@ -954,7 +954,7 @@ function showQrzCard(cs, d) {
     document.getElementById('ciQrzName').textContent     = d.name || '';
 
     var photo = document.getElementById('ciQrzPhoto');
-    if (d.photo) { photo.src = d.photo; photo.style.display = ''; }
+    if (d.photo) { photo.src = '/admin/events/station-log/qrz-photo?callsign=' + encodeURIComponent(cs); photo.style.display = ''; }
     else         { photo.style.display = 'none'; }
 
     var lic = document.getElementById('ciQrzLicence');
@@ -1099,7 +1099,7 @@ function loadLog() {
                 ? '<span style="font-size:.68rem;font-weight:800;padding:.1rem .4rem;border-radius:999px;background:#fef9c3;color:#a16207;">✓ Member</span>'
                 : '<span style="font-size:.68rem;color:#cbd5e1;">—</span>';
             var photo = e.photo_url
-                ? '<img src="' + escHtml(e.photo_url) + '" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1.5px solid #e2e8f0;margin-right:.4rem;vertical-align:middle;" onerror="this.style.display=\'none\'">'
+                ? '<img src="/admin/events/station-log/qrz-photo?callsign=' + encodeURIComponent(e.callsign) + '" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1.5px solid #e2e8f0;margin-right:.4rem;vertical-align:middle;">'
                 : '<div style="width:28px;height:28px;border-radius:50%;background:#f1f5f9;display:inline-flex;align-items:center;justify-content:center;font-size:.7rem;color:#94a3b8;margin-right:.4rem;vertical-align:middle;flex-shrink:0;">📡</div>';
             var qrzLink = qrz.qrz_url
                 ? '<a href="' + escHtml(qrz.qrz_url) + '" target="_blank" style="font-size:.65rem;color:#6366f1;font-weight:700;text-decoration:none;margin-left:.3rem;">QRZ↗</a>'
