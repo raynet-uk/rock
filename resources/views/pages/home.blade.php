@@ -340,7 +340,7 @@ body {
     @if(!$hideAfterEnd)
     <div id="netBanner" style="position:relative;overflow:hidden;background:#0a0a1a;border-top:1px solid #1a1a3e;border-bottom:1px solid #1a1a3e;">
         <div id="netEmergencyOverlay" style="display:none;position:absolute;inset:0;pointer-events:none;z-index:4;border:2px solid transparent;box-shadow:inset 0 0 0 2px transparent;"></div>
-        <div id="netEmergencyFlash" style="display:none;position:absolute;inset:0;pointer-events:none;z-index:5;opacity:0;background:transparent;"></div>
+        <div id="netEmergencyFlash" style="display:none;position:absolute;inset:0;pointer-events:none;z-index:5;opacity:0;background:linear-gradient(to bottom,rgba(200,16,46,.45) 0%,transparent 40%,transparent 60%,rgba(200,16,46,.45) 100%);"></div>
         <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(200,16,46,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(200,16,46,.04) 1px,transparent 1px);background-size:32px 32px;pointer-events:none;"></div>
         <div style="position:absolute;top:-40px;left:15%;width:300px;height:120px;background:radial-gradient(ellipse,rgba(200,16,46,.25) 0%,transparent 70%);pointer-events:none;"></div>
         <div style="position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(200,16,46,.05),transparent);animation:nScan 4s ease-in-out infinite;pointer-events:none;"></div>
@@ -683,28 +683,26 @@ body {
             if (window.waterfallSetActive) window.waterfallSetActive(true, '', priority);
             if (priority === 'emergency') {
                 if (prev && prev !== 'emergency' && flash) {
-                    // Brief outline flash on transition to emergency
                     flash.style.display = '';
-                    flash.style.opacity = '0';
-                    flash.style.boxShadow = 'inset 0 0 0 3px #C8102E, inset 0 0 40px rgba(200,16,46,.35)';
                     flash.style.animation = 'none';
                     void flash.offsetWidth;
-                    flash.style.animation = 'flashFade .9s ease forwards';
-                    setTimeout(function(){ flash.style.display='none'; flash.style.boxShadow=''; }, 950);
+                    flash.style.animation = 'flashFade .7s ease forwards';
+                    setTimeout(function(){ flash.style.display='none'; }, 750);
                 }
                 if (banner) banner.style.animation = 'emergencyHeartbeat 1.8s ease-in-out infinite';
                 if (overlay) {
                     overlay.style.display = '';
-                    overlay.style.background = 'transparent';
-                    overlay.style.boxShadow = 'inset 0 0 0 2px rgba(200,16,46,.7), inset 0 0 30px rgba(200,16,46,.18)';
+                    // Top and bottom edge glow bars only — subtle, not distracting
+                    overlay.style.background = 'linear-gradient(to bottom, rgba(200,16,46,.22) 0%, transparent 28%, transparent 72%, rgba(200,16,46,.22) 100%)';
+                    overlay.style.boxShadow = '';
                     overlay.style.animation = 'emergencyHeartbeat 1.8s ease-in-out infinite';
                 }
             } else if (priority === 'urgent') {
                 if (banner) banner.style.animation = 'urgentPulse 2.8s ease-in-out infinite';
                 if (overlay) {
                     overlay.style.display = '';
-                    overlay.style.background = 'transparent';
-                    overlay.style.boxShadow = 'inset 0 0 0 2px rgba(245,158,11,.55), inset 0 0 24px rgba(245,158,11,.12)';
+                    overlay.style.background = 'linear-gradient(to bottom, rgba(245,158,11,.15) 0%, transparent 30%, transparent 70%, rgba(245,158,11,.15) 100%)';
+                    overlay.style.boxShadow = '';
                     overlay.style.animation = 'urgentPulse 2.8s ease-in-out infinite';
                 }
             }
