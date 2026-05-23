@@ -1507,32 +1507,34 @@ function importOfflineQueue() {
     function importNext(i) {
         if (i >= q.length) {
             // All done
+            loadLog();
             if (failed === 0) {
+                btn.textContent = '✓ All imported!';
+                btn.style.background = '#15803d';
                 clearOfflineQueue();
-                closeOfflineSyncModal();
-                loadLog();
+                setTimeout(closeOfflineSyncModal, 1800);
             } else {
-                // Remove successfully imported ones only
-                var remaining = getOfflineQueue().slice(done);
+                // Keep only failed entries
+                var remaining = q.filter(function(_, idx){ return idx >= done; });
                 saveOfflineQueue(remaining);
-                err.textContent = failed + ' entries failed to import — they remain in the queue.';
+                err.textContent = failed + ' entr' + (failed===1?'y':'ies') + ' failed — tap Retry to try again.';
                 err.style.display = '';
                 btn.disabled = false;
                 btn.textContent = 'Retry Failed';
-                loadLog();
+                btn.style.background = '';
             }
             return;
         }
-        var e = q[i];
+        var entry = q[i];
+        btn.textContent = 'Importing ' + (i+1) + ' of ' + q.length + '...';
         fetch('{{ route("admin.events.station-log.store") }}', {
             method: 'POST',
             headers: {'Content-Type':'application/json','X-CSRF-TOKEN': csrf, 'X-Offline-Replay': '1'},
-            body: JSON.stringify({callsign: e.callsign, signal_report: e.signal_report, notes: e.notes})
+            body: JSON.stringify({callsign: entry.callsign, signal_report: entry.signal_report, notes: entry.notes})
         })
         .then(function(r){ return r.json(); })
         .then(function(d){
             if (d.success) { done++; } else { failed++; }
-            btn.textContent = 'Importing ' + (i+1) + ' / ' + q.length + '...';
             importNext(i + 1);
         })
         .catch(function(){
@@ -1660,12 +1662,15 @@ document.addEventListener('DOMContentLoaded', function(){
     window.addEventListener('offline', function(){ updateStatusBanner(); loadLog(); });
     window.addEventListener('online',  function(){
         updateStatusBanner();
-        var q = getOfflineQueue();
-        if (q.length > 0) {
-            showOfflineSyncModal(q);
-        } else {
-            loadLog();
-        }
+        // Small delay to let connection stabilise before showing popup or loading
+        setTimeout(function(){
+            var q = getOfflineQueue();
+            if (q.length > 0) {
+                showOfflineSyncModal(q);
+            } else {
+                loadLog();
+            }
+        }, 800);
     });
 
     // Delegated handlers for rows and remove buttons
