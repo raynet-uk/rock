@@ -340,7 +340,7 @@ body {
     @if(!$hideAfterEnd)
     <div id="netBanner" style="position:relative;overflow:hidden;background:#0a0a1a;border-top:1px solid #1a1a3e;border-bottom:1px solid #1a1a3e;">
         <div id="netEmergencyOverlay" style="display:none;position:absolute;inset:0;pointer-events:none;z-index:4;border:2px solid transparent;box-shadow:inset 0 0 0 2px transparent;"></div>
-        <div id="netEmergencyFlash" style="display:none;position:absolute;inset:0;pointer-events:none;z-index:5;opacity:0;background:linear-gradient(to bottom,rgba(200,16,46,.45) 0%,transparent 40%,transparent 60%,rgba(200,16,46,.45) 100%);"></div>
+        <div id="netEmergencyFlash" style="display:none;"></div>
         <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(200,16,46,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(200,16,46,.04) 1px,transparent 1px);background-size:32px 32px;pointer-events:none;"></div>
         <div style="position:absolute;top:-40px;left:15%;width:300px;height:120px;background:radial-gradient(ellipse,rgba(200,16,46,.25) 0%,transparent 70%);pointer-events:none;"></div>
         <div style="position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(200,16,46,.05),transparent);animation:nScan 4s ease-in-out infinite;pointer-events:none;"></div>
@@ -447,8 +447,8 @@ body {
         @keyframes badgeFadeIn{0%{opacity:0;transform:translateY(8px) scale(.92);}100%{opacity:1;transform:translateY(0) scale(1);}}
         @keyframes lblFlash{0%,100%{opacity:1;}40%{opacity:0;}}
         @keyframes ghostDrift{0%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(-20px) scale(.9);}}
-        @keyframes emergencyHeartbeat{0%,100%{opacity:1;}14%{opacity:.7;}28%{opacity:1;}42%{opacity:.75;}56%{opacity:1;}}
-        @keyframes urgentPulse{0%,100%{opacity:1;}50%{opacity:.86;}}
+        @keyframes emergencyHeartbeat{0%,100%{opacity:1;box-shadow:0 0 0 1px rgba(200,16,46,.5),0 -4px 32px rgba(200,16,46,.55),0 4px 32px rgba(200,16,46,.55);}14%{opacity:.85;box-shadow:0 0 0 1px rgba(200,16,46,.3),0 -2px 16px rgba(200,16,46,.3),0 2px 16px rgba(200,16,46,.3);}28%{opacity:1;box-shadow:0 0 0 1px rgba(200,16,46,.5),0 -4px 32px rgba(200,16,46,.55),0 4px 32px rgba(200,16,46,.55);}42%{opacity:.9;box-shadow:0 0 0 1px rgba(200,16,46,.35),0 -3px 20px rgba(200,16,46,.4),0 3px 20px rgba(200,16,46,.4);}56%{opacity:1;box-shadow:0 0 0 1px rgba(200,16,46,.5),0 -4px 32px rgba(200,16,46,.55),0 4px 32px rgba(200,16,46,.55);}}
+        @keyframes urgentPulse{0%,100%{opacity:1;box-shadow:0 0 0 1px rgba(245,158,11,.4),0 -4px 28px rgba(245,158,11,.4),0 4px 28px rgba(245,158,11,.4);}50%{opacity:.9;box-shadow:0 0 0 1px rgba(245,158,11,.2),0 -2px 14px rgba(245,158,11,.2),0 2px 14px rgba(245,158,11,.2);}}
         @keyframes flashFade{0%{opacity:1;}60%{opacity:.7;}100%{opacity:0;}}
         </style>
         @endverbatim
@@ -678,33 +678,23 @@ body {
             var banner  = document.getElementById('netBanner');
             var overlay = document.getElementById('netEmergencyOverlay');
             var flash   = document.getElementById('netEmergencyFlash');
-            if (banner)  banner.style.animation  = '';
+            if (banner)  { banner.style.animation = ''; banner.style.boxShadow = ''; }
             if (overlay) { overlay.style.animation = ''; overlay.style.display = 'none'; }
             if (window.waterfallSetActive) window.waterfallSetActive(true, '', priority);
             if (priority === 'emergency') {
-                if (prev && prev !== 'emergency' && flash) {
-                    flash.style.display = '';
-                    flash.style.animation = 'none';
-                    void flash.offsetWidth;
-                    flash.style.animation = 'flashFade .7s ease forwards';
-                    setTimeout(function(){ flash.style.display='none'; }, 750);
+                if (banner) {
+                    banner.style.animation  = 'emergencyHeartbeat 1.8s ease-in-out infinite';
+                    banner.style.transition = 'box-shadow .6s ease';
+                    banner.style.boxShadow  = '0 0 0 1px rgba(200,16,46,.5), 0 -4px 32px rgba(200,16,46,.55), 0 4px 32px rgba(200,16,46,.55)';
                 }
-                if (banner) banner.style.animation = 'emergencyHeartbeat 1.8s ease-in-out infinite';
-                if (overlay) {
-                    overlay.style.display = '';
-                    // Top and bottom edge glow bars only — subtle, not distracting
-                    overlay.style.background = 'linear-gradient(to bottom, rgba(200,16,46,.22) 0%, transparent 28%, transparent 72%, rgba(200,16,46,.22) 100%)';
-                    overlay.style.boxShadow = '';
-                    overlay.style.animation = 'emergencyHeartbeat 1.8s ease-in-out infinite';
-                }
+                if (overlay) { overlay.style.display = 'none'; }
             } else if (priority === 'urgent') {
-                if (banner) banner.style.animation = 'urgentPulse 2.8s ease-in-out infinite';
-                if (overlay) {
-                    overlay.style.display = '';
-                    overlay.style.background = 'linear-gradient(to bottom, rgba(245,158,11,.15) 0%, transparent 30%, transparent 70%, rgba(245,158,11,.15) 100%)';
-                    overlay.style.boxShadow = '';
-                    overlay.style.animation = 'urgentPulse 2.8s ease-in-out infinite';
+                if (banner) {
+                    banner.style.animation  = 'urgentPulse 2.8s ease-in-out infinite';
+                    banner.style.transition = 'box-shadow .6s ease';
+                    banner.style.boxShadow  = '0 0 0 1px rgba(245,158,11,.4), 0 -4px 28px rgba(245,158,11,.4), 0 4px 28px rgba(245,158,11,.4)';
                 }
+                if (overlay) { overlay.style.display = 'none'; }
             }
         }
 
