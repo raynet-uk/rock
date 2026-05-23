@@ -1548,15 +1548,11 @@ function escHtml(s) {
 }
 
 function loadLog() {
-    fetch('{{ route("admin.events.station-log.index") }}')
-    .then(function(r){ return r.json(); })
-    .then(function(serverData){
-        // Merge server data with local pending entries (offline queue)
-        // Remove pending entries whose callsign now exists in server data
-        _pendingEntries = _pendingEntries.filter(function(p){
-            return !serverData.some(function(s){ return s.callsign === p.callsign; });
-        });
-        var data = serverData.concat(_pendingEntries);
+    // Offline — show local queue only
+    if (isOfflineMode()) {
+        renderOfflineLog();
+        return;
+    }
     fetch('{{ route("admin.events.station-log.index") }}')
     .then(function(r){ return r.json(); })
     .then(function(data){
@@ -1575,8 +1571,6 @@ function loadLog() {
             var qrz  = e.qrz_data || {};
             var even = i % 2 === 0;
             var time = new Date(e.checked_in_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-            var isPending = !!e._offline;
-            var rowBg = isPending ? (even ? '#fffbeb' : '#fef9c3') : (even ? '#fff' : '#f9fafb');
             var licBadge = qrz.licence_class
                 ? '<span style="font-size:.68rem;font-weight:800;padding:.1rem .4rem;border-radius:999px;background:#dcfce7;color:#15803d;">' + escHtml(qrz.licence_class) + '</span>'
                 : '';
@@ -1589,23 +1583,15 @@ function loadLog() {
             var qrzLink = qrz.qrz_url
                 ? '<a href="' + escHtml(qrz.qrz_url) + '" target="_blank" style="font-size:.65rem;color:#6366f1;font-weight:700;text-decoration:none;margin-left:.3rem;">QRZ↗</a>'
                 : '';
-            return '<div style="display:grid;grid-template-columns:2rem 3.5rem 6rem 1fr 5rem 7rem 4rem 4rem 6rem 2.5rem;gap:.5rem;align-items:center;'
-                + 'padding:.6rem 1.25rem;background:' + (even?'#fff':'#f9fafb') + ';border-bottom:1px solid #f1f5f9;transition:background .15s;" data-even="' + (even?'1':'0') + '">'
+            return '<div style="display:grid;grid-template-columns:2rem 3.5rem 6rem 1fr 5rem 7rem 4rem 4rem 6rem 2.5rem;gap:.5rem;align-items:center;padding:.6rem 1.25rem;background:' + (even?'#fff':'#f9fafb') + ';border-bottom:1px solid #f1f5f9;" data-even="' + (even?'1':'0') + '">'
                 + '<div style="font-size:.68rem;font-weight:800;color:#cbd5e1;text-align:center;">' + (i+1) + '</div>'
                 + '<div style="font-size:.72rem;color:#94a3b8;font-family:monospace;white-space:nowrap;">' + time + '</div>'
-                + '<div style="display:flex;align-items:center;">'
-                    + photo
-                    + '<span style="font-family:monospace;font-weight:900;font-size:.88rem;color:#003366;">' + escHtml(e.callsign) + '</span>'
-                    + qrzLink
-                + '</div>'
-                + '<div><span style="font-weight:700;color:#334155;font-size:.82rem;">' + escHtml(e.name||'—') + '</span>'
-                    + (e.notes ? '<span style="color:#94a3b8;font-size:.75rem;"> · ' + escHtml(e.notes) + '</span>' : '')
-                    + pendingBadge
-                + '</div>'
+                + '<div style="display:flex;align-items:center;">' + photo + '<span style="font-family:monospace;font-weight:900;font-size:.88rem;color:#003366;">' + escHtml(e.callsign) + '</span>' + qrzLink + '</div>'
+                + '<div><span style="font-weight:700;color:#334155;font-size:.82rem;">' + escHtml(e.name||'---') + '</span>' + (e.notes ? '<span style="color:#94a3b8;font-size:.75rem;"> · ' + escHtml(e.notes) + '</span>' : '') + '</div>'
                 + '<div>' + licBadge + '</div>'
-                + '<div style="font-size:.75rem;color:#64748b;">' + escHtml(qrz.location||'—') + '</div>'
-                + '<div style="font-size:.75rem;color:#64748b;font-family:monospace;">' + escHtml(qrz.grid||'—') + '</div>'
-                + '<div style="font-family:monospace;font-weight:800;color:#059669;font-size:.82rem;">' + escHtml(e.signal_report||'—') + '</div>'
+                + '<div style="font-size:.75rem;color:#64748b;">' + escHtml(qrz.location||'---') + '</div>'
+                + '<div style="font-size:.75rem;color:#64748b;font-family:monospace;">' + escHtml(qrz.grid||'---') + '</div>'
+                + '<div style="font-family:monospace;font-weight:800;color:#059669;font-size:.82rem;">' + escHtml(e.signal_report||'---') + '</div>'
                 + '<div style="display:flex;align-items:center;gap:.35rem;">' + memberBadge
                     + (!e.is_registered ? '<button data-invite="' + e.id + '" data-callsign="' + escHtml(e.callsign) + '" data-name="' + escHtml(e.name||e.callsign) + '" title="Invite to RAYNET" style="font-size:.65rem;font-weight:700;background:#003366;color:#fff;border:none;border-radius:4px;padding:.15rem .4rem;cursor:pointer;white-space:nowrap;">✉</button>' : '')
                 + '</div>'
@@ -1614,6 +1600,7 @@ function loadLog() {
         }).join('');
     });
 }
+
 
 function updateStatusBanner() {
     // Offline mode — show offline banner and keep form fully enabled
