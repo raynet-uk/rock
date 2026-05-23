@@ -1125,6 +1125,28 @@ Route::get('/net-status-json', function () {
     $slots   = json_decode(\App\Models\Setting::get('net_controller_slots', '[]'), true) ?? [];
     $controller = count($slots) ? '' : \App\Models\Setting::get('net_controller', '');
     $nextChange = null;
+    $qrz = app(\App\Services\QrzService::class);
+
+    // Helper: lookup name from QRZ, fall back to local member table
+    $lookupName = function(string $cs) use ($qrz): ?array {
+        $cs = strtoupper($cs);
+        $cacheKey = 'qrz_ctrl_' . $cs;
+        $cached = \Illuminate\Support\Facades\Cache::get($cacheKey);
+        if ($cached !== null) return $cached ?: null;
+
+        $data = $qrz->lookup($cs);
+        if ($data && !empty($data['name'])) {
+            $info = ['name' => $data['name_fmt'] ?? $data['name'], 'location' => $data['city'] ?? null];
+            \Illuminate\Support\Facades\Cache::put($cacheKey, $info, 3600);
+            return $info;
+        }
+        // Fall back to local user table
+        $user = \App\Models\User::whereRaw('UPPER(callsign) = ?', [$cs])->first();
+        $info = $user ? ['name' => $user->name, 'location' => null] : null;
+        \Illuminate\Support\Facades\Cache::put($cacheKey, $info ?? false, 600);
+        return $info;
+    };
+
     foreach ($slots as &$slot) {
         if (!empty($slot['callsign']) && !empty($slot['from']) && !empty($slot['to'])) {
             if ($nowTime >= $slot['from'] && $nowTime < $slot['to']) {
@@ -1138,17 +1160,11 @@ Route::get('/net-status-json', function () {
                 $mins = (strtotime($slot['to']) - strtotime($nowTime)) / 60;
                 if ($nextChange === null || $mins < $nextChange) $nextChange = (int)$mins;
             }
-            $cs   = strtoupper($slot['callsign']);
-            $user = \App\Models\User::whereRaw('UPPER(callsign) = ?', [$cs])->first();
-            $slot['info'] = $user ? ['name' => $user->name, 'title' => $user->operator_title ?? null] : null;
+            $slot['info'] = $lookupName($slot['callsign']);
         }
     }
     unset($slot);
-    $currentCtrlInfo = null;
-    if ($controller) {
-        $user = \App\Models\User::whereRaw('UPPER(callsign) = ?', [strtoupper($controller)])->first();
-        $currentCtrlInfo = $user ? ['name' => $user->name, 'title' => $user->operator_title ?? null] : null;
-    }
+    $currentCtrlInfo = $controller ? $lookupName($controller) : null;
     return response()->json([
         'active'          => true,
         'controller'      => $controller,
