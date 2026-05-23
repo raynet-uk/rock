@@ -1,7 +1,7 @@
 // RAYNET-OS Net Control Service Worker
 // Intercepts net control API calls when offline and queues them for sync
 
-const SW_VERSION   = 'v2';
+const SW_VERSION   = 'v3';
 const CACHE_NAME   = 'raynet-net-control-' + SW_VERSION;
 const DB_NAME      = 'raynet-offline';
 const DB_VERSION   = 1;
@@ -79,18 +79,7 @@ async function dbDelete(storeName, key) {
 self.addEventListener('install',  () => self.skipWaiting());
 self.addEventListener('activate', e  => e.waitUntil(clients.claim()));
 
-// ── Fetch interception ─────────────────────────────────────────────────────
-self.addEventListener('fetch', event => {
-    const url = new URL(event.request.url);
-
-    // Only intercept POST requests to our offline routes
-    if (event.request.method !== 'POST') return;
-    // Exact match only — don't intercept sub-routes or page navigations
-    const shouldIntercept = OFFLINE_ROUTES.some(r => url.pathname === r);
-    if (!shouldIntercept) return;
-
-    event.respondWith(handlePost(event.request.clone()));
-});
+// Fetch interception removed — offline queuing now uses localStorage
 
 async function handlePost(request) {
     // Try online first
