@@ -686,25 +686,53 @@ class EventAdminController extends Controller
     public function stationLogQrz(\Illuminate\Http\Request $request)
     {
         $cs = strtoupper(trim($request->query('callsign', '')));
-        if (!$cs) return response()->json(['name' => null]);
-        // Try local member first
-        $user = \App\Models\User::whereRaw('UPPER(callsign) = ?', [$cs])->first();
+        if (!$cs) return response()->json(['found' => false]);
+
+        $registered = \App\Models\User::whereRaw('UPPER(callsign) = ?', [$cs])->exists();
+        $user       = \App\Models\User::whereRaw('UPPER(callsign) = ?', [$cs])->first();
+
         if ($user) {
-            return response()->json(['name' => $user->name, 'location' => null, 'source' => 'local']);
+            return response()->json([
+                'found'        => true,
+                'source'       => 'local',
+                'is_registered'=> true,
+                'name'         => $user->name,
+                'callsign'     => $cs,
+                'licence_class'=> $user->licence_class ?? null,
+                'photo'        => $user->avatar ?? null,
+                'email'        => null, // never expose local emails to admin UI
+                'location'     => null,
+                'grid'         => null,
+                'country'      => null,
+                'qrz_url'      => 'https://www.qrz.com/db/' . $cs,
+            ]);
         }
+
         try {
             $qrz  = app(\App\Services\QrzService::class);
             $data = $qrz->lookup($cs);
             if ($data && !empty($data['name'])) {
                 return response()->json([
-                    'name'     => $data['name_fmt'] ?? $data['name'],
-                    'location' => $data['city'] ?? null,
-                    'photo'    => $data['image_url'] ?? null,
-                    'source'   => 'qrz',
+                    'found'        => true,
+                    'source'       => 'qrz',
+                    'is_registered'=> false,
+                    'name'         => $data['name_fmt'] ?? $data['name'],
+                    'callsign'     => $cs,
+                    'licence_class'=> $data['licence_class'] ?? null,
+                    'photo'        => $data['image_url'] ?? null,
+                    'email'        => $data['email'] ?? null,
+                    'location'     => trim(implode(', ', array_filter([$data['city'] ?? null, $data['country'] ?? null]))),
+                    'grid'         => $data['grid'] ?? null,
+                    'country'      => $data['country'] ?? null,
+                    'qrz_url'      => $data['url'] ?? ('https://www.qrz.com/db/' . $cs),
+                    'cq_zone'      => $data['cq_zone'] ?? null,
+                    'dxcc'         => $data['dxcc'] ?? null,
+                    'lotw'         => $data['lotw'] ?? null,
                 ]);
             }
         } catch (\Throwable $e) {}
-        return response()->json(['name' => null]);
+
+        return response()->json(['found' => false, 'is_registered' => false, 'callsign' => $cs]);
     }
 
     public function stationLogIndex()
@@ -720,15 +748,29 @@ class EventAdminController extends Controller
         }
         $request->validate(['callsign' => 'required|string|max:20']);
         $cs   = strtoupper(trim($request->callsign));
-        // Enrich from QRZ or local user
-        $name = null;
+        $name = null; $qrzData = null; $photoUrl = null;
+        $isRegistered = \App\Models\User::whereRaw('UPPER(callsign) = ?', [$cs])->exists();
         $user = \App\Models\User::whereRaw('UPPER(callsign) = ?', [$cs])->first();
-        if ($user) $name = $user->name;
+        if ($user) { $name = $user->name; $photoUrl = $user->avatar ?? null; }
         if (!$name) {
             try {
                 $qrz  = app(\App\Services\QrzService::class);
                 $data = $qrz->lookup($cs);
-                if ($data && !empty($data['name'])) $name = $data['name_fmt'] ?? $data['name'];
+                if ($data && !empty($data['name'])) {
+                    $name     = $data['name_fmt'] ?? $data['name'];
+                    $photoUrl = $data['image_url'] ?? null;
+                    $qrzData  = array_filter([
+                        'licence_class' => $data['licence_class'] ?? null,
+                        'location'      => trim(implode(', ', array_filter([$data['city'] ?? null, $data['country'] ?? null]))),
+                        'grid'          => $data['grid'] ?? null,
+                        'country'       => $data['country'] ?? null,
+                        'email'         => $data['email'] ?? null,
+                        'qrz_url'       => $data['url'] ?? ('https://www.qrz.com/db/' . $cs),
+                        'cq_zone'       => $data['cq_zone'] ?? null,
+                        'dxcc'          => $data['dxcc'] ?? null,
+                        'lotw'          => $data['lotw'] ?? null,
+                    ]);
+                }
             } catch (\Throwable $e) {}
         }
         $entry = \App\Models\NetStationLog::create([
@@ -736,8 +778,11 @@ class EventAdminController extends Controller
             'name'          => $name,
             'signal_report' => $request->signal_report ?? null,
             'notes'         => $request->notes ?? null,
+            'qrz_data'      => $qrzData ? json_encode($qrzData) : null,
+            'is_registered' => $isRegistered,
+            'photo_url'     => $photoUrl,
         ]);
-        return response()->json(['success' => true, 'entry' => $entry]);
+        return response()->json(['success' => true, 'entry' => $entry->load([])]);
     }
 
     public function stationLogDestroy(int $id)
@@ -750,6 +795,54 @@ class EventAdminController extends Controller
     {
         \App\Models\NetStationLog::truncate();
         return response()->json(['success' => true]);
+    }
+
+    public function stationLogInvite(\Illuminate\Http\Request $request)
+    {
+        $request->validate([
+            'callsign' => 'required|string|max:20',
+            'email'    => 'required|email',
+            'name'     => 'nullable|string|max:100',
+        ]);
+        $cs        = strtoupper(trim($request->callsign));
+        $name      = $request->name ?? $cs;
+        $groupName = \App\Helpers\RaynetSetting::groupName();
+        $inviteUrl = url('/register');
+        try {
+            \Illuminate\Support\Facades\Mail::to($request->email)
+                ->send(new \App\Mail\NetStationInvite(
+                    toEmail:   $request->email,
+                    callsign:  $cs,
+                    name:      $name,
+                    groupName: $groupName,
+                    inviteUrl: $inviteUrl,
+                    adminName: auth()->user()->name ?? null,
+                ));
+            return response()->json(['success' => true]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
+
+    public function stationLogExportPdf()
+    {
+        $stations  = \App\Models\NetStationLog::orderBy('checked_in_at')->get();
+        $groupName = \App\Helpers\RaynetSetting::groupName();
+        $netName   = \App\Models\Setting::get('net_callsign','NET');
+        $date      = now()->format('d M Y H:i');
+
+        $html = view('admin.events.station-log-pdf', compact('stations','groupName','netName','date'))->render();
+
+        $dompdf = new \Dompdf\Dompdf();
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4','landscape');
+        $dompdf->render();
+
+        $filename = 'station-log-' . now()->format('Y-m-d-Hi') . '.pdf';
+        return response($dompdf->output(), 200, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
     }
 
 }

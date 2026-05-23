@@ -911,9 +911,10 @@ body {
                     var logging = !!d.station_logging;
 
                     if (wrap) {
-                        var wasVisible = wrap.style.maxWidth !== '0' && wrap.style.maxWidth !== '';
+                        var wasVisible = wrap.dataset.visible === '1';
                         if (logging && !wasVisible) {
-                            // Animate in
+                            // Animate in from zero width
+                            wrap.dataset.visible = '1';
                             wrap.style.display   = 'flex';
                             wrap.style.maxWidth  = '0';
                             wrap.style.opacity   = '0';
@@ -922,8 +923,9 @@ body {
                             wrap.style.opacity   = '1';
                         } else if (!logging && wasVisible) {
                             // Animate out
-                            wrap.style.maxWidth = '0';
-                            wrap.style.opacity  = '0';
+                            wrap.dataset.visible = '0';
+                            wrap.style.maxWidth  = '0';
+                            wrap.style.opacity   = '0';
                             setTimeout(function(){ wrap.style.display = 'none'; }, 520);
                         }
                     }
@@ -934,15 +936,27 @@ body {
                         if (newCount !== oldCount) {
                             countEl.dataset.prev = newCount;
                             countEl.textContent  = newCount;
-                            countEl.style.transition = 'color .3s';
+                            countEl.style.transition = 'color .3s, transform .15s';
                             if (newCount > oldCount) {
-                                // Added — green flash then back to white
+                                // Added — bounce up + green flash
+                                countEl.style.transform = 'scale(1.5)';
                                 countEl.style.color = '#22c55e';
-                                setTimeout(function(){ countEl.style.color = 'rgba(255,255,255,.9)'; }, 900);
+                                setTimeout(function(){
+                                    countEl.style.transform = 'scale(1)';
+                                }, 200);
+                                setTimeout(function(){
+                                    countEl.style.color = 'rgba(255,255,255,.9)';
+                                }, 1000);
                             } else {
-                                // Removed — blue flash then back to white
-                                countEl.style.color = '#60a5fa';
-                                setTimeout(function(){ countEl.style.color = 'rgba(255,255,255,.9)'; }, 900);
+                                // Removed — shrink + red flash
+                                countEl.style.transform = 'scale(0.7)';
+                                countEl.style.color = '#ff4444';
+                                setTimeout(function(){
+                                    countEl.style.transform = 'scale(1)';
+                                }, 200);
+                                setTimeout(function(){
+                                    countEl.style.color = 'rgba(255,255,255,.9)';
+                                }, 1000);
                             }
                         }
                     }

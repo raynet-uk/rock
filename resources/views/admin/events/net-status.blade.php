@@ -391,22 +391,55 @@ input:checked+.slider:before{transform:translateX(24px);}
 <div class="tab-pane" id="tab-checkins">
 
   {{-- Status banner --}}
-  <div id="ciStatusBanner" style="border-radius:10px;padding:.75rem 1rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:.75rem;font-size:.82rem;font-weight:700;">
-  </div>
+  <div id="ciStatusBanner" style="border-radius:10px;padding:.75rem 1rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:.75rem;font-size:.82rem;font-weight:700;"></div>
 
   {{-- Entry form --}}
   <div class="nc-card" id="ciFormCard">
-    <div class="nc-card-title" style="display:flex;align-items:center;justify-content:space-between;">
-      <span>📻 Log a Station</span>
-      <span id="ciLiveCount" style="font-size:.8rem;font-weight:700;color:var(--muted);">0 stations</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+      <div class="nc-card-title" style="margin:0;">📻 Log a Station</div>
+      <div style="display:flex;align-items:center;gap:.75rem;">
+        <span id="ciLiveCount" style="font-size:.82rem;font-weight:700;color:var(--muted);">0 stations</span>
+        <a href="{{ route('admin.events.station-log.export-pdf') }}" target="_blank"
+           style="font-size:.78rem;font-weight:700;color:#C8102E;background:#fff1f2;border:1px solid #fecdd3;border-radius:6px;padding:.3rem .75rem;text-decoration:none;white-space:nowrap;">
+          ⬇ Export PDF
+        </a>
+      </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 2fr auto;gap:.75rem;align-items:start;margin-bottom:.5rem;">
+
+    {{-- QRZ preview card --}}
+    <div id="ciQrzCard" style="display:none;margin-bottom:1rem;padding:.85rem 1rem;background:linear-gradient(135deg,#f0f4ff,#f8fafc);border:1px solid #c7d7ff;border-radius:10px;">
+      <div style="display:flex;align-items:center;gap:1rem;">
+        <img id="ciQrzPhoto" src="" alt="" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid #c7d7ff;display:none;flex-shrink:0;">
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
+            <span id="ciQrzCallsign" style="font-family:monospace;font-weight:900;font-size:1.1rem;color:#003366;"></span>
+            <span id="ciQrzLicence" style="display:none;font-size:.7rem;font-weight:800;padding:.15rem .5rem;border-radius:999px;background:#dcfce7;color:#15803d;"></span>
+            <span id="ciQrzRegistered" style="display:none;font-size:.7rem;font-weight:800;padding:.15rem .5rem;border-radius:999px;background:#fef9c3;color:#a16207;">✓ On RAYNET</span>
+            <a id="ciQrzLink" href="#" target="_blank" style="font-size:.7rem;color:#6366f1;font-weight:700;text-decoration:none;">QRZ ↗</a>
+          </div>
+          <div id="ciQrzName" style="font-weight:700;color:#334155;font-size:.9rem;margin-top:.15rem;"></div>
+          <div style="display:flex;gap:1rem;margin-top:.2rem;flex-wrap:wrap;">
+            <span id="ciQrzLocation" style="font-size:.75rem;color:#64748b;display:none;">📍 <span></span></span>
+            <span id="ciQrzGrid" style="font-size:.75rem;color:#64748b;font-family:monospace;display:none;">Grid: <span></span></span>
+            <span id="ciQrzDxcc" style="font-size:.75rem;color:#64748b;display:none;">DXCC: <span></span></span>
+            <span id="ciQrzLotw" style="font-size:.75rem;color:#64748b;display:none;">LoTW ✓</span>
+          </div>
+        </div>
+        <div id="ciInviteBtn" style="display:none;">
+          <button onclick="openInviteModal()" style="font-size:.75rem;font-weight:700;background:linear-gradient(135deg,#003366,#001a33);color:#fff;border:none;border-radius:8px;padding:.4rem .85rem;cursor:pointer;white-space:nowrap;">
+            ✉ Invite to RAYNET
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 2fr auto;gap:.75rem;align-items:start;">
       <div>
         <label class="label">Callsign *</label>
-        <input type="text" id="ciCallsign" class="input" placeholder="e.g. G4BDS"
-               style="text-transform:uppercase;font-family:monospace;font-weight:800;font-size:.95rem;"
+        <input type="text" id="ciCallsign" class="input"
+               placeholder="e.g. G4BDS"
+               style="text-transform:uppercase;font-family:monospace;font-weight:800;font-size:.95rem;letter-spacing:.05em;"
                maxlength="20" autocomplete="off">
-        <div id="ciQrzName" style="font-size:.71rem;margin-top:.3rem;min-height:.85rem;font-weight:600;transition:color .2s;padding-left:2px;"></div>
       </div>
       <div>
         <label class="label">Signal Report</label>
@@ -418,30 +451,70 @@ input:checked+.slider:before{transform:translateX(24px);}
         <input type="text" id="ciNotes" class="input" placeholder="Optional notes">
       </div>
       <div style="padding-top:1.6rem;">
-        <button onclick="logCheckin()" id="ciSubmitBtn" class="btn btn-primary" style="white-space:nowrap;width:100%;">
+        <button onclick="logCheckin()" id="ciSubmitBtn" class="btn btn-primary" style="width:100%;white-space:nowrap;">
           + Log
         </button>
       </div>
     </div>
-    <div id="ciError" style="color:#C8102E;font-size:.78rem;margin-top:.25rem;display:none;padding:.4rem .6rem;background:#fff1f2;border-radius:6px;border:1px solid #fecdd3;"></div>
+    <div id="ciError" style="color:#C8102E;font-size:.78rem;margin-top:.6rem;display:none;padding:.4rem .6rem;background:#fff1f2;border-radius:6px;border:1px solid #fecdd3;"></div>
   </div>
 
   {{-- Log table --}}
   <div class="nc-card" style="padding:0;overflow:hidden;">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--border);">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--border);background:linear-gradient(to right,#fafbff,#fff);">
       <div style="font-weight:800;color:var(--navy);font-size:.95rem;">Station Log</div>
       <button onclick="clearLog()" style="font-size:.75rem;font-weight:700;color:#C8102E;background:none;border:1px solid #fecdd3;border-radius:6px;padding:.25rem .65rem;cursor:pointer;">
         Clear All
       </button>
     </div>
-    <div id="ciLog" style="min-height:80px;"></div>
-    <div id="ciEmpty" style="text-align:center;padding:2.5rem;color:var(--muted);font-size:.85rem;display:none;">
-      <div style="font-size:1.5rem;margin-bottom:.5rem;">📭</div>
-      No stations logged yet
+    {{-- Table header --}}
+    <div style="display:grid;grid-template-columns:2rem 3.5rem 6rem 1fr 5rem 7rem 4rem 4rem 6rem 2.5rem;gap:.5rem;padding:.5rem 1.25rem;background:#f8fafc;border-bottom:1px solid var(--border);">
+      <div style="font-size:.65rem;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">#</div>
+      <div style="font-size:.65rem;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">Time</div>
+      <div style="font-size:.65rem;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">Callsign</div>
+      <div style="font-size:.65rem;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">Name</div>
+      <div style="font-size:.65rem;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">Licence</div>
+      <div style="font-size:.65rem;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">Location</div>
+      <div style="font-size:.65rem;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">Grid</div>
+      <div style="font-size:.65rem;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">Signal</div>
+      <div style="font-size:.65rem;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">Member</div>
+      <div></div>
+    </div>
+    <div id="ciLog"></div>
+    <div id="ciEmpty" style="text-align:center;padding:2.5rem;color:var(--muted);font-size:.85rem;">
+      <div style="font-size:1.5rem;margin-bottom:.5rem;">📭</div>No stations logged yet
     </div>
   </div>
-
 </div>
+
+{{-- Invite Modal --}}
+<div id="inviteModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:2rem;max-width:480px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.2);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;">
+      <div style="font-size:1.1rem;font-weight:900;color:var(--navy);">✉ Invite to RAYNET</div>
+      <button onclick="closeInviteModal()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--muted);">✕</button>
+    </div>
+    <div id="inviteCallsignDisplay" style="font-family:monospace;font-size:1.2rem;font-weight:900;color:var(--navy);background:#f0f4ff;padding:.4rem .85rem;border-radius:8px;display:inline-block;margin-bottom:1rem;"></div>
+    <div id="inviteQrzEmailRow" style="display:none;margin-bottom:.75rem;padding:.6rem .85rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:.82rem;">
+      <div style="font-weight:700;color:#15803d;margin-bottom:.3rem;">📧 Email found on QRZ:</div>
+      <div style="display:flex;align-items:center;gap:.5rem;">
+        <span id="inviteQrzEmail" style="font-family:monospace;font-weight:700;color:#334155;"></span>
+        <button onclick="useQrzEmail()" style="font-size:.72rem;font-weight:700;background:#15803d;color:#fff;border:none;border-radius:5px;padding:.2rem .55rem;cursor:pointer;">Use this</button>
+      </div>
+    </div>
+    <div class="field">
+      <label class="label">Email Address *</label>
+      <input type="email" id="inviteEmail" class="input" placeholder="operator@example.com">
+    </div>
+    <div id="inviteError" style="color:#C8102E;font-size:.78rem;margin:.4rem 0;display:none;"></div>
+    <div style="display:flex;gap:.75rem;margin-top:1rem;">
+      <button onclick="sendInvite()" id="inviteSendBtn" class="btn btn-primary" style="flex:1;">Send Invitation</button>
+      <button onclick="closeInviteModal()" class="btn btn-ghost">Cancel</button>
+    </div>
+    <div id="inviteSuccess" style="display:none;text-align:center;padding:.75rem;background:#f0fdf4;border-radius:8px;color:#15803d;font-weight:700;margin-top:.75rem;">✓ Invitation sent successfully!</div>
+  </div>
+</div>
+
 
 
 
@@ -813,6 +886,9 @@ function pickCtrl(callsign) {
 
 
 <script>
+var _ciQrzData = {};
+var _ciInviteCallsign = '';
+
 function logCheckin() {
     var cs    = document.getElementById('ciCallsign').value.trim().toUpperCase();
     var rep   = document.getElementById('ciReport').value.trim();
@@ -820,23 +896,19 @@ function logCheckin() {
     var err   = document.getElementById('ciError');
     if (!cs) { err.textContent = 'Callsign is required'; err.style.display=''; return; }
     err.style.display = 'none';
-    // Guard: check server-side setting directly
     fetch('/admin/events/station-log/logging-status', {cache:'no-store',
         headers:{'Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content}
     })
     .then(function(r){ return r.json(); })
     .then(function(status){
         if (!status.enabled) {
-            err.textContent = 'Station logging is not enabled — turn it on in Live Status Control first';
+            err.textContent = 'Station logging is not enabled — enable it in Live Status Control first';
             err.style.display = '';
             return;
         }
         doLogCheckin(cs, rep, notes, err);
     })
-    .catch(function(){
-        // If check fails, attempt anyway and let server decide
-        doLogCheckin(cs, rep, notes, err);
-    });
+    .catch(function(){ doLogCheckin(cs, rep, notes, err); });
 }
 
 function doLogCheckin(cs, rep, notes, err) {
@@ -851,7 +923,7 @@ function doLogCheckin(cs, rep, notes, err) {
             document.getElementById('ciCallsign').value = '';
             document.getElementById('ciReport').value   = '';
             document.getElementById('ciNotes').value    = '';
-            document.getElementById('ciQrzName').textContent = '';
+            hideQrzCard();
             loadLog();
         } else if (d.error) {
             err.textContent = d.error;
@@ -861,25 +933,125 @@ function doLogCheckin(cs, rep, notes, err) {
 }
 
 function qrzLookup(cs) {
-    if (!cs || cs.length < 3) return;
-    var nameEl = document.getElementById('ciQrzName');
-    if (nameEl) { nameEl.textContent = '⏳ looking up...'; nameEl.style.color='var(--muted)'; }
+    if (!cs || cs.length < 3) { hideQrzCard(); return; }
     fetch('/admin/events/station-log/qrz?callsign=' + encodeURIComponent(cs), {
         headers: {'X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content, 'Accept':'application/json'}
     })
     .then(function(r){ return r.json(); })
     .then(function(d){
-        if (nameEl) {
-            if (d.name) {
-                nameEl.textContent = d.name + (d.location ? ' · ' + d.location : '');
-                nameEl.style.color = '#059669';
-            } else {
-                nameEl.textContent = 'Not found on QRZ';
-                nameEl.style.color = 'var(--muted)';
-            }
-        }
+        _ciQrzData[cs] = d;
+        if (!d.found) { hideQrzCard(); return; }
+        showQrzCard(cs, d);
     })
-    .catch(function(){ if(nameEl) nameEl.textContent = ''; });
+    .catch(function(){ hideQrzCard(); });
+}
+
+function showQrzCard(cs, d) {
+    var card = document.getElementById('ciQrzCard');
+    if (!card) return;
+
+    document.getElementById('ciQrzCallsign').textContent = cs;
+    document.getElementById('ciQrzName').textContent     = d.name || '';
+
+    var photo = document.getElementById('ciQrzPhoto');
+    if (d.photo) { photo.src = d.photo; photo.style.display = ''; }
+    else         { photo.style.display = 'none'; }
+
+    var lic = document.getElementById('ciQrzLicence');
+    if (d.licence_class) { lic.textContent = d.licence_class; lic.style.display = ''; }
+    else                 { lic.style.display = 'none'; }
+
+    var reg = document.getElementById('ciQrzRegistered');
+    reg.style.display = d.is_registered ? '' : 'none';
+
+    var link = document.getElementById('ciQrzLink');
+    link.href = d.qrz_url || ('https://www.qrz.com/db/' + cs);
+
+    var loc = document.getElementById('ciQrzLocation');
+    if (d.location) { loc.querySelector('span').textContent = d.location; loc.style.display = ''; }
+    else            { loc.style.display = 'none'; }
+
+    var grid = document.getElementById('ciQrzGrid');
+    if (d.grid) { grid.querySelector('span').textContent = d.grid; grid.style.display = ''; }
+    else        { grid.style.display = 'none'; }
+
+    var dxcc = document.getElementById('ciQrzDxcc');
+    if (d.dxcc) { dxcc.querySelector('span').textContent = d.dxcc; dxcc.style.display = ''; }
+    else        { dxcc.style.display = 'none'; }
+
+    var lotw = document.getElementById('ciQrzLotw');
+    lotw.style.display = (d.lotw === '1' || d.lotw === 'Y') ? '' : 'none';
+
+    var invBtn = document.getElementById('ciInviteBtn');
+    invBtn.style.display = (!d.is_registered) ? '' : 'none';
+    _ciInviteCallsign = cs;
+
+    card.style.display = '';
+    card.style.animation = 'none'; void card.offsetWidth;
+    card.style.animation = 'badgeFadeIn .35s ease forwards';
+}
+
+function hideQrzCard() {
+    var card = document.getElementById('ciQrzCard');
+    if (card) card.style.display = 'none';
+}
+
+function openInviteModal() {
+    var cs   = _ciInviteCallsign;
+    var d    = _ciQrzData[cs] || {};
+    var modal = document.getElementById('inviteModal');
+    document.getElementById('inviteCallsignDisplay').textContent = cs;
+    document.getElementById('inviteEmail').value = '';
+    document.getElementById('inviteError').style.display = 'none';
+    document.getElementById('inviteSuccess').style.display = 'none';
+    document.getElementById('inviteSendBtn').disabled = false;
+    var qrzEmailRow = document.getElementById('inviteQrzEmailRow');
+    if (d.email) {
+        document.getElementById('inviteQrzEmail').textContent = d.email;
+        qrzEmailRow.style.display = '';
+    } else {
+        qrzEmailRow.style.display = 'none';
+    }
+    modal.style.display = 'flex';
+}
+
+function closeInviteModal() {
+    document.getElementById('inviteModal').style.display = 'none';
+}
+
+function useQrzEmail() {
+    var email = document.getElementById('inviteQrzEmail').textContent;
+    document.getElementById('inviteEmail').value = email;
+}
+
+function sendInvite() {
+    var cs    = _ciInviteCallsign;
+    var d     = _ciQrzData[cs] || {};
+    var email = document.getElementById('inviteEmail').value.trim();
+    var err   = document.getElementById('inviteError');
+    var btn   = document.getElementById('inviteSendBtn');
+    if (!email) { err.textContent = 'Email address is required'; err.style.display = ''; return; }
+    err.style.display = 'none';
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+    fetch('{{ route("admin.events.station-log.invite") }}', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content},
+        body: JSON.stringify({callsign:cs, email:email, name: d.name || cs})
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+        if (res.success) {
+            document.getElementById('inviteSuccess').style.display = '';
+            btn.textContent = '✓ Sent';
+            setTimeout(closeInviteModal, 2000);
+        } else {
+            err.textContent = res.error || 'Failed to send';
+            err.style.display = '';
+            btn.disabled = false;
+            btn.textContent = 'Send Invitation';
+        }
+    });
 }
 
 function removeCheckin(id) {
@@ -895,6 +1067,10 @@ function clearLog() {
         method: 'POST',
         headers: {'X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content}
     }).then(function(){ loadLog(); });
+}
+
+function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function loadLog() {
@@ -913,89 +1089,131 @@ function loadLog() {
         }
         if (empty) empty.style.display = 'none';
         log.innerHTML = data.map(function(e, i) {
-            var time = new Date(e.checked_in_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+            var qrz  = e.qrz_data || {};
             var even = i % 2 === 0;
-            return '<div style="display:grid;grid-template-columns:2rem 6rem 4rem 1fr auto auto;gap:.6rem;align-items:center;'
-                + 'padding:.6rem 1.25rem;background:' + (even ? '#fff' : '#f9fafb') + ';border-bottom:1px solid #f1f5f9;">'
+            var time = new Date(e.checked_in_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+            var licBadge = qrz.licence_class
+                ? '<span style="font-size:.68rem;font-weight:800;padding:.1rem .4rem;border-radius:999px;background:#dcfce7;color:#15803d;">' + escHtml(qrz.licence_class) + '</span>'
+                : '';
+            var memberBadge = e.is_registered
+                ? '<span style="font-size:.68rem;font-weight:800;padding:.1rem .4rem;border-radius:999px;background:#fef9c3;color:#a16207;">✓ Member</span>'
+                : '<span style="font-size:.68rem;color:#cbd5e1;">—</span>';
+            var photo = e.photo_url
+                ? '<img src="' + escHtml(e.photo_url) + '" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1.5px solid #e2e8f0;margin-right:.4rem;vertical-align:middle;" onerror="this.style.display=\'none\'">'
+                : '<div style="width:28px;height:28px;border-radius:50%;background:#f1f5f9;display:inline-flex;align-items:center;justify-content:center;font-size:.7rem;color:#94a3b8;margin-right:.4rem;vertical-align:middle;flex-shrink:0;">📡</div>';
+            var qrzLink = qrz.qrz_url
+                ? '<a href="' + escHtml(qrz.qrz_url) + '" target="_blank" style="font-size:.65rem;color:#6366f1;font-weight:700;text-decoration:none;margin-left:.3rem;">QRZ↗</a>'
+                : '';
+            return '<div style="display:grid;grid-template-columns:2rem 3.5rem 6rem 1fr 5rem 7rem 4rem 4rem 6rem 2.5rem;gap:.5rem;align-items:center;'
+                + 'padding:.6rem 1.25rem;background:' + (even?'#fff':'#f9fafb') + ';border-bottom:1px solid #f1f5f9;transition:background .15s;" data-even="' + (even?'1':'0') + '">'
                 + '<div style="font-size:.68rem;font-weight:800;color:#cbd5e1;text-align:center;">' + (i+1) + '</div>'
-                + '<div style="font-size:.85rem;font-weight:900;font-family:monospace;color:var(--navy);">' + e.callsign + '</div>'
-                + '<div style="font-size:.75rem;font-weight:700;color:#059669;font-family:monospace;">' + (e.signal_report || '—') + '</div>'
-                + '<div style="font-size:.78rem;color:#64748b;">'
-                    + (e.name ? '<span style="font-weight:700;color:#334155;">' + escHtml(e.name) + '</span>' : '')
-                    + (e.notes ? '<span style="color:#94a3b8;"> · ' + escHtml(e.notes) + '</span>' : '')
+                + '<div style="font-size:.72rem;color:#94a3b8;font-family:monospace;white-space:nowrap;">' + time + '</div>'
+                + '<div style="display:flex;align-items:center;">'
+                    + photo
+                    + '<span style="font-family:monospace;font-weight:900;font-size:.88rem;color:#003366;">' + escHtml(e.callsign) + '</span>'
+                    + qrzLink
                 + '</div>'
-                + '<div style="font-size:.7rem;color:#94a3b8;font-family:monospace;white-space:nowrap;">' + time + '</div>'
-                + '<button data-remove="' + e.id + '" title="Remove" '
-                    + 'style="background:none;border:none;cursor:pointer;color:#fca5a5;font-size:.85rem;padding:0 .2rem;line-height:1;transition:color .15s;" >✕</button>'
+                + '<div><span style="font-weight:700;color:#334155;font-size:.82rem;">' + escHtml(e.name||'—') + '</span>'
+                    + (e.notes ? '<span style="color:#94a3b8;font-size:.75rem;"> · ' + escHtml(e.notes) + '</span>' : '')
+                + '</div>'
+                + '<div>' + licBadge + '</div>'
+                + '<div style="font-size:.75rem;color:#64748b;">' + escHtml(qrz.location||'—') + '</div>'
+                + '<div style="font-size:.75rem;color:#64748b;font-family:monospace;">' + escHtml(qrz.grid||'—') + '</div>'
+                + '<div style="font-family:monospace;font-weight:800;color:#059669;font-size:.82rem;">' + escHtml(e.signal_report||'—') + '</div>'
+                + '<div style="display:flex;align-items:center;gap:.35rem;">' + memberBadge
+                    + (!e.is_registered ? '<button data-invite="' + e.id + '" data-callsign="' + escHtml(e.callsign) + '" data-name="' + escHtml(e.name||e.callsign) + '" title="Invite to RAYNET" style="font-size:.65rem;font-weight:700;background:#003366;color:#fff;border:none;border-radius:4px;padding:.15rem .4rem;cursor:pointer;white-space:nowrap;">✉</button>' : '')
+                + '</div>'
+                + '<button data-remove="' + e.id + '" title="Remove" style="background:none;border:none;cursor:pointer;color:#fca5a5;font-size:.9rem;padding:0;text-align:center;line-height:1;">✕</button>'
                 + '</div>';
         }).join('');
     });
-}
-
-function escHtml(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function updateStatusBanner() {
     fetch('/net-status-json', {cache:'no-store'})
     .then(function(r){ return r.json(); })
     .then(function(d){
-        var banner  = document.getElementById('ciStatusBanner');
+        var banner   = document.getElementById('ciStatusBanner');
         var formCard = document.getElementById('ciFormCard');
         var submitBtn = document.getElementById('ciSubmitBtn');
         if (!banner) return;
         if (!d.active) {
-            banner.style.background = '#f1f5f9';
-            banner.style.color      = '#64748b';
+            banner.style.cssText = 'border-radius:10px;padding:.75rem 1rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:.75rem;font-size:.82rem;font-weight:700;background:#f1f5f9;color:#64748b;';
             banner.innerHTML = '<span style="font-size:1rem;">⚫</span> Net is not currently active';
-            if (formCard) formCard.style.opacity = '.5';
+            if (formCard) formCard.style.opacity = '.55';
             if (submitBtn) submitBtn.disabled = true;
         } else if (!d.station_logging) {
-            banner.style.background = '#fff7ed';
-            banner.style.color      = '#c2410c';
-            banner.innerHTML = '<span style="font-size:1rem;">⚠️</span> Station logging is <strong>disabled</strong> — enable it in the Live Status Control tab to log stations';
-            if (formCard) formCard.style.opacity = '.5';
+            banner.style.cssText = 'border-radius:10px;padding:.75rem 1rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:.75rem;font-size:.82rem;font-weight:700;background:#fff7ed;color:#c2410c;';
+            banner.innerHTML = '<span style="font-size:1rem;">⚠️</span> Station logging is <strong style="margin:0 .2rem;">disabled</strong> — enable it in the Live Status Control tab';
+            if (formCard) formCard.style.opacity = '.55';
             if (submitBtn) submitBtn.disabled = true;
         } else {
-            banner.style.background = '#f0fdf4';
-            banner.style.color      = '#15803d';
-            banner.innerHTML = '<span style="font-size:1rem;">🟢</span> Station logging is <strong>active</strong> — type a callsign and press Enter to log';
+            banner.style.cssText = 'border-radius:10px;padding:.75rem 1rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:.75rem;font-size:.82rem;font-weight:700;background:#f0fdf4;color:#15803d;';
+            banner.innerHTML = '<span style="font-size:1rem;">🟢</span> Station logging is <strong style="margin:0 .2rem;">active</strong> — type a callsign and press Enter to log';
             if (formCard) formCard.style.opacity = '1';
             if (submitBtn) submitBtn.disabled = false;
         }
     });
 }
 
-// Load on tab switch and auto-refresh every 10s
 document.addEventListener('DOMContentLoaded', function(){
     updateStatusBanner();
     loadLog();
     setInterval(function(){ updateStatusBanner(); loadLog(); }, 10000);
-    // Delegated remove button handler — avoids quote nesting in JS strings
+
+    // Delegated handlers for rows and remove buttons
     var ciLog = document.getElementById('ciLog');
     if (ciLog) {
         ciLog.addEventListener('click', function(e) {
-            var btn = e.target.closest('[data-remove]');
-            if (btn) removeCheckin(parseInt(btn.dataset.remove));
+            var removeBtn = e.target.closest('[data-remove]');
+            if (removeBtn) { removeCheckin(parseInt(removeBtn.dataset.remove)); return; }
+            var invBtn = e.target.closest('[data-invite]');
+            if (invBtn) {
+                _ciInviteCallsign = invBtn.dataset.callsign;
+                _ciQrzData[_ciInviteCallsign] = _ciQrzData[_ciInviteCallsign] || {name: invBtn.dataset.name};
+                openInviteModal();
+            }
         });
         ciLog.addEventListener('mouseover', function(e) {
             var btn = e.target.closest('[data-remove]');
-            if (btn) btn.style.color = '#C8102E';
+            if (btn) { btn.style.color = '#C8102E'; return; }
+            var row = e.target.closest('[data-even]');
+            if (row) row.style.background = '#f0f4ff';
         });
         ciLog.addEventListener('mouseout', function(e) {
             var btn = e.target.closest('[data-remove]');
-            if (btn) btn.style.color = '#fca5a5';
+            if (btn) { btn.style.color = '#fca5a5'; return; }
+            var row = e.target.closest('[data-even]');
+            if (row) row.style.background = row.dataset.even === '1' ? '#fff' : '#f9fafb';
         });
     }
+
     var ci = document.getElementById('ciCallsign');
     if (ci) {
-        ci.addEventListener('keydown', function(e){ if(e.key==='Enter') logCheckin(); });
-        ci.addEventListener('blur', function(){ qrzLookup(ci.value.trim().toUpperCase()); });
+        ci.addEventListener('keydown', function(e){
+            if (e.key === 'Enter') logCheckin();
+        });
         ci.addEventListener('input', function(){
-            var el = document.getElementById('ciQrzName');
-            if (el) el.textContent = '';
+            hideQrzCard();
+        });
+        var qrzTimer;
+        ci.addEventListener('input', function(){
+            clearTimeout(qrzTimer);
+            var val = ci.value.trim().toUpperCase();
+            if (val.length >= 3) {
+                qrzTimer = setTimeout(function(){ qrzLookup(val); }, 600);
+            }
+        });
+        ci.addEventListener('blur', function(){
+            var val = ci.value.trim().toUpperCase();
+            if (val.length >= 3) qrzLookup(val);
         });
     }
+
+    // Close invite modal on backdrop click
+    document.getElementById('inviteModal').addEventListener('click', function(e){
+        if (e.target === this) closeInviteModal();
+    });
 });
 </script>
 

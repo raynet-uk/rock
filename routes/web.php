@@ -1190,6 +1190,8 @@ Route::middleware(['web','auth','admin'])->prefix('admin/events')->name('admin.e
     })->name('station-log.logging-status');
     Route::get('/station-log/qrz',         [\App\Http\Controllers\EventAdminController::class, 'stationLogQrz'])    ->name('station-log.qrz');
     Route::post('/station-log',           [\App\Http\Controllers\EventAdminController::class, 'stationLogStore'])  ->name('station-log.store');
+    Route::post('/station-log/invite',     [\App\Http\Controllers\EventAdminController::class, 'stationLogInvite'])  ->name('station-log.invite');
+    Route::get('/station-log/export-pdf',  [\App\Http\Controllers\EventAdminController::class, 'stationLogExportPdf'])->name('station-log.export-pdf');
     Route::delete('/station-log/{id}',    [\App\Http\Controllers\EventAdminController::class, 'stationLogDestroy'])->name('station-log.destroy');
     Route::post('/station-log/clear',     [\App\Http\Controllers\EventAdminController::class, 'stationLogClear'])  ->name('station-log.clear');
 });
