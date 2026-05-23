@@ -232,4 +232,9 @@ self.addEventListener('message', async event => {
     if (event.data.type === 'SYNC_NOW') {
         await replayQueue();
     }
+    if (event.data.type === 'CLEAR_QUEUE') {
+        const all = await dbGetAll(QUEUE_STORE);
+        for (const item of all) { await dbDelete(QUEUE_STORE, item.id); }
+        notifyClients({type:'QUEUE_CLEARED', count: all.length});
+    }
 });

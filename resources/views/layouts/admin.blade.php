@@ -489,7 +489,7 @@ document.querySelectorAll('.sb-subitem.active').forEach(el=>{
       var d = e.data;
       if (!d) return;
       if (d.type === 'SYNC_STATUS')    updateBar(d.online, d.queued || 0);
-      if (d.type === 'SYNC_COMPLETE')  { onSyncComplete(d); if (typeof loadLog === 'function') loadLog(); }
+      if (d.type === 'SYNC_COMPLETE')  { onSyncComplete(d); } // loadLog handled by popup import
       if (d.type === 'AUTH_FAILED')    showAuthFailed(d.message);
     });
   }
@@ -604,6 +604,13 @@ document.querySelectorAll('.sb-subitem.active').forEach(el=>{
     fetchToken();
     // Refresh token every 10 hours
     setInterval(fetchToken, 36000000);
+
+    // Clear SW IndexedDB queue — we now use localStorage for offline entries
+    setTimeout(function(){
+        if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({type:'CLEAR_QUEUE'});
+        }
+    }, 2000);
 
     // Show stored token expiry
     var exp = localStorage.getItem(TOKEN_EXP);

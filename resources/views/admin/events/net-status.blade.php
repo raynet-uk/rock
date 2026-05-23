@@ -1466,13 +1466,18 @@ function deleteHistory(id) {
 
 function showOfflineSyncModal(q) {
     var list = document.getElementById('offlineSyncList');
+    var btn  = document.getElementById('offlineSyncImportBtn');
+    var err  = document.getElementById('offlineSyncError');
     if (!list) return;
+    // Reset state
+    if (btn) { btn.disabled = false; btn.textContent = '📥 Import ' + q.length + ' station' + (q.length!==1?'s':'') + ' to Log'; btn.style.background = ''; }
+    if (err) err.style.display = 'none';
     list.innerHTML = q.map(function(e, i) {
         var time = new Date(e.logged_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-        return '<div style="display:flex;align-items:center;gap:.75rem;padding:.6rem .85rem;'
+        return '<div style="display:flex;align-items:center;gap:.75rem;padding:.55rem .85rem;'
             + (i%2===0?'background:#fff':'background:#f9fafb') + ';border-bottom:1px solid #f1f5f9;">'
             + '<span style="font-family:monospace;font-weight:900;color:#003366;font-size:.9rem;min-width:80px;">' + escHtml(e.callsign) + '</span>'
-            + '<span style="font-size:.75rem;color:#94a3b8;font-family:monospace;">' + time + '</span>'
+            + '<span style="font-size:.75rem;color:#94a3b8;font-family:monospace;min-width:40px;">' + time + '</span>'
             + (e.signal_report ? '<span style="font-size:.75rem;font-weight:700;color:#059669;font-family:monospace;">' + escHtml(e.signal_report) + '</span>' : '')
             + (e.notes ? '<span style="font-size:.75rem;color:#64748b;">' + escHtml(e.notes) + '</span>' : '')
             + '</div>';
