@@ -1178,7 +1178,7 @@ function loadHistory() {
             var ended   = new Date(h.ended_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
             var started = h.started_at ? new Date(h.started_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '---';
             return '<div style="border-bottom:1px solid #f1f5f9;">'
-                + '<div style="display:flex;align-items:center;gap:1rem;padding:.85rem 1.25rem;cursor:pointer;" data-toggle-hist="' + h.id + '">'
+                + '<div style="display:flex;align-items:center;gap:1rem;padding:.85rem 1.25rem;cursor:pointer;" data-toggle-hist=' + h.id + '>'
                     + '<div style="width:36px;height:36px;border-radius:8px;background:#f0f4ff;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">📻</div>'
                     + '<div style="flex:1;min-width:0;">'
                         + '<div style="font-weight:800;color:var(--navy);font-size:.88rem;">' + escHtml(h.net_callsign||'Unknown Net')
@@ -1495,6 +1495,19 @@ document.addEventListener('DOMContentLoaded', function(){
     document.getElementById('inviteModal').addEventListener('click', function(e){
         if (e.target === this) closeInviteModal();
     });
+    // Load and auto-refresh history
+    loadHistory();
+    setInterval(loadHistory, 30000);
+
+    // History row delegated click
+    var _histList = document.getElementById('histList');
+    if (_histList) {
+        _histList.addEventListener('click', function(e) {
+            if (e.target.closest('a') || e.target.tagName === 'BUTTON') return;
+            var row = e.target.closest('[data-toggle-hist]');
+            if (row) toggleHistEntry(parseInt(row.getAttribute('data-toggle-hist')));
+        });
+    }
 });
 </script>
 
