@@ -614,7 +614,14 @@ class EventAdminController extends Controller
 
     public function storeNetSchedule(\Illuminate\Http\Request $request) {
         $request->validate(['name'=>'required|string|max:100','callsign'=>'required|string|max:30','frequency'=>'nullable|string|max:30','controller'=>'nullable|string|max:30','description'=>'nullable|string','days_of_week'=>'required|array|min:1','start_time'=>'required|date_format:H:i','end_time'=>'required|date_format:H:i',]);
-        \App\Models\NetSchedule::create(['name'=>$request->name,'callsign'=>strtoupper($request->callsign),'frequency'=>$request->frequency,'band'=>$request->band,'controller'=>$request->controller ? strtoupper($request->controller) : null,'controller_slots'=>$request->controller_slots ?? [],'description'=>$request->description,'announcement'=>$request->announcement,'days_of_week'=>$request->days_of_week,'repeat_type'=>$request->repeat_type ?? 'weekly','priority'=>$request->priority ?? 'routine','start_time'=>$request->start_time,'end_time'=>$request->end_time,'auto_activate'=>$request->boolean('auto_activate'),'is_active'=>true,]);
+        $newSchedule = \App\Models\NetSchedule::create(['name'=>$request->name,'callsign'=>strtoupper($request->callsign),'frequency'=>$request->frequency,'band'=>$request->band,'controller'=>$request->controller ? strtoupper($request->controller) : null,'controller_slots'=>$request->controller_slots ?? [],'description'=>$request->description,'announcement'=>$request->announcement,'days_of_week'=>$request->days_of_week,'repeat_type'=>$request->repeat_type ?? 'weekly','priority'=>$request->priority ?? 'routine','start_time'=>$request->start_time,'end_time'=>$request->end_time,'auto_activate'=>$request->boolean('auto_activate'),'is_active'=>true,]);
+        $this->notifyControllerSlots($request->controller_slots ?? [], [], [
+            'callsign'     => strtoupper($request->callsign),
+            'name'         => $request->name,
+            'frequency'    => $request->frequency,
+            'description'  => $request->description,
+            'announcement' => $request->announcement,
+        ]);
         return back()->with('success', 'Schedule created.');
     }
 
@@ -622,7 +629,15 @@ class EventAdminController extends Controller
     public function updateNetSchedule(\Illuminate\Http\Request $request, $id) {
         $s = \App\Models\NetSchedule::findOrFail($id);
         $request->validate(['name'=>'required|string|max:100','callsign'=>'required|string|max:30','frequency'=>'nullable|string|max:30','controller'=>'nullable|string|max:30','description'=>'nullable|string','days_of_week'=>'required|array|min:1','start_time'=>'required|date_format:H:i','end_time'=>'required|date_format:H:i']);
+        $previousSlots2 = is_array($s->controller_slots) ? $s->controller_slots : json_decode($s->controller_slots ?? '[]', true) ?? [];
         $s->update(['name'=>$request->name,'callsign'=>strtoupper($request->callsign),'frequency'=>$request->frequency,'band'=>$request->band,'controller'=>$request->controller ? strtoupper($request->controller) : null,'controller_slots'=>$request->controller_slots ?? [],'description'=>$request->description,'announcement'=>$request->announcement,'days_of_week'=>$request->days_of_week,'repeat_type'=>$request->repeat_type ?? 'weekly','priority'=>$request->priority ?? 'routine','start_time'=>$request->start_time,'end_time'=>$request->end_time,'auto_activate'=>$request->boolean('auto_activate'),'is_active'=>$request->boolean('is_active')]);
+        $this->notifyControllerSlots($request->controller_slots ?? [], $previousSlots2, [
+            'callsign'     => strtoupper($request->callsign),
+            'name'         => $request->name,
+            'frequency'    => $request->frequency,
+            'description'  => $request->description,
+            'announcement' => $request->announcement,
+        ]);
         return back()->with('success', 'Schedule updated.');
     }
 
@@ -647,6 +662,47 @@ class EventAdminController extends Controller
         $clone->is_active = false;
         $clone->save();
         return back()->with('success', 'Schedule cloned successfully.');
+    }
+
+    /**
+     * Send controller scheduled emails for any slots whose callsign matches a registered user.
+     * Only sends if the callsign is newly added or changed vs $previousSlots.
+     */
+    private function notifyControllerSlots(array $slots, array $previousSlots, array $netInfo): void
+    {
+        $previousCallsigns = collect($previousSlots)->pluck('callsign')->map(fn($c) => strtoupper($c))->toArray();
+        $groupName = \App\Helpers\RaynetSetting::groupName();
+
+        foreach ($slots as $slot) {
+            $cs = strtoupper(trim($slot['callsign'] ?? ''));
+            if (!$cs) continue;
+
+            // Only notify if this is a new/changed assignment
+            if (in_array($cs, $previousCallsigns)) continue;
+
+            $user = \App\Models\User::whereRaw('UPPER(callsign) = ?', [$cs])->first();
+            if (!$user || !$user->email) continue;
+
+            try {
+                \Illuminate\Support\Facades\Mail::to($user->email)->send(
+                    new \App\Mail\NetControllerScheduled(
+                        controllerName:     $user->name,
+                        controllerCallsign: $cs,
+                        netCallsign:        $netInfo['callsign'] ?? '',
+                        netName:            $netInfo['name'] ?? '',
+                        frequency:          $netInfo['frequency'] ?? '',
+                        slotStart:          $slot['start'] ?? '',
+                        slotEnd:            $slot['end'] ?? '',
+                        groupName:          $groupName,
+                        description:        $netInfo['description'] ?? null,
+                        announcement:       $netInfo['announcement'] ?? null,
+                        netUrl:             url('/admin/events/net-status'),
+                    )
+                );
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('NetControllerScheduled mail failed for ' . $cs . ': ' . $e->getMessage());
+            }
+        }
     }
 
     public function updateNetStatus(\Illuminate\Http\Request $request) {
@@ -684,7 +740,17 @@ class EventAdminController extends Controller
         $slots     = is_array($rawSlots)
             ? array_values(array_filter($rawSlots, fn($s) => !empty($s['callsign'])))
             : [];
+        // Notify any newly-assigned controllers
+        $previousSlots = json_decode(\App\Models\Setting::get('net_controller_slots', '[]'), true) ?? [];
         \App\Models\Setting::set('net_controller_slots', json_encode($slots));
+
+        $this->notifyControllerSlots($slots, $previousSlots, [
+            'callsign'     => $request->input('net_callsign',''),
+            'name'         => $request->input('net_description',''),
+            'frequency'    => $request->input('net_frequency',''),
+            'description'  => $request->input('net_description',''),
+            'announcement' => $request->input('net_announcement',''),
+        ]);
 
         // Derive net_controller from the currently active time slot only
         // If slots exist but none is active right now, store empty — endpoint computes live
