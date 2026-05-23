@@ -943,6 +943,10 @@ function logCheckin() {
     .catch(function(){ doLogCheckin(cs, rep, notes, err); });
 }
 
+// Local pending entries shown while offline / not yet synced
+var _pendingEntries = [];
+var _pendingIdSeq   = 1;
+
 function doLogCheckin(cs, rep, notes, err) {
     fetch('{{ route("admin.events.station-log.store") }}', {
         method: 'POST',
@@ -956,6 +960,22 @@ function doLogCheckin(cs, rep, notes, err) {
             document.getElementById('ciReport').value   = '';
             document.getElementById('ciNotes').value    = '';
             hideQrzCard();
+            var nameEl = document.getElementById('ciQrzName');
+            if (nameEl) { nameEl.textContent = ''; }
+            if (d.queued) {
+                // Offline — add to local pending list so it appears in UI immediately
+                _pendingEntries.push({
+                    _pending_id:    _pendingIdSeq++,
+                    callsign:       cs,
+                    signal_report:  rep,
+                    notes:          notes,
+                    name:           null,
+                    qrz_data:       {},
+                    is_registered:  false,
+                    checked_in_at:  new Date().toISOString(),
+                    _offline:       true,
+                });
+            }
             loadLog();
         } else if (d.error) {
             err.textContent = d.error;
@@ -1380,12 +1400,20 @@ function escHtml(s) {
 function loadLog() {
     fetch('{{ route("admin.events.station-log.index") }}')
     .then(function(r){ return r.json(); })
-    .then(function(data){
+    .then(function(serverData){
+        // Merge server data with local pending entries (offline queue)
+        // Remove pending entries whose callsign now exists in server data
+        _pendingEntries = _pendingEntries.filter(function(p){
+            return !serverData.some(function(s){ return s.callsign === p.callsign; });
+        });
+        var data = serverData.concat(_pendingEntries);
         var log   = document.getElementById('ciLog');
         var empty = document.getElementById('ciEmpty');
         var cnt   = document.getElementById('ciLiveCount');
         if (!log) return;
-        if (cnt) cnt.textContent = data.length + ' station' + (data.length !== 1 ? 's' : '');
+        var pendingCount = _pendingEntries.length;
+        var total = data.length;
+        if (cnt) cnt.textContent = total + ' station' + (total !== 1 ? 's' : '') + (pendingCount > 0 ? ' (' + pendingCount + ' queued)' : '');
         if (!data.length) {
             log.innerHTML = '';
             if (empty) empty.style.display = '';
@@ -1396,6 +1424,8 @@ function loadLog() {
             var qrz  = e.qrz_data || {};
             var even = i % 2 === 0;
             var time = new Date(e.checked_in_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+            var isPending = !!e._offline;
+            var rowBg = isPending ? (even ? '#fffbeb' : '#fef9c3') : (even ? '#fff' : '#f9fafb');
             var licBadge = qrz.licence_class
                 ? '<span style="font-size:.68rem;font-weight:800;padding:.1rem .4rem;border-radius:999px;background:#dcfce7;color:#15803d;">' + escHtml(qrz.licence_class) + '</span>'
                 : '';
@@ -1419,6 +1449,7 @@ function loadLog() {
                 + '</div>'
                 + '<div><span style="font-weight:700;color:#334155;font-size:.82rem;">' + escHtml(e.name||'—') + '</span>'
                     + (e.notes ? '<span style="color:#94a3b8;font-size:.75rem;"> · ' + escHtml(e.notes) + '</span>' : '')
+                    + pendingBadge
                 + '</div>'
                 + '<div>' + licBadge + '</div>'
                 + '<div style="font-size:.75rem;color:#64748b;">' + escHtml(qrz.location||'—') + '</div>'

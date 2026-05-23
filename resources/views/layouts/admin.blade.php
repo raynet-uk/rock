@@ -489,7 +489,7 @@ document.querySelectorAll('.sb-subitem.active').forEach(el=>{
       var d = e.data;
       if (!d) return;
       if (d.type === 'SYNC_STATUS')    updateBar(d.online, d.queued || 0);
-      if (d.type === 'SYNC_COMPLETE')  onSyncComplete(d);
+      if (d.type === 'SYNC_COMPLETE')  { onSyncComplete(d); if (typeof loadLog === 'function') loadLog(); }
       if (d.type === 'AUTH_FAILED')    showAuthFailed(d.message);
     });
   }

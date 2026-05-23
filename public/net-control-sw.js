@@ -8,10 +8,12 @@ const DB_VERSION   = 1;
 const QUEUE_STORE  = 'sync_queue';
 const TOKEN_STORE  = 'offline_token';
 
-// Routes we intercept for offline queuing
+// Exact POST routes we intercept for offline queuing
 const OFFLINE_ROUTES = [
     '/admin/events/station-log',
     '/admin/events/net-status',
+    '/admin/events/station-log/archive-and-clear',
+    '/admin/events/station-log/clear',
 ];
 
 // ── IndexedDB helpers ──────────────────────────────────────────────────────
@@ -83,7 +85,8 @@ self.addEventListener('fetch', event => {
 
     // Only intercept POST requests to our offline routes
     if (event.request.method !== 'POST') return;
-    const shouldIntercept = OFFLINE_ROUTES.some(r => url.pathname.startsWith(r));
+    // Exact match only — don't intercept sub-routes or page navigations
+    const shouldIntercept = OFFLINE_ROUTES.some(r => url.pathname === r);
     if (!shouldIntercept) return;
 
     event.respondWith(handlePost(event.request.clone()));
@@ -139,12 +142,7 @@ self.addEventListener('sync', event => {
     }
 });
 
-// Also try on fetch of any page (connectivity check)
-self.addEventListener('fetch', event => {
-    if (event.request.method === 'GET' && event.request.url.includes('/admin/')) {
-        event.waitUntil(tryReplayIfOnline());
-    }
-});
+
 
 async function tryReplayIfOnline() {
     try {
