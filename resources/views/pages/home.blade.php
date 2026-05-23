@@ -433,7 +433,11 @@ body {
                 })();
                 </script>
                 @endif
-                <a href="{{ route('members') }}" class="net-join">Join Net →</a>
+                <div id="netCheckinWrap" style="display:flex;flex-direction:column;align-items:center;gap:.1rem;">
+                    <div style="font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.35);">On Net</div>
+                    <div id="netCheckinCount" style="font-size:1.1rem;font-weight:900;color:rgba(255,255,255,.9);font-family:monospace;line-height:1;">0</div>
+                    <div style="font-size:.58rem;color:rgba(255,255,255,.3);font-weight:600;letter-spacing:.05em;">stations</div>
+                </div>
             </div>
         </div>
         @verbatim
@@ -900,6 +904,20 @@ body {
                             }
                         });
                         ctrlSlideIn(fresh, slotTo, info);
+                    }
+                    // Update check-in counter
+                    var countEl = document.getElementById('netCheckinCount');
+                    if (countEl && typeof d.checkins !== 'undefined') {
+                        var newCount = parseInt(d.checkins) || 0;
+                        var oldCount = parseInt(countEl.textContent) || 0;
+                        if (newCount !== oldCount) {
+                            countEl.textContent = newCount;
+                            countEl.style.animation = 'none';
+                            void countEl.offsetWidth;
+                            countEl.style.color = '#22c55e';
+                            countEl.style.animation = 'badgeFadeIn .4s ease forwards';
+                            setTimeout(function(){ countEl.style.color = ''; }, 1500);
+                        }
                     }
                     scheduleSlots(d.slots || []);
                 })

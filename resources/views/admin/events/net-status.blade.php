@@ -159,6 +159,7 @@ input:checked+.slider:before{transform:translateX(24px);}
   <div class="nc-tab" onclick="switchTab('schedules',this)">📅 Schedules</div>
   <div class="nc-tab" onclick="switchTab('calendar',this)">🗓 Calendar</div>
   <div class="nc-tab" onclick="switchTab('sessions',this)">📋 Session Log</div>
+    <div class="nc-tab" onclick="switchTab('checkins',this)">📻 Station Log</div>
 </div>
 
 {{-- LIVE TAB --}}
@@ -383,6 +384,35 @@ input:checked+.slider:before{transform:translateX(24px);}
     @endif
   </div>
 </div>
+<div class="tab-pane" id="tab-checkins">
+  <div class="nc-card">
+    <div class="nc-card-title">📻 Station Log</div>
+    <div style="display:flex;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;align-items:flex-end;">
+      <div style="flex:1;min-width:160px;">
+        <label class="label">Callsign</label>
+        <input type="text" id="ciCallsign" class="input" placeholder="e.g. G4BDS" style="text-transform:uppercase;" maxlength="20">
+      </div>
+      <div style="flex:1;min-width:100px;">
+        <label class="label">Signal Report</label>
+        <input type="text" id="ciReport" class="input" placeholder="59" maxlength="10">
+      </div>
+      <div style="flex:2;min-width:160px;">
+        <label class="label">Notes</label>
+        <input type="text" id="ciNotes" class="input" placeholder="Optional">
+      </div>
+      <button onclick="logCheckin()" class="btn btn-primary" style="white-space:nowrap;">+ Log Station</button>
+    </div>
+    <div id="ciError" style="color:#C8102E;font-size:.8rem;margin-bottom:.75rem;display:none;"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;">
+      <div style="font-size:.8rem;font-weight:700;color:var(--muted);">
+        <span id="ciCount">0</span> stations logged
+      </div>
+      <button onclick="clearLog()" class="btn btn-ghost btn-sm" style="color:#C8102E;font-size:.75rem;">Clear All</button>
+    </div>
+    <div id="ciLog" style="display:flex;flex-direction:column;gap:.4rem;max-height:400px;overflow-y:auto;"></div>
+  </div>
+</div>
+
 
 {{-- 7-DAY MODAL --}}
 <div class="modal-backdrop" id="modal7day">
@@ -748,6 +778,82 @@ function pickCtrl(callsign) {
     active.style.borderColor = 'var(--navy)';
   }
 }
+</script>
+
+
+<script>
+function logCheckin() {
+    var cs  = document.getElementById('ciCallsign').value.trim().toUpperCase();
+    var rep = document.getElementById('ciReport').value.trim();
+    var notes = document.getElementById('ciNotes').value.trim();
+    var err = document.getElementById('ciError');
+    if (!cs) { err.textContent = 'Callsign is required'; err.style.display=''; return; }
+    err.style.display = 'none';
+    fetch('{{ route("admin.events.station-log.store") }}', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','X-CSRF-TOKEN':'{{ csrf_token() }}'},
+        body: JSON.stringify({callsign:cs, signal_report:rep, notes:notes})
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if (d.success) {
+            document.getElementById('ciCallsign').value = '';
+            document.getElementById('ciReport').value   = '';
+            document.getElementById('ciNotes').value    = '';
+            loadLog();
+        }
+    });
+}
+
+function removeCheckin(id) {
+    fetch('{{ url("admin/events/station-log") }}/' + id, {
+        method: 'DELETE',
+        headers: {'X-CSRF-TOKEN':'{{ csrf_token() }}'}
+    }).then(function(){ loadLog(); });
+}
+
+function clearLog() {
+    if (!confirm('Clear all logged stations?')) return;
+    fetch('{{ route("admin.events.station-log.clear") }}', {
+        method: 'POST',
+        headers: {'X-CSRF-TOKEN':'{{ csrf_token() }}'}
+    }).then(function(){ loadLog(); });
+}
+
+function loadLog() {
+    fetch('{{ route("admin.events.station-log.index") }}')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+        var log = document.getElementById('ciLog');
+        var cnt = document.getElementById('ciCount');
+        if (!log) return;
+        cnt.textContent = data.length;
+        if (!data.length) {
+            log.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:.85rem;">No stations logged yet</div>';
+            return;
+        }
+        log.innerHTML = data.map(function(e, i) {
+            var time = new Date(e.checked_in_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+            return '<div style="display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem;background:#f8fafc;border-radius:8px;border:1px solid #e5e7eb;">'
+                + '<div style="font-size:.7rem;font-weight:700;color:var(--muted);min-width:32px;text-align:center;">' + (i+1) + '</div>'
+                + '<div style="font-size:.82rem;font-weight:800;font-family:monospace;color:var(--navy);min-width:80px;">' + e.callsign + '</div>'
+                + (e.signal_report ? '<div style="font-size:.75rem;font-weight:700;color:#059669;min-width:30px;">' + e.signal_report + '</div>' : '<div style="min-width:30px;"></div>')
+                + '<div style="flex:1;font-size:.78rem;color:var(--muted);">' + (e.name || '') + (e.notes ? ' · ' + e.notes : '') + '</div>'
+                + '<div style="font-size:.7rem;color:var(--muted);">' + time + '</div>'
+                + '<button onclick="removeCheckin(' + e.id + ')" style="background:none;border:none;cursor:pointer;color:#C8102E;font-size:.9rem;padding:0 .25rem;">✕</button>'
+                + '</div>';
+        }).join('');
+    });
+}
+
+// Load on tab switch and auto-refresh every 15s
+document.addEventListener('DOMContentLoaded', function(){
+    loadLog();
+    setInterval(loadLog, 15000);
+    // Allow Enter key on callsign field
+    var ci = document.getElementById('ciCallsign');
+    if (ci) ci.addEventListener('keydown', function(e){ if(e.key==='Enter') logCheckin(); });
+});
 </script>
 
 @endsection

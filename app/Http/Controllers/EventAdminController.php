@@ -684,4 +684,47 @@ class EventAdminController extends Controller
         return back()->with('success', 'Net status updated.');
     }
 
+
+    public function stationLogIndex()
+    {
+        $stations = \App\Models\NetStationLog::orderByDesc('checked_in_at')->get();
+        return response()->json($stations);
+    }
+
+    public function stationLogStore(\Illuminate\Http\Request $request)
+    {
+        $request->validate(['callsign' => 'required|string|max:20']);
+        $cs   = strtoupper(trim($request->callsign));
+        // Enrich from QRZ or local user
+        $name = null;
+        $user = \App\Models\User::whereRaw('UPPER(callsign) = ?', [$cs])->first();
+        if ($user) $name = $user->name;
+        if (!$name) {
+            try {
+                $qrz  = app(\App\Services\QrzService::class);
+                $data = $qrz->lookup($cs);
+                if ($data && !empty($data['name'])) $name = $data['name_fmt'] ?? $data['name'];
+            } catch (\Throwable $e) {}
+        }
+        $entry = \App\Models\NetStationLog::create([
+            'callsign'      => $cs,
+            'name'          => $name,
+            'signal_report' => $request->signal_report ?? null,
+            'notes'         => $request->notes ?? null,
+        ]);
+        return response()->json(['success' => true, 'entry' => $entry]);
+    }
+
+    public function stationLogDestroy(int $id)
+    {
+        \App\Models\NetStationLog::findOrFail($id)->delete();
+        return response()->json(['success' => true]);
+    }
+
+    public function stationLogClear()
+    {
+        \App\Models\NetStationLog::truncate();
+        return response()->json(['success' => true]);
+    }
+
 }

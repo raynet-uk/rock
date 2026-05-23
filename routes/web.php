@@ -1165,6 +1165,7 @@ Route::get('/net-status-json', function () {
     }
     unset($slot);
     $currentCtrlInfo = $controller ? $lookupName($controller) : null;
+    $checkinCount = \App\Models\NetStationLog::count();
     return response()->json([
         'active'          => true,
         'controller'      => $controller,
@@ -1176,5 +1177,14 @@ Route::get('/net-status-json', function () {
         'next_change'     => $nextChange,
         'slots'           => $slots,
         'now'             => $nowTime,
+        'checkins'        => $checkinCount,
     ]);
 })->middleware('throttle:60,1');
+
+// Net station log routes
+Route::middleware(['web','auth','admin'])->prefix('admin/events')->name('admin.events.')->group(function () {
+    Route::get('/station-log',            [\App\Http\Controllers\EventAdminController::class, 'stationLogIndex'])  ->name('station-log.index');
+    Route::post('/station-log',           [\App\Http\Controllers\EventAdminController::class, 'stationLogStore'])  ->name('station-log.store');
+    Route::delete('/station-log/{id}',    [\App\Http\Controllers\EventAdminController::class, 'stationLogDestroy'])->name('station-log.destroy');
+    Route::post('/station-log/clear',     [\App\Http\Controllers\EventAdminController::class, 'stationLogClear'])  ->name('station-log.clear');
+});
