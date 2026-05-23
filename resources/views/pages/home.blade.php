@@ -342,6 +342,7 @@ body {
         <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(200,16,46,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(200,16,46,.04) 1px,transparent 1px);background-size:32px 32px;pointer-events:none;"></div>
         <div style="position:absolute;top:-40px;left:15%;width:300px;height:120px;background:radial-gradient(ellipse,rgba(200,16,46,.25) 0%,transparent 70%);pointer-events:none;"></div>
         <div style="position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(200,16,46,.05),transparent);animation:nScan 4s ease-in-out infinite;pointer-events:none;"></div>
+        <canvas id="netOscope" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.18;"></canvas>
         <style>
         .net-inner{max-width:1200px;margin:0 auto;padding:.85rem 1rem;display:grid;grid-template-columns:auto 1px 1fr auto;align-items:center;gap:1rem;}
         .net-divider{width:1px;height:32px;background:linear-gradient(to bottom,transparent,rgba(200,16,46,.5),transparent);}
@@ -402,10 +403,15 @@ body {
                     <div id="ctrlRing" style="display:none;position:absolute;bottom:0;left:4px;right:4px;height:2px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden;">
                         <div id="ctrlRingArc" style="height:100%;width:100%;background:#22c55e;transform-origin:left;transition:background .6s;border-radius:2px;"></div>
                     </div>
+                    <div style="display:flex;align-items:center;gap:.5rem;">
+                        <img id="netCtrlAvatar" src="" alt="" style="display:none;width:28px;height:28px;border-radius:50%;object-fit:cover;border:1.5px solid rgba(255,255,255,.2);opacity:0;transition:opacity .5s;flex-shrink:0;">
+                        <div style="flex:1;min-width:0;">
                     <div class="net-meta-label">Controller</div>
                     <div style="position:relative;min-height:1.1em;">
                         <div class="net-meta-value" id="netCtrlDisplay" style="position:relative;z-index:1;"></div>
                         <div id="netCtrlGhost" style="position:absolute;top:0;left:0;right:0;font-size:.85rem;font-weight:800;font-family:monospace;color:rgba(255,255,255,.85);pointer-events:none;opacity:0;text-align:center;white-space:nowrap;"></div>
+                    </div>
+                        </div>
                     </div>
                     <div id="netCtrlName" style="font-size:.6rem;color:rgba(255,255,255,.4);font-weight:600;letter-spacing:.03em;margin-top:.12rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;"></div>
                 </div>
@@ -544,6 +550,62 @@ body {
         tick();
         setInterval(tick, 1000);
 
+        // ── Oscilloscope ──
+        (function(){
+            var canvas = document.getElementById('netOscope');
+            if (!canvas) return;
+            var ctx    = canvas.getContext('2d');
+            var freq   = 1.4;   // base wave frequency
+            var targetFreq = 1.4;
+            var amp    = 0.32;  // amplitude as fraction of height
+            var targetAmp  = 0.32;
+            var flatline   = false;
+            var phase  = 0;
+            var raf;
+
+            function resize() {
+                canvas.width  = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            function draw() {
+                freq += (targetFreq - freq) * 0.04;
+                amp  += (targetAmp  - amp)  * 0.04;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.beginPath();
+                ctx.strokeStyle = '#C8102E';
+                ctx.lineWidth   = 1.2;
+                var h  = canvas.height;
+                var w  = canvas.width;
+                var cy = h / 2;
+                for (var x = 0; x <= w; x++) {
+                    var t = (x / w) * Math.PI * 2 * freq + phase;
+                    var y = flatline
+                        ? cy
+                        : cy + Math.sin(t) * (h * amp)
+                            + Math.sin(t * 2.3 + 1) * (h * amp * 0.18)
+                            + Math.sin(t * 0.7 + 2) * (h * amp * 0.09);
+                    x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+                phase += flatline ? 0 : 0.018;
+                raf = requestAnimationFrame(draw);
+            }
+            draw();
+
+            // Expose controls globally
+            window.oscopeHandover = function() {
+                targetFreq = 4.5; targetAmp = 0.55;
+                setTimeout(function(){ targetFreq = 1.4; targetAmp = 0.32; }, 2000);
+            };
+            window.oscopeFlatline = function() {
+                flatline = true;
+                setTimeout(function(){ flatline = false; }, 1800);
+            };
+        })();
+
         // ── Controller live-polling + precision slot scheduler ──
         var _lastCtrl     = ((document.getElementById('netCtrlDisplay') || {}).textContent || '').trim();
         var _slotTimers   = [];
@@ -632,12 +694,32 @@ body {
         }
 
         // ── Slide controller in (first appearance or handover) ──
+        function showCtrlAvatar(info) {
+            var img = document.getElementById('netCtrlAvatar');
+            if (!img) return;
+            if (info && info.photo) {
+                img.style.display = '';
+                img.style.opacity = '0';
+                img.onload = function() {
+                    img.style.opacity = '1';
+                };
+                img.onerror = function() {
+                    img.style.display = 'none';
+                };
+                img.src = info.photo;
+            } else {
+                img.style.display = 'none';
+                img.src = '';
+            }
+        }
+
         function ctrlSlideIn(callsign, slotTo, info) {
             var el      = document.getElementById('netCtrlDisplay');
             var wrap    = document.getElementById('netCtrlWrap');
             var divider = document.getElementById('netCtrlDivider');
             if (!el) return;
             if (_lastCtrl && _lastCtrl !== callsign) {
+                if (window.oscopeHandover) window.oscopeHandover();
                 ghostOldCtrl();
                 stopRing();
                 setTimeout(function() {
@@ -648,11 +730,13 @@ body {
                     el.style.animation = 'ctrlGreenBlink 300ms ease-in-out 5';
                     setTimeout(function(){ el.style.animation='none'; el.style.color=''; }, 1600);
                     showCtrlName(info);
+                    showCtrlAvatar(info);
                     startRing(slotTo);
                 }, 460);
             } else if (!_lastCtrl) {
                 el.textContent = callsign;
                 showCtrlName(info);
+                showCtrlAvatar(info);
                 if (wrap) { wrap.style.display=''; wrap.style.animation='none'; void wrap.offsetWidth; wrap.style.animation='ctrlSlideIn .5s cubic-bezier(.22,1,.36,1) forwards'; }
                 if (divider) divider.style.display = '';
                 el.style.color = '#22c55e';
@@ -669,6 +753,7 @@ body {
             var divider = document.getElementById('netCtrlDivider');
             var nameEl  = document.getElementById('netCtrlName');
             if (!wrap || wrap.style.display === 'none') return;
+            if (window.oscopeFlatline) window.oscopeFlatline();
             stopRing();
             ghostOldCtrl();
             setTimeout(function() {

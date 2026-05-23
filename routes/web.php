@@ -1136,7 +1136,7 @@ Route::get('/net-status-json', function () {
 
         $data = $qrz->lookup($cs);
         if ($data && !empty($data['name'])) {
-            $info = ['name' => $data['name_fmt'] ?? $data['name'], 'location' => $data['city'] ?? null];
+            $info = ['name' => $data['name_fmt'] ?? $data['name'], 'location' => $data['city'] ?? null, 'photo' => $data['image_url'] ?? null];
             \Illuminate\Support\Facades\Cache::put($cacheKey, $info, 3600);
             return $info;
         }
