@@ -651,7 +651,26 @@ class EventAdminController extends Controller
 
     public function updateNetStatus(\Illuminate\Http\Request $request) {
         // Checkbox only submits when checked — handle explicitly
-        \App\Models\Setting::set('net_active', $request->has('net_active') ? '1' : '0');
+        $wasActive = \App\Models\Setting::get('net_active','0') === '1';
+        $nowActive  = $request->has('net_active');
+        \App\Models\Setting::set('net_active', $nowActive ? '1' : '0');
+
+        // Auto-archive station log when net is turned off
+        if ($wasActive && !$nowActive) {
+            $stations = \App\Models\NetStationLog::orderBy('checked_in_at')->get();
+            if ($stations->isNotEmpty()) {
+                \App\Models\NetLogHistory::create([
+                    'net_callsign'  => \App\Models\Setting::get('net_callsign',''),
+                    'net_name'      => \App\Models\Setting::get('net_description',''),
+                    'frequency'     => \App\Models\Setting::get('net_frequency',''),
+                    'started_at'    => \App\Models\Setting::get('net_start_time') ? \Carbon\Carbon::today('Europe/London')->setTimeFromTimeString(\App\Models\Setting::get('net_start_time')) : null,
+                    'ended_at'      => now(),
+                    'stations'      => $stations->toArray(),
+                    'station_count' => $stations->count(),
+                ]);
+                \App\Models\NetStationLog::truncate();
+            }
+        }
 
         $fields = ['net_callsign','net_frequency','net_band','net_description','net_announcement','net_priority','net_start_time','net_end_time'];
         \App\Models\Setting::set('net_station_logging', $request->has('net_station_logging') ? '1' : '0');
@@ -771,27 +790,28 @@ class EventAdminController extends Controller
         $isRegistered = \App\Models\User::whereRaw('UPPER(callsign) = ?', [$cs])->exists();
         $user = \App\Models\User::whereRaw('UPPER(callsign) = ?', [$cs])->first();
         if ($user) { $name = $user->name; $photoUrl = $user->avatar ?? null; }
-        if (!$name) {
-            try {
-                $qrz  = app(\App\Services\QrzService::class);
-                $data = $qrz->lookup($cs);
-                if ($data && !empty($data['name'])) {
+        // Always attempt QRZ lookup for full data regardless of local registration
+        try {
+            $qrz  = app(\App\Services\QrzService::class);
+            $data = $qrz->lookup($cs);
+            if ($data && !empty($data['name'])) {
+                if (!$name) {
                     $name     = $data['name_fmt'] ?? $data['name'];
-                    $photoUrl = $data['image_url'] ?? null;
-                    $qrzData  = array_filter([
-                        'licence_class' => $data['licence_class'] ?? null,
-                        'location'      => trim(implode(', ', array_filter([$data['city'] ?? null, $data['country'] ?? null]))),
-                        'grid'          => $data['grid'] ?? null,
-                        'country'       => $data['country'] ?? null,
-                        'email'         => $data['email'] ?? null,
-                        'qrz_url'       => $data['url'] ?? ('https://www.qrz.com/db/' . $cs),
-                        'cq_zone'       => $data['cq_zone'] ?? null,
-                        'dxcc'          => $data['dxcc'] ?? null,
-                        'lotw'          => $data['lotw'] ?? null,
-                    ]);
                 }
-            } catch (\Throwable $e) {}
-        }
+                if (!$photoUrl) $photoUrl = $data['image_url'] ?? null;
+                $qrzData = array_filter([
+                    'licence_class' => $data['licence_class'] ?? null,
+                    'location'      => trim(implode(', ', array_filter([$data['city'] ?? null, $data['country'] ?? null]))),
+                    'grid'          => $data['grid'] ?? null,
+                    'country'       => $data['country'] ?? null,
+                    'email'         => $data['email'] ?? null,
+                    'qrz_url'       => $data['url'] ?? ('https://www.qrz.com/db/' . $cs),
+                    'cq_zone'       => $data['cq_zone'] ?? null,
+                    'dxcc'          => $data['dxcc'] ?? null,
+                    'lotw'          => $data['lotw'] ?? null,
+                ]);
+            }
+        } catch (\Throwable $e) {}
         $entry = \App\Models\NetStationLog::create([
             'callsign'      => $cs,
             'name'          => $name,
@@ -813,6 +833,107 @@ class EventAdminController extends Controller
     public function stationLogClear()
     {
         \App\Models\NetStationLog::truncate();
+        return response()->json(['success' => true]);
+    }
+
+    public function stationLogArchiveAndClear()
+    {
+        $stations = \App\Models\NetStationLog::orderBy('checked_in_at')->get();
+        if ($stations->isNotEmpty()) {
+            \App\Models\NetLogHistory::create([
+                'net_callsign'  => \App\Models\Setting::get('net_callsign',''),
+                'net_name'      => \App\Models\Setting::get('net_description',''),
+                'frequency'     => \App\Models\Setting::get('net_frequency',''),
+                'started_at'    => \App\Models\Setting::get('net_start_time') ? \Carbon\Carbon::today('Europe/London')->setTimeFromTimeString(\App\Models\Setting::get('net_start_time')) : null,
+                'ended_at'      => now(),
+                'stations'      => $stations->toArray(),
+                'station_count' => $stations->count(),
+            ]);
+        }
+        \App\Models\NetStationLog::truncate();
+        return response()->json(['success' => true, 'archived' => $stations->count()]);
+    }
+
+    public function netLogHistory()
+    {
+        $history = \App\Models\NetLogHistory::orderByDesc('ended_at')->get();
+        return response()->json($history);
+    }
+
+    public function netLogHistoryShow(int $id)
+    {
+        $h = \App\Models\NetLogHistory::findOrFail($id);
+        return response()->json($h);
+    }
+
+    public function netLogHistoryAdif(int $id)
+    {
+        $h        = \App\Models\NetLogHistory::findOrFail($id);
+        $stations = is_array($h->stations) ? $h->stations : json_decode($h->stations, true) ?? [];
+        $date     = $h->ended_at->format('Ymd');
+        $time     = $h->ended_at->format('His');
+        $myCall   = strtoupper($h->net_callsign ?: \App\Models\Setting::get('net_callsign','UNKNOWN'));
+        $freq     = $h->frequency ?: '';
+        // Strip MHz suffix if present, convert to MHz float
+        $freqMhz  = preg_replace('/[^0-9.]/', '', $freq) ?: '145.500';
+
+        $adif  = "ADIF Export — {$h->net_callsign} Net Log — {$h->ended_at->format('d M Y')}
+";
+        $adif .= "<ADIF_VER:5>3.1.0 <PROGRAMID:9>RAYNET-OS <EOH>
+
+";
+
+        foreach ($stations as $s) {
+            $cs = strtoupper($s['callsign'] ?? '');
+            if (!$cs) continue;
+            $rst = $s['signal_report'] ?? '59';
+            $adif .= "<CALL:" . strlen($cs) . ">{$cs} ";
+            $adif .= "<QSO_DATE:8>{$date} ";
+            $adif .= "<TIME_ON:6>{$time} ";
+            $adif .= "<FREQ:" . strlen($freqMhz) . ">{$freqMhz} ";
+            $adif .= "<MODE:2>FM ";
+            $adif .= "<RST_SENT:" . strlen($rst) . ">{$rst} ";
+            $adif .= "<RST_RCVD:" . strlen($rst) . ">{$rst} ";
+            $adif .= "<STATION_CALLSIGN:" . strlen($myCall) . ">{$myCall} ";
+            $adif .= "<COMMENT:7>NET LOG ";
+            $adif .= "<EOR>
+";
+        }
+
+        $filename = 'net-log-' . $h->ended_at->format('Y-m-d') . '-' . strtolower($myCall) . '.adi';
+        return response($adif, 200, [
+            'Content-Type'        => 'text/plain',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
+    public function netLogHistoryPdf(int $id)
+    {
+        $h         = \App\Models\NetLogHistory::findOrFail($id);
+        $stations  = collect(is_array($h->stations) ? $h->stations : json_decode($h->stations, true) ?? []);
+        $groupName = \App\Helpers\RaynetSetting::groupName();
+        $netName   = $h->net_callsign ?: 'NET';
+        $date      = $h->ended_at->format('d M Y H:i');
+        // Reuse station-log-pdf view but with history data
+        return view('admin.events.station-log-pdf', [
+            'stations'  => $stations->map(fn($s) => (object) array_merge($s, [
+                'checked_in_at' => \Carbon\Carbon::parse($s['checked_in_at'] ?? $h->ended_at),
+                'qrz_data'      => $s['qrz_data'] ?? null,
+                'is_registered' => $s['is_registered'] ?? false,
+                'signal_report' => $s['signal_report'] ?? null,
+                'notes'         => $s['notes'] ?? null,
+                'name'          => $s['name'] ?? null,
+                'callsign'      => $s['callsign'] ?? '',
+            ])),
+            'groupName' => $groupName,
+            'netName'   => $netName,
+            'date'      => $date,
+        ]);
+    }
+
+    public function netLogHistoryDestroy(int $id)
+    {
+        \App\Models\NetLogHistory::findOrFail($id)->delete();
         return response()->json(['success' => true]);
     }
 

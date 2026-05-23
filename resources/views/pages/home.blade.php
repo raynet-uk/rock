@@ -913,7 +913,6 @@ body {
                     if (wrap) {
                         var wasVisible = wrap.dataset.visible === '1';
                         if (logging && !wasVisible) {
-                            // Animate in from zero width
                             wrap.dataset.visible = '1';
                             wrap.style.display   = 'flex';
                             wrap.style.maxWidth  = '0';
@@ -922,18 +921,19 @@ body {
                             wrap.style.maxWidth  = '120px';
                             wrap.style.opacity   = '1';
                         } else if (!logging && wasVisible) {
-                            // Animate out
                             wrap.dataset.visible = '0';
                             wrap.style.maxWidth  = '0';
                             wrap.style.opacity   = '0';
+                            if (countEl) { countEl.textContent = '0'; countEl.dataset.prev = '0'; }
                             setTimeout(function(){ wrap.style.display = 'none'; }, 520);
                         }
                     }
 
                     if (countEl && logging && typeof d.checkins !== 'undefined') {
                         var newCount = parseInt(d.checkins) || 0;
-                        var oldCount = parseInt(countEl.dataset.prev !== undefined ? countEl.dataset.prev : countEl.textContent) || 0;
-                        if (newCount !== oldCount) {
+                        var oldCount = countEl.dataset.prev !== undefined ? parseInt(countEl.dataset.prev) : parseInt(countEl.textContent) || -1;
+                        if (newCount !== oldCount || countEl.dataset.initialized !== '1') {
+                            countEl.dataset.initialized = '1';
                             countEl.dataset.prev = newCount;
                             countEl.textContent  = newCount;
                             countEl.style.transition = 'color .3s, transform .15s';

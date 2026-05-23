@@ -160,6 +160,7 @@ input:checked+.slider:before{transform:translateX(24px);}
   <div class="nc-tab" onclick="switchTab('calendar',this)">🗓 Calendar</div>
   <div class="nc-tab" onclick="switchTab('sessions',this)">📋 Session Log</div>
     <div class="nc-tab" onclick="switchTab('checkins',this)">📻 Station Log</div>
+    <div class="nc-tab" onclick="switchTab('loghistory',this)">📂 Net Log History</div>
 </div>
 
 {{-- LIVE TAB --}}
@@ -463,9 +464,14 @@ input:checked+.slider:before{transform:translateX(24px);}
   <div class="nc-card" style="padding:0;overflow:hidden;">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--border);background:linear-gradient(to right,#fafbff,#fff);">
       <div style="font-weight:800;color:var(--navy);font-size:.95rem;">Station Log</div>
-      <button onclick="clearLog()" style="font-size:.75rem;font-weight:700;color:#C8102E;background:none;border:1px solid #fecdd3;border-radius:6px;padding:.25rem .65rem;cursor:pointer;">
-        Clear All
-      </button>
+      <div style="display:flex;gap:.5rem;">
+        <button onclick="archiveAndClear()" style="font-size:.75rem;font-weight:700;color:#003366;background:#f0f4ff;border:1px solid #c7d7ff;border-radius:6px;padding:.25rem .65rem;cursor:pointer;white-space:nowrap;">
+          📂 Archive &amp; Clear
+        </button>
+        <button onclick="clearLog()" style="font-size:.75rem;font-weight:700;color:#C8102E;background:none;border:1px solid #fecdd3;border-radius:6px;padding:.25rem .65rem;cursor:pointer;">
+          Clear
+        </button>
+      </div>
     </div>
     {{-- Table header --}}
     <div style="display:grid;grid-template-columns:2rem 3.5rem 6rem 1fr 5rem 7rem 4rem 4rem 6rem 2.5rem;gap:.5rem;padding:.5rem 1.25rem;background:#f8fafc;border-bottom:1px solid var(--border);">
@@ -486,6 +492,21 @@ input:checked+.slider:before{transform:translateX(24px);}
     </div>
   </div>
 </div>
+
+<div class="tab-pane" id="tab-loghistory">
+  <div class="nc-card" style="padding:0;overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--border);background:linear-gradient(to right,#fafbff,#fff);">
+      <div style="font-weight:800;color:var(--navy);font-size:.95rem;">📂 Net Log History</div>
+      <div id="histCount" style="font-size:.8rem;color:var(--muted);font-weight:700;"></div>
+    </div>
+    <div id="histList" style="min-height:80px;"></div>
+    <div id="histEmpty" style="text-align:center;padding:2.5rem;color:var(--muted);font-size:.85rem);">
+      <div style="font-size:1.5rem;margin-bottom:.5rem;">📭</div>No net logs archived yet
+    </div>
+  </div>
+</div>
+
+
 
 {{-- Invite Modal --}}
 <div id="inviteModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
@@ -1069,6 +1090,266 @@ function clearLog() {
     }).then(function(){ loadLog(); });
 }
 
+function archiveAndClear() {
+    if (!confirm('Archive the current station log and clear it? This will save all entries to Net Log History.')) return;
+    fetch('{{ route("admin.events.station-log.archive-and-clear") }}', {
+        method: 'POST',
+        headers: {'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content}
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if (d.success) {
+            loadLog();
+            loadHistory();
+            var msg = d.archived > 0 ? d.archived + ' station' + (d.archived !== 1 ? 's' : '') + ' archived.' : 'Log was empty.';
+            var banner = document.getElementById('ciStatusBanner');
+            if (banner) { var orig = banner.innerHTML; banner.innerHTML = '📂 ' + msg; setTimeout(function(){ banner.innerHTML = orig; }, 3000); }
+        }
+    });
+}
+
+function renderStations(stations) {
+    if (!stations || !stations.length) return '<div style="padding:1rem;text-align:center;color:var(--muted);font-size:.82rem;">No stations in this log</div>';
+    var cols = '2rem 3.5rem 6rem 1fr 5rem 7rem 4rem 4rem 5rem';
+    var hdr = '<div style="display:grid;grid-template-columns:' + cols + ';gap:.5rem;padding:.4rem .75rem;background:#f1f5f9;border-bottom:1px solid #e2e8f0;">'
+        + ['#','Time','Callsign','Name','Licence','Location','Grid','Signal','Member'].map(function(x){ return '<div style="font-size:.62rem;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">' + x + '</div>'; }).join('')
+        + '</div>';
+    var rows = stations.map(function(s, i) {
+        var qrz = s.qrz_data || {};
+        if (typeof qrz === 'string') { try { qrz = JSON.parse(qrz); } catch(e){ qrz={}; } }
+        var time = s.checked_in_at ? new Date(s.checked_in_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '---';
+        var bg = (i%2===0) ? '#fff' : '#f9fafb';
+        return '<div style="display:grid;grid-template-columns:' + cols + ';gap:.5rem;padding:.5rem .75rem;background:' + bg + ';border-bottom:1px solid #f1f5f9;align-items:center;">'
+            + '<div style="font-size:.65rem;color:#cbd5e1;text-align:center;">' + (i+1) + '</div>'
+            + '<div style="font-size:.72rem;color:#94a3b8;font-family:monospace;">' + time + '</div>'
+            + '<div style="font-family:monospace;font-weight:900;font-size:.85rem;color:#003366;">' + escHtml(s.callsign||'') + '</div>'
+            + '<div style="font-weight:600;color:#334155;font-size:.8rem;">' + escHtml(s.name||'---') + '</div>'
+            + '<div>' + (qrz.licence_class ? '<span style="font-size:.65rem;font-weight:800;padding:.1rem .35rem;border-radius:999px;background:#dcfce7;color:#15803d;">' + escHtml(qrz.licence_class) + '</span>' : '<span style="color:#e2e8f0;">---</span>') + '</div>'
+            + '<div style="font-size:.72rem;color:#64748b;">' + escHtml(qrz.location||'---') + '</div>'
+            + '<div style="font-size:.72rem;color:#64748b;font-family:monospace;">' + escHtml(qrz.grid||'---') + '</div>'
+            + '<div style="font-family:monospace;font-weight:800;color:#059669;font-size:.8rem;">' + escHtml(s.signal_report||'---') + '</div>'
+            + '<div>' + (s.is_registered
+                ? '<span style="font-size:.65rem;font-weight:800;padding:.1rem .35rem;border-radius:999px;background:#fef9c3;color:#a16207;">Member</span>'
+                : '<span style="font-size:.65rem;font-weight:800;padding:.1rem .35rem;border-radius:999px;background:#fee2e2;color:#b91c1c;">Not</span>') + '</div>'
+            + '</div>';
+    }).join('');
+    return hdr + rows;
+}
+
+function toggleHistEntry(id) {
+    var body  = document.getElementById('hist-body-' + id);
+    var arrow = document.getElementById('hist-arrow-' + id);
+    if (!body) return;
+    if (body.style.display === 'none' || !body.style.display) {
+        body.style.display = '';
+        if (arrow) arrow.textContent = '▲';
+        if (!body.dataset.loaded) {
+            body.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--muted);">Loading...</div>';
+            fetch('/admin/events/net-log-history/' + id)
+            .then(function(r){ return r.json(); })
+            .then(function(h){
+                var stations = Array.isArray(h.stations) ? h.stations : JSON.parse(h.stations||'[]');
+                body.innerHTML = renderStations(stations);
+                body.dataset.loaded = '1';
+            });
+        }
+    } else {
+        body.style.display = 'none';
+        if (arrow) arrow.textContent = '▼';
+    }
+}
+
+function loadHistory() {
+    fetch('{{ route("admin.events.net-log-history.index") }}')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+        var list  = document.getElementById('histList');
+        var empty = document.getElementById('histEmpty');
+        var cnt   = document.getElementById('histCount');
+        if (!list) return;
+        if (cnt) cnt.textContent = data.length + ' session' + (data.length !== 1 ? 's' : '');
+        if (!data.length) {
+            list.innerHTML = '';
+            if (empty) empty.style.display = '';
+            return;
+        }
+        if (empty) empty.style.display = 'none';
+        list.innerHTML = data.map(function(h) {
+            var ended   = new Date(h.ended_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+            var started = h.started_at ? new Date(h.started_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '---';
+            return '<div style="border-bottom:1px solid #f1f5f9;">'
+                + '<div style="display:flex;align-items:center;gap:1rem;padding:.85rem 1.25rem;cursor:pointer;" data-toggle-hist="' + h.id + '">'
+                    + '<div style="width:36px;height:36px;border-radius:8px;background:#f0f4ff;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">📻</div>'
+                    + '<div style="flex:1;min-width:0;">'
+                        + '<div style="font-weight:800;color:var(--navy);font-size:.88rem;">' + escHtml(h.net_callsign||'Unknown Net')
+                            + (h.frequency ? '<span style="color:var(--muted);font-weight:600;"> · ' + escHtml(h.frequency) + '</span>' : '')
+                        + '</div>'
+                        + '<div style="font-size:.72rem;color:var(--muted);margin-top:.1rem;">' + ended + ' · Started: ' + started + '</div>'
+                    + '</div>'
+                    + '<div style="display:flex;align-items:center;gap:.45rem;flex-shrink:0;">'
+                        + '<span style="font-size:.82rem;font-weight:900;color:var(--navy);">' + h.station_count + '</span>'
+                        + '<span style="font-size:.65rem;color:var(--muted);margin-right:.2rem;">stations</span>'
+                        + '<a href="/admin/events/net-log-history/' + h.id + '/pdf" target="_blank" onclick="event.stopPropagation()" style="font-size:.7rem;font-weight:700;color:#C8102E;background:#fff1f2;border:1px solid #fecdd3;border-radius:5px;padding:.18rem .45rem;text-decoration:none;">PDF</a>'
+                        + '<a href="/admin/events/net-log-history/' + h.id + '/adif" onclick="event.stopPropagation()" style="font-size:.7rem;font-weight:700;color:#059669;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:5px;padding:.18rem .45rem;text-decoration:none;">ADIF</a>'
+                        + '<button onclick="event.stopPropagation();deleteHistory(' + h.id + ')" style="background:none;border:none;cursor:pointer;color:#fca5a5;font-size:.9rem;padding:0 .15rem;">✕</button>'
+                        + '<span id="hist-arrow-' + h.id + '" style="color:var(--muted);font-size:.7rem;margin-left:.2rem;">▼</span>'
+                    + '</div>'
+                + '</div>'
+                + '<div id="hist-body-' + h.id + '" style="display:none;border-top:1px solid #f1f5f9;"></div>'
+                + '</div>';
+        }).join('');
+    });
+}
+
+function openHistModal(id) {
+    fetch('{{ route("admin.events.net-log-history.index") }}')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+        var h = data.find(function(x){ return x.id === id; });
+        if (!h) return;
+        var modal = document.getElementById('histModal');
+        var title = document.getElementById('histModalTitle');
+        var body  = document.getElementById('histModalBody');
+        var ended = new Date(h.ended_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+        title.textContent = (h.net_callsign||'Net') + ' · ' + ended;
+        var stations = Array.isArray(h.stations) ? h.stations : [];
+        body.innerHTML = '<div style="display:grid;grid-template-columns:2rem 3.5rem 6rem 1fr 5rem 7rem 4rem 4rem 5rem;gap:.5rem;padding:.4rem .75rem;background:#f8fafc;border-bottom:1px solid var(--border);margin-bottom:.25rem;">'
+            + ['#','Time','Callsign','Name','Licence','Location','Grid','Signal','Member'].map(function(h){ return '<div style="font-size:.62rem;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">' + h + '</div>'; }).join('')
+            + '</div>'
+            + stations.map(function(s, i) {
+                var qrz = s.qrz_data || {};
+                if (typeof qrz === 'string') { try { qrz = JSON.parse(qrz); } catch(e){ qrz={}; } }
+                var time = s.checked_in_at ? new Date(s.checked_in_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '—';
+                var even = i % 2 === 0;
+                return '<div style="display:grid;grid-template-columns:2rem 3.5rem 6rem 1fr 5rem 7rem 4rem 4rem 5rem;gap:.5rem;padding:.5rem .75rem;background:' + (even?'#fff':'#f9fafb') + ';border-bottom:1px solid #f1f5f9;align-items:center;">'
+                    + '<div style="font-size:.65rem;color:#cbd5e1;text-align:center;">' + (i+1) + '</div>'
+                    + '<div style="font-size:.72rem;color:#94a3b8;font-family:monospace;">' + time + '</div>'
+                    + '<div style="font-family:monospace;font-weight:900;font-size:.85rem;color:#003366;">' + escHtml(s.callsign||'') + '</div>'
+                    + '<div style="font-weight:600;color:#334155;font-size:.8rem;">' + escHtml(s.name||'—') + '</div>'
+                    + '<div>' + (qrz.licence_class ? '<span style="font-size:.65rem;font-weight:800;padding:.1rem .35rem;border-radius:999px;background:#dcfce7;color:#15803d;">' + escHtml(qrz.licence_class) + '</span>' : '<span style="color:#e2e8f0;">—</span>') + '</div>'
+                    + '<div style="font-size:.72rem;color:#64748b;">' + escHtml(qrz.location||'—') + '</div>'
+                    + '<div style="font-size:.72rem;color:#64748b;font-family:monospace;">' + escHtml(qrz.grid||'—') + '</div>'
+                    + '<div style="font-family:monospace;font-weight:800;color:#059669;font-size:.8rem;">' + escHtml(s.signal_report||'—') + '</div>'
+                    + '<div>' + (s.is_registered ? '<span style="font-size:.65rem;font-weight:800;padding:.1rem .35rem;border-radius:999px;background:#fef9c3;color:#a16207;">✓ Member</span>' : '<span style="font-size:.65rem;font-weight:800;padding:.1rem .35rem;border-radius:999px;background:#fee2e2;color:#b91c1c;">✗ Not Member</span>') + '</div>'
+                    + '</div>';
+            }).join('');
+        modal.style.display = 'flex';
+    });
+}
+
+function closeHistModal() {
+    document.getElementById('histModal').style.display = 'none';
+}
+
+function deleteHistory(id) {
+    if (!confirm('Delete this net log entry?')) return;
+    fetch('{{ url("admin/events/net-log-history") }}/' + id, {
+        method: 'DELETE',
+        headers: {'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content}
+    }).then(function(){ loadHistory(); });
+}
+
+function archiveAndClear() {
+    if (!confirm('Archive the current station log and clear it? This will save all entries to Net Log History.')) return;
+    fetch('{{ route("admin.events.station-log.archive-and-clear") }}', {
+        method: 'POST',
+        headers: {'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content}
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if (d.success) {
+            loadLog();
+            loadHistory();
+            var msg = d.archived > 0 ? d.archived + ' station' + (d.archived !== 1 ? 's' : '') + ' archived.' : 'Log was empty.';
+            var banner = document.getElementById('ciStatusBanner');
+            if (banner) { var orig = banner.innerHTML; banner.innerHTML = '📂 ' + msg; setTimeout(function(){ banner.innerHTML = orig; }, 3000); }
+        }
+    });
+}
+
+function loadHistory() {
+    fetch('{{ route("admin.events.net-log-history.index") }}')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+        var list  = document.getElementById('histList');
+        var empty = document.getElementById('histEmpty');
+        var cnt   = document.getElementById('histCount');
+        if (!list) return;
+        if (cnt) cnt.textContent = data.length + ' session' + (data.length !== 1 ? 's' : '');
+        if (!data.length) {
+            list.innerHTML = '';
+            if (empty) empty.style.display = '';
+            return;
+        }
+        if (empty) empty.style.display = 'none';
+        list.innerHTML = data.map(function(h) {
+            var ended = new Date(h.ended_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+            var started = h.started_at ? new Date(h.started_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '—';
+            return '<div style="display:flex;align-items:center;gap:1rem;padding:.85rem 1.25rem;border-bottom:1px solid #f1f5f9;cursor:pointer;transition:background .15s;" data-hist-id="' + h.id + '">'
+                + '<div style="width:40px;height:40px;border-radius:10px;background:#f0f4ff;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">📻</div>'
+                + '<div style="flex:1;min-width:0;">'
+                    + '<div style="font-weight:800;color:var(--navy);font-size:.88rem;">' + escHtml(h.net_callsign||'Unknown Net') + (h.frequency ? ' · ' + escHtml(h.frequency) : '') + '</div>'
+                    + '<div style="font-size:.75rem;color:var(--muted);margin-top:.1rem;">' + ended + ' · Started: ' + started + '</div>'
+                + '</div>'
+                + '<div style="text-align:right;flex-shrink:0;">'
+                    + '<div style="font-size:.85rem;font-weight:900;color:var(--navy);">' + h.station_count + '</div>'
+                    + '<div style="font-size:.65rem;color:var(--muted);">stations</div>'
+                + '</div>'
+                + '<button data-hist-delete="' + h.id + '" onclick="event.stopPropagation();deleteHistory(' + h.id + ')" title="Delete" '
+                    + 'style="background:none;border:none;cursor:pointer;color:#fca5a5;font-size:.9rem;padding:0 .2rem;flex-shrink:0;">✕</button>'
+                + '</div>';
+        }).join('');
+    });
+}
+
+function openHistModal(id) {
+    fetch('{{ route("admin.events.net-log-history.index") }}')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+        var h = data.find(function(x){ return x.id === id; });
+        if (!h) return;
+        var modal = document.getElementById('histModal');
+        var title = document.getElementById('histModalTitle');
+        var body  = document.getElementById('histModalBody');
+        var ended = new Date(h.ended_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+        title.textContent = (h.net_callsign||'Net') + ' · ' + ended;
+        var stations = Array.isArray(h.stations) ? h.stations : [];
+        body.innerHTML = '<div style="display:grid;grid-template-columns:2rem 3.5rem 6rem 1fr 5rem 7rem 4rem 4rem 5rem;gap:.5rem;padding:.4rem .75rem;background:#f8fafc;border-bottom:1px solid var(--border);margin-bottom:.25rem;">'
+            + ['#','Time','Callsign','Name','Licence','Location','Grid','Signal','Member'].map(function(h){ return '<div style="font-size:.62rem;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">' + h + '</div>'; }).join('')
+            + '</div>'
+            + stations.map(function(s, i) {
+                var qrz = s.qrz_data || {};
+                if (typeof qrz === 'string') { try { qrz = JSON.parse(qrz); } catch(e){ qrz={}; } }
+                var time = s.checked_in_at ? new Date(s.checked_in_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '—';
+                var even = i % 2 === 0;
+                return '<div style="display:grid;grid-template-columns:2rem 3.5rem 6rem 1fr 5rem 7rem 4rem 4rem 5rem;gap:.5rem;padding:.5rem .75rem;background:' + (even?'#fff':'#f9fafb') + ';border-bottom:1px solid #f1f5f9;align-items:center;">'
+                    + '<div style="font-size:.65rem;color:#cbd5e1;text-align:center;">' + (i+1) + '</div>'
+                    + '<div style="font-size:.72rem;color:#94a3b8;font-family:monospace;">' + time + '</div>'
+                    + '<div style="font-family:monospace;font-weight:900;font-size:.85rem;color:#003366;">' + escHtml(s.callsign||'') + '</div>'
+                    + '<div style="font-weight:600;color:#334155;font-size:.8rem;">' + escHtml(s.name||'—') + '</div>'
+                    + '<div>' + (qrz.licence_class ? '<span style="font-size:.65rem;font-weight:800;padding:.1rem .35rem;border-radius:999px;background:#dcfce7;color:#15803d;">' + escHtml(qrz.licence_class) + '</span>' : '<span style="color:#e2e8f0;">—</span>') + '</div>'
+                    + '<div style="font-size:.72rem;color:#64748b;">' + escHtml(qrz.location||'—') + '</div>'
+                    + '<div style="font-size:.72rem;color:#64748b;font-family:monospace;">' + escHtml(qrz.grid||'—') + '</div>'
+                    + '<div style="font-family:monospace;font-weight:800;color:#059669;font-size:.8rem;">' + escHtml(s.signal_report||'—') + '</div>'
+                    + '<div>' + (s.is_registered ? '<span style="font-size:.65rem;font-weight:800;padding:.1rem .35rem;border-radius:999px;background:#fef9c3;color:#a16207;">✓ Member</span>' : '<span style="font-size:.65rem;font-weight:800;padding:.1rem .35rem;border-radius:999px;background:#fee2e2;color:#b91c1c;">✗ Not Member</span>') + '</div>'
+                    + '</div>';
+            }).join('');
+        modal.style.display = 'flex';
+    });
+}
+
+function closeHistModal() {
+    document.getElementById('histModal').style.display = 'none';
+}
+
+function deleteHistory(id) {
+    if (!confirm('Delete this net log entry?')) return;
+    fetch('{{ url("admin/events/net-log-history") }}/' + id, {
+        method: 'DELETE',
+        headers: {'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content}
+    }).then(function(){ loadHistory(); });
+}
+
 function escHtml(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -1097,7 +1378,7 @@ function loadLog() {
                 : '';
             var memberBadge = e.is_registered
                 ? '<span style="font-size:.68rem;font-weight:800;padding:.1rem .4rem;border-radius:999px;background:#fef9c3;color:#a16207;">✓ Member</span>'
-                : '<span style="font-size:.68rem;color:#cbd5e1;">—</span>';
+                : '<span style="font-size:.68rem;font-weight:800;padding:.1rem .4rem;border-radius:999px;background:#fee2e2;color:#b91c1c;">✗ Not Member</span>';
             var photo = e.photo_url
                 ? '<img src="/admin/events/station-log/qrz-photo?callsign=' + encodeURIComponent(e.callsign) + '" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1.5px solid #e2e8f0;margin-right:.4rem;vertical-align:middle;">'
                 : '<div style="width:28px;height:28px;border-radius:50%;background:#f1f5f9;display:inline-flex;align-items:center;justify-content:center;font-size:.7rem;color:#94a3b8;margin-right:.4rem;vertical-align:middle;flex-shrink:0;">📡</div>';

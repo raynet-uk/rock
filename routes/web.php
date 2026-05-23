@@ -1191,6 +1191,12 @@ Route::middleware(['web','auth','admin'])->prefix('admin/events')->name('admin.e
     Route::get('/station-log/qrz-photo', [\App\Http\Controllers\EventAdminController::class, 'stationLogQrzPhoto'])->name('station-log.qrz-photo');
     Route::get('/station-log/qrz',         [\App\Http\Controllers\EventAdminController::class, 'stationLogQrz'])    ->name('station-log.qrz');
     Route::post('/station-log',           [\App\Http\Controllers\EventAdminController::class, 'stationLogStore'])  ->name('station-log.store');
+    Route::post('/station-log/archive-and-clear', [\App\Http\Controllers\EventAdminController::class, 'stationLogArchiveAndClear'])->name('station-log.archive-and-clear');
+    Route::get('/net-log-history/{id}',     [\App\Http\Controllers\EventAdminController::class, 'netLogHistoryShow'])   ->name('net-log-history.show');
+    Route::get('/net-log-history/{id}/adif', [\App\Http\Controllers\EventAdminController::class, 'netLogHistoryAdif'])   ->name('net-log-history.adif');
+    Route::get('/net-log-history/{id}/pdf',  [\App\Http\Controllers\EventAdminController::class, 'netLogHistoryPdf'])    ->name('net-log-history.pdf');
+    Route::get('/net-log-history',           [\App\Http\Controllers\EventAdminController::class, 'netLogHistory'])        ->name('net-log-history.index');
+    Route::delete('/net-log-history/{id}',   [\App\Http\Controllers\EventAdminController::class, 'netLogHistoryDestroy']) ->name('net-log-history.destroy');
     Route::post('/station-log/invite',     [\App\Http\Controllers\EventAdminController::class, 'stationLogInvite'])  ->name('station-log.invite');
     Route::get('/station-log/export-pdf',  [\App\Http\Controllers\EventAdminController::class, 'stationLogExportPdf'])->name('station-log.export-pdf');
     Route::delete('/station-log/{id}',    [\App\Http\Controllers\EventAdminController::class, 'stationLogDestroy'])->name('station-log.destroy');
