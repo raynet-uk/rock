@@ -176,7 +176,18 @@ async function replayQueue() {
             });
 
             if (response.ok || response.status === 422) {
-                // 422 = validation error — still consumed, don't retry
+                // Check for server-side soft failure
+                try {
+                    const clone = response.clone();
+                    const json  = await clone.json();
+                    if (json && json.success === false && !json.queued) {
+                        // Server rejected — mark failed so we don't lose it silently
+                        await dbPut(QUEUE_STORE, {...item, status:'server_rejected', error: json.error || 'rejected'});
+                        failed++;
+                        notifyClients({type:'SYNC_ERROR', message: 'Entry rejected by server: ' + (json.error||'unknown')});
+                        continue;
+                    }
+                } catch(e) {}
                 await dbDelete(QUEUE_STORE, item.id);
                 synced++;
             } else if (response.status === 401) {

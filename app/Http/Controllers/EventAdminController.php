@@ -781,7 +781,9 @@ class EventAdminController extends Controller
 
     public function stationLogStore(\Illuminate\Http\Request $request)
     {
-        if (\App\Models\Setting::get('net_station_logging','0') !== '1') {
+        // Skip logging-enabled check for offline replays (already authorised by Bearer token)
+        $isOfflineReplay = $request->hasHeader('X-Offline-Replay') || $request->bearerToken();
+        if (!$isOfflineReplay && \App\Models\Setting::get('net_station_logging','0') !== '1') {
             return response()->json(['success' => false, 'error' => 'Station logging is not enabled']);
         }
         $request->validate(['callsign' => 'required|string|max:20']);

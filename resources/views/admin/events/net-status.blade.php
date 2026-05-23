@@ -508,6 +508,26 @@ input:checked+.slider:before{transform:translateX(24px);}
 
 
 
+{{-- Offline Sync Modal --}}
+<div id="offlineSyncModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1002;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:2rem;max-width:520px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.25);">
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;">
+      <div style="font-size:1.5rem;">📶</div>
+      <div>
+        <div style="font-size:1rem;font-weight:900;color:var(--navy);">Connection Restored</div>
+        <div style="font-size:.78rem;color:var(--muted);margin-top:.1rem;">You have offline-logged stations ready to sync</div>
+      </div>
+    </div>
+    <div id="offlineSyncList" style="background:#f8fafc;border-radius:8px;border:1px solid var(--border);margin-bottom:1.25rem;overflow:hidden;"></div>
+    <div id="offlineSyncError" style="display:none;color:#C8102E;font-size:.78rem;margin-bottom:.75rem;padding:.4rem .6rem;background:#fff1f2;border-radius:6px;border:1px solid #fecdd3;"></div>
+    <div style="display:flex;gap:.75rem;">
+      <button id="offlineSyncImportBtn" onclick="importOfflineQueue()" class="btn btn-primary" style="flex:1;">📥 Import All to Station Log</button>
+      <button onclick="discardOfflineQueue()" style="font-size:.82rem;font-weight:700;color:#C8102E;background:none;border:1px solid #fecdd3;border-radius:8px;padding:.5rem .85rem;cursor:pointer;">Discard</button>
+      <button onclick="closeOfflineSyncModal()" style="font-size:.82rem;font-weight:700;color:var(--muted);background:none;border:1px solid var(--border);border-radius:8px;padding:.5rem .85rem;cursor:pointer;">Later</button>
+    </div>
+  </div>
+</div>
+
 {{-- Invite Modal --}}
 <div id="inviteModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
   <div style="background:#fff;border-radius:16px;padding:2rem;max-width:480px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.2);">
@@ -943,11 +963,76 @@ function logCheckin() {
     .catch(function(){ doLogCheckin(cs, rep, notes, err); });
 }
 
-// Local pending entries shown while offline / not yet synced
-var _pendingEntries = [];
-var _pendingIdSeq   = 1;
+// ── Offline local store ───────────────────────────────────────────────────
+var OFFLINE_STORE_KEY = 'raynet_offline_log';
+
+function getOfflineQueue() {
+    try { return JSON.parse(localStorage.getItem(OFFLINE_STORE_KEY) || '[]'); } catch(e) { return []; }
+}
+
+function saveOfflineQueue(q) {
+    localStorage.setItem(OFFLINE_STORE_KEY, JSON.stringify(q));
+}
+
+function addToOfflineQueue(cs, rep, notes) {
+    var q = getOfflineQueue();
+    q.push({callsign: cs, signal_report: rep, notes: notes, logged_at: new Date().toISOString()});
+    saveOfflineQueue(q);
+    renderOfflineLog();
+}
+
+function removeFromOfflineQueue(idx) {
+    var q = getOfflineQueue();
+    q.splice(idx, 1);
+    saveOfflineQueue(q);
+    renderOfflineLog();
+}
+
+function clearOfflineQueue() {
+    localStorage.removeItem(OFFLINE_STORE_KEY);
+    renderOfflineLog();
+}
+
+function renderOfflineLog() {
+    var q    = getOfflineQueue();
+    var log  = document.getElementById('ciLog');
+    var empty = document.getElementById('ciEmpty');
+    var cnt  = document.getElementById('ciLiveCount');
+    if (!log) return;
+    if (cnt) cnt.textContent = q.length + ' station' + (q.length !== 1 ? 's' : '') + ' (offline)';
+    if (!q.length) {
+        log.innerHTML = '';
+        if (empty) empty.style.display = '';
+        return;
+    }
+    if (empty) empty.style.display = 'none';
+    log.innerHTML = q.map(function(e, i) {
+        var time = new Date(e.logged_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+        return '<div style="display:grid;grid-template-columns:2rem 3.5rem 6rem 1fr 4rem 2.5rem;gap:.5rem;align-items:center;'
+            + 'padding:.6rem 1.25rem;background:' + (i%2===0?'#fffbeb':'#fef9c3') + ';border-bottom:1px solid #fde68a;">'
+            + '<div style="font-size:.68rem;font-weight:800;color:#92400e;text-align:center;">' + (i+1) + '</div>'
+            + '<div style="font-size:.72rem;color:#92400e;font-family:monospace;">' + time + '</div>'
+            + '<div style="font-family:monospace;font-weight:900;font-size:.88rem;color:#003366;">' + escHtml(e.callsign) + '</div>'
+            + '<div style="font-size:.78rem;color:#64748b;">' + escHtml(e.notes||'') + '</div>'
+            + '<div style="font-size:.68rem;font-weight:800;padding:.1rem .4rem;border-radius:999px;background:#fbbf24;color:#1e293b;text-align:center;">⏳ Queued</div>'
+            + '<button data-offline-remove="' + i + '" style="background:none;border:none;cursor:pointer;color:#fca5a5;font-size:.9rem;padding:0;text-align:center;">✕</button>'
+            + '</div>';
+    }).join('');
+}
 
 function doLogCheckin(cs, rep, notes, err) {
+    // Offline — store locally, show in list
+    if (isOfflineMode()) {
+        addToOfflineQueue(cs, rep, notes);
+        document.getElementById('ciCallsign').value = '';
+        document.getElementById('ciReport').value   = '';
+        document.getElementById('ciNotes').value    = '';
+        hideQrzCard();
+        var nameEl = document.getElementById('ciQrzName');
+        if (nameEl) nameEl.textContent = '';
+        return;
+    }
+
     fetch('{{ route("admin.events.station-log.store") }}', {
         method: 'POST',
         headers: {'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content},
@@ -961,21 +1046,7 @@ function doLogCheckin(cs, rep, notes, err) {
             document.getElementById('ciNotes').value    = '';
             hideQrzCard();
             var nameEl = document.getElementById('ciQrzName');
-            if (nameEl) { nameEl.textContent = ''; }
-            if (d.queued) {
-                // Offline — add to local pending list so it appears in UI immediately
-                _pendingEntries.push({
-                    _pending_id:    _pendingIdSeq++,
-                    callsign:       cs,
-                    signal_report:  rep,
-                    notes:          notes,
-                    name:           null,
-                    qrz_data:       {},
-                    is_registered:  false,
-                    checked_in_at:  new Date().toISOString(),
-                    _offline:       true,
-                });
-            }
+            if (nameEl) nameEl.textContent = '';
             loadLog();
         } else if (d.error) {
             err.textContent = d.error;
@@ -1393,6 +1464,85 @@ function deleteHistory(id) {
     }).then(function(){ loadHistory(); });
 }
 
+function showOfflineSyncModal(q) {
+    var list = document.getElementById('offlineSyncList');
+    if (!list) return;
+    list.innerHTML = q.map(function(e, i) {
+        var time = new Date(e.logged_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+        return '<div style="display:flex;align-items:center;gap:.75rem;padding:.6rem .85rem;'
+            + (i%2===0?'background:#fff':'background:#f9fafb') + ';border-bottom:1px solid #f1f5f9;">'
+            + '<span style="font-family:monospace;font-weight:900;color:#003366;font-size:.9rem;min-width:80px;">' + escHtml(e.callsign) + '</span>'
+            + '<span style="font-size:.75rem;color:#94a3b8;font-family:monospace;">' + time + '</span>'
+            + (e.signal_report ? '<span style="font-size:.75rem;font-weight:700;color:#059669;font-family:monospace;">' + escHtml(e.signal_report) + '</span>' : '')
+            + (e.notes ? '<span style="font-size:.75rem;color:#64748b;">' + escHtml(e.notes) + '</span>' : '')
+            + '</div>';
+    }).join('');
+    var modal = document.getElementById('offlineSyncModal');
+    modal.style.display = 'flex';
+}
+
+function closeOfflineSyncModal() {
+    document.getElementById('offlineSyncModal').style.display = 'none';
+}
+
+function discardOfflineQueue() {
+    if (!confirm('Discard all ' + getOfflineQueue().length + ' offline entries? This cannot be undone.')) return;
+    clearOfflineQueue();
+    closeOfflineSyncModal();
+    loadLog();
+}
+
+function importOfflineQueue() {
+    var q   = getOfflineQueue();
+    if (!q.length) { closeOfflineSyncModal(); return; }
+    var btn = document.getElementById('offlineSyncImportBtn');
+    var err = document.getElementById('offlineSyncError');
+    btn.disabled = true;
+    btn.textContent = 'Importing...';
+    err.style.display = 'none';
+
+    var done = 0, failed = 0;
+    var csrf = document.querySelector('meta[name="csrf-token"]').content;
+
+    function importNext(i) {
+        if (i >= q.length) {
+            // All done
+            if (failed === 0) {
+                clearOfflineQueue();
+                closeOfflineSyncModal();
+                loadLog();
+            } else {
+                // Remove successfully imported ones only
+                var remaining = getOfflineQueue().slice(done);
+                saveOfflineQueue(remaining);
+                err.textContent = failed + ' entries failed to import — they remain in the queue.';
+                err.style.display = '';
+                btn.disabled = false;
+                btn.textContent = 'Retry Failed';
+                loadLog();
+            }
+            return;
+        }
+        var e = q[i];
+        fetch('{{ route("admin.events.station-log.store") }}', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json','X-CSRF-TOKEN': csrf},
+            body: JSON.stringify({callsign: e.callsign, signal_report: e.signal_report, notes: e.notes})
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            if (d.success) { done++; } else { failed++; }
+            btn.textContent = 'Importing ' + (i+1) + ' / ' + q.length + '...';
+            importNext(i + 1);
+        })
+        .catch(function(){
+            failed++;
+            importNext(i + 1);
+        });
+    }
+    importNext(0);
+}
+
 function escHtml(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -1407,13 +1557,14 @@ function loadLog() {
             return !serverData.some(function(s){ return s.callsign === p.callsign; });
         });
         var data = serverData.concat(_pendingEntries);
+    fetch('{{ route("admin.events.station-log.index") }}')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
         var log   = document.getElementById('ciLog');
         var empty = document.getElementById('ciEmpty');
         var cnt   = document.getElementById('ciLiveCount');
         if (!log) return;
-        var pendingCount = _pendingEntries.length;
-        var total = data.length;
-        if (cnt) cnt.textContent = total + ' station' + (total !== 1 ? 's' : '') + (pendingCount > 0 ? ' (' + pendingCount + ' queued)' : '');
+        if (cnt) cnt.textContent = data.length + ' station' + (data.length !== 1 ? 's' : '');
         if (!data.length) {
             log.innerHTML = '';
             if (empty) empty.style.display = '';
@@ -1510,14 +1661,32 @@ document.addEventListener('DOMContentLoaded', function(){
     loadLog();
     setInterval(function(){ updateStatusBanner(); loadLog(); }, 10000);
 
+    // On page load, if there's a pending offline queue and we're online, prompt sync
+    (function(){
+        var q = getOfflineQueue();
+        if (q.length > 0 && navigator.onLine) {
+            setTimeout(function(){ showOfflineSyncModal(q); }, 1500);
+        }
+    })();
+
     // Re-run banner check when connectivity changes
-    window.addEventListener('online',  function(){ updateStatusBanner(); });
-    window.addEventListener('offline', function(){ updateStatusBanner(); });
+    window.addEventListener('offline', function(){ updateStatusBanner(); loadLog(); });
+    window.addEventListener('online',  function(){
+        updateStatusBanner();
+        var q = getOfflineQueue();
+        if (q.length > 0) {
+            showOfflineSyncModal(q);
+        } else {
+            loadLog();
+        }
+    });
 
     // Delegated handlers for rows and remove buttons
     var ciLog = document.getElementById('ciLog');
     if (ciLog) {
         ciLog.addEventListener('click', function(e) {
+            var offRemove = e.target.closest('[data-offline-remove]');
+            if (offRemove) { removeFromOfflineQueue(parseInt(offRemove.dataset.offlineRemove)); return; }
             var removeBtn = e.target.closest('[data-remove]');
             if (removeBtn) { removeCheckin(parseInt(removeBtn.dataset.remove)); return; }
             var invBtn = e.target.closest('[data-invite]');
