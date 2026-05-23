@@ -339,10 +339,13 @@ body {
     @endphp
     @if(!$hideAfterEnd)
     <div id="netBanner" style="position:relative;overflow:hidden;background:#0a0a1a;border-top:1px solid #1a1a3e;border-bottom:1px solid #1a1a3e;">
+        <div id="netEmergencyOverlay" style="display:none;position:absolute;inset:0;pointer-events:none;z-index:4;border:2px solid transparent;box-shadow:inset 0 0 0 2px transparent;"></div>
+        <div id="netEmergencyFlash" style="display:none;position:absolute;inset:0;pointer-events:none;z-index:5;opacity:0;background:transparent;"></div>
         <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(200,16,46,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(200,16,46,.04) 1px,transparent 1px);background-size:32px 32px;pointer-events:none;"></div>
         <div style="position:absolute;top:-40px;left:15%;width:300px;height:120px;background:radial-gradient(ellipse,rgba(200,16,46,.25) 0%,transparent 70%);pointer-events:none;"></div>
         <div style="position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(200,16,46,.05),transparent);animation:nScan 4s ease-in-out infinite;pointer-events:none;"></div>
-        <canvas id="netOscope" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.18;"></canvas>
+        <canvas id="netWaterfall" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.55;"></canvas>
+        <canvas id="netOscope"    style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.18;"></canvas>
         <style>
         .net-inner{max-width:1200px;margin:0 auto;padding:.85rem 1rem;display:grid;grid-template-columns:auto 1px 1fr auto;align-items:center;gap:1rem;}
         .net-divider{width:1px;height:32px;background:linear-gradient(to bottom,transparent,rgba(200,16,46,.5),transparent);}
@@ -446,7 +449,7 @@ body {
         @keyframes ghostDrift{0%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(-20px) scale(.9);}}
         @keyframes emergencyHeartbeat{0%,100%{opacity:1;}14%{opacity:.7;}28%{opacity:1;}42%{opacity:.75;}56%{opacity:1;}}
         @keyframes urgentPulse{0%,100%{opacity:1;}50%{opacity:.86;}}
-        @keyframes flashFade{0%{opacity:.75;}50%{opacity:.6;}100%{opacity:0;}}
+        @keyframes flashFade{0%{opacity:1;}60%{opacity:.7;}100%{opacity:0;}}
         </style>
         @endverbatim
     </div>
@@ -677,19 +680,33 @@ body {
             var flash   = document.getElementById('netEmergencyFlash');
             if (banner)  banner.style.animation  = '';
             if (overlay) { overlay.style.animation = ''; overlay.style.display = 'none'; }
+            if (window.waterfallSetActive) window.waterfallSetActive(true, '', priority);
             if (priority === 'emergency') {
                 if (prev && prev !== 'emergency' && flash) {
+                    // Brief outline flash on transition to emergency
                     flash.style.display = '';
+                    flash.style.opacity = '0';
+                    flash.style.boxShadow = 'inset 0 0 0 3px #C8102E, inset 0 0 40px rgba(200,16,46,.35)';
                     flash.style.animation = 'none';
                     void flash.offsetWidth;
                     flash.style.animation = 'flashFade .9s ease forwards';
-                    setTimeout(function(){ flash.style.display='none'; }, 950);
+                    setTimeout(function(){ flash.style.display='none'; flash.style.boxShadow=''; }, 950);
                 }
-                if (banner)  banner.style.animation  = 'emergencyHeartbeat 1.8s ease-in-out infinite';
-                if (overlay) { overlay.style.display=''; overlay.style.background='rgba(200,16,46,.13)'; overlay.style.animation='emergencyHeartbeat 1.8s ease-in-out infinite'; }
+                if (banner) banner.style.animation = 'emergencyHeartbeat 1.8s ease-in-out infinite';
+                if (overlay) {
+                    overlay.style.display = '';
+                    overlay.style.background = 'transparent';
+                    overlay.style.boxShadow = 'inset 0 0 0 2px rgba(200,16,46,.7), inset 0 0 30px rgba(200,16,46,.18)';
+                    overlay.style.animation = 'emergencyHeartbeat 1.8s ease-in-out infinite';
+                }
             } else if (priority === 'urgent') {
-                if (banner)  banner.style.animation  = 'urgentPulse 2.8s ease-in-out infinite';
-                if (overlay) { overlay.style.display=''; overlay.style.background='rgba(245,158,11,.09)'; overlay.style.animation='urgentPulse 2.8s ease-in-out infinite'; }
+                if (banner) banner.style.animation = 'urgentPulse 2.8s ease-in-out infinite';
+                if (overlay) {
+                    overlay.style.display = '';
+                    overlay.style.background = 'transparent';
+                    overlay.style.boxShadow = 'inset 0 0 0 2px rgba(245,158,11,.55), inset 0 0 24px rgba(245,158,11,.12)';
+                    overlay.style.animation = 'urgentPulse 2.8s ease-in-out infinite';
+                }
             }
         }
 
@@ -720,6 +737,7 @@ body {
             if (!el) return;
             if (_lastCtrl && _lastCtrl !== callsign) {
                 if (window.oscopeHandover) window.oscopeHandover();
+                if (window.waterfallHandover) window.waterfallHandover();
                 ghostOldCtrl();
                 stopRing();
                 setTimeout(function() {
@@ -754,6 +772,7 @@ body {
             var nameEl  = document.getElementById('netCtrlName');
             if (!wrap || wrap.style.display === 'none') return;
             if (window.oscopeFlatline) window.oscopeFlatline();
+            if (window.waterfallFlatline) window.waterfallFlatline();
             stopRing();
             ghostOldCtrl();
             setTimeout(function() {
@@ -878,9 +897,11 @@ body {
                     if (!d.active) {
                         var banner = document.getElementById('netBanner');
                         if (banner) banner.style.display = 'none';
+                        if (window.waterfallFlatline) window.waterfallFlatline();
                         return;
                     }
                     applyPriority(d.priority || 'routine');
+                    if (window.waterfallSetActive) window.waterfallSetActive(true, d.frequency || '', d.priority || 'routine');
                     var fresh = (d.controller || '').trim().toUpperCase();
                     if (fresh && fresh !== _lastCtrl) {
                         var slotTo = null, info = d.controller_info || null;
@@ -982,6 +1003,4 @@ body {
     </div>
 </div>
 
-<div id="netEmergencyOverlay" style="display:none;position:fixed;inset:0;pointer-events:none;z-index:998;"></div>
-<div id="netEmergencyFlash" style="display:none;position:fixed;inset:0;background:#C8102E;pointer-events:none;z-index:999;opacity:0;"></div>
 @endsection
