@@ -39,15 +39,14 @@ class NetControllerAccess
             [$from, $to] = $pair;
             $windowStart = $from->copy()->subMinutes(self::WINDOW_MINUTES);
             $windowEnd   = $to->copy()->addMinutes(self::WINDOW_MINUTES);
-            if ($now->between($windowStart, $windowEnd)) {
-                return array_merge($slot, [
-                    'from_dt'      => $from,
-                    'to_dt'        => $to,
-                    'window_start' => $windowStart,
-                    'window_end'   => $windowEnd,
-                    'can_log'      => $now->between($from, $to),
-                ]);
-            }
+            // parseSlotPair already confirmed $now is in this window
+            return array_merge($slot, [
+                'from_dt'      => $from,
+                'to_dt'        => $to,
+                'window_start' => $windowStart,
+                'window_end'   => $windowEnd,
+                'can_log'      => $now->between($from, $to),
+            ]);
         }
         return null;
     }
@@ -119,13 +118,35 @@ class NetControllerAccess
 
     private static function parseSlotPair(string $from, string $to, Carbon $ref): ?array
     {
-        $fromDt = self::parseSlotTime($from, $ref);
-        $toDt   = self::parseSlotTime($to, $ref);
-        if (!$fromDt || !$toDt) return null;
-        // Handle midnight crossover — if to < from, to is next day
-        if ($toDt->lt($fromDt)) {
-            $toDt->addDay();
+        if (!$from || !$to) return null;
+
+        // Try multiple day offsets so midnight-crossing slots work on both sides
+        // e.g. slot 23:00-01:00: at 00:30 we need from=yesterday, to=today
+        foreach ([-1, 0, 1] as $dayOffset) {
+            $base   = $ref->copy()->addDays($dayOffset);
+            $fromDt = self::parseSlotTime($from, $base);
+            $toDt   = self::parseSlotTime($to,   $ref->copy()); // always relative to now's date
+            if (!$fromDt || !$toDt) continue;
+
+            // Handle midnight crossover — if to <= from, to is next calendar day
+            if ($toDt->lte($fromDt)) {
+                $toDt->addDay();
+            }
+
+            $windowStart = $fromDt->copy()->subMinutes(self::WINDOW_MINUTES);
+            $windowEnd   = $toDt->copy()->addMinutes(self::WINDOW_MINUTES);
+
+            // If now falls within this candidate window, this is the right pair
+            if ($ref->between($windowStart, $windowEnd)) {
+                return [$fromDt, $toDt];
+            }
         }
+
+        // No window match — return the straightforward today pair as fallback
+        $fromDt = self::parseSlotTime($from, $ref);
+        $toDt   = self::parseSlotTime($to,   $ref);
+        if (!$fromDt || !$toDt) return null;
+        if ($toDt->lte($fromDt)) $toDt->addDay();
         return [$fromDt, $toDt];
     }
 }

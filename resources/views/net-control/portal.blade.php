@@ -8,10 +8,7 @@
 
 /* ── Mobile (default) ── */
 .nc-wrap{max-width:900px;margin:0 auto;padding:1.5rem 1rem 4rem;}
-.nc-header{background:linear-gradient(135deg,#003366,#001a33);color:#fff;border-radius:16px;padding:1.5rem;margin-bottom:1.5rem;position:relative;overflow:hidden;}
-.nc-header h1{font-size:1.3rem;font-weight:900;margin:0 0 .25rem;}
-.nc-header .cs{font-family:monospace;font-size:2rem;font-weight:900;letter-spacing:.05em;}
-.nc-header .freq{font-size:.82rem;color:rgba(255,255,255,.6);margin-top:.2rem;}
+.nc-header{background:linear-gradient(135deg,#001a33 0%,#003366 50%,#001a33 100%);color:#fff;border-radius:16px;margin-bottom:1.5rem;}
 .status-pill{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .85rem;border-radius:999px;font-size:.78rem;font-weight:800;}
 .pill-pre{background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3);}
 .pill-live{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3);}
@@ -38,6 +35,7 @@
 .handover-arrow{display:flex;align-items:center;gap:.75rem;padding:.75rem;background:#f8fafc;border-radius:10px;border:1px solid var(--border);margin-bottom:.75rem;}
 .log-row{display:grid;grid-template-columns:2rem 3.5rem 5.5rem 1fr 4rem 4rem 2rem;gap:.4rem;align-items:center;padding:.5rem .75rem;border-bottom:1px solid #f1f5f9;}
 .log-row.hdr{background:#f8fafc;font-size:.62rem;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(1.4);}}
 
 /* ── Desktop (≥1024px) ── */
 @media (min-width:1024px) {
@@ -74,24 +72,146 @@
   /* Wider log table on desktop */
   .log-row{grid-template-columns:2rem 3.5rem 7rem 1fr 5rem 5rem 2rem;}
   .log-row.hdr{font-size:.65rem;}
+
+  /* Sticky countdown banner */
+  .nc-sticky-banner{display:flex;}
+  .nc-wrap{padding-top:.5rem;}
 }
+
+/* Hidden on mobile */
+.nc-sticky-banner{display:none;position:sticky;top:0;z-index:100;
+  background:linear-gradient(135deg,#001a33,#003366);
+  color:#fff;padding:.6rem 2rem;
+  align-items:center;justify-content:space-between;gap:1rem;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  box-shadow:0 2px 12px rgba(0,0,0,.3);}
 </style>
 
 <div class="nc-wrap">
 
   {{-- Header --}}
-  <div class="nc-header">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
-      <div>
-        <div class="nc-header h1">Net Control Portal</div>
-        <div class="cs">{{ $net['callsign'] ?: 'NET' }}</div>
-        <div class="freq">{{ $net['frequency'] ? $net['frequency'] . ' MHz' : '' }} &nbsp;·&nbsp; {{ $groupName }}</div>
-      </div>
-      <div style="text-align:right;">
-        <div id="statusPill" class="status-pill pill-pre">⏳ Pre-slot</div>
-        <div style="font-size:.72rem;color:rgba(255,255,255,.5);margin-top:.4rem;">
-          Logged in as <strong style="color:#fff;">{{ $user->callsign }}</strong>
+  <div class="nc-header" style="position:relative;overflow:hidden;padding:0;">
+    {{-- Animated background canvas --}}
+    <canvas id="ncHeaderCanvas" style="position:absolute;inset:0;width:100%;height:100%;opacity:.18;pointer-events:none;"></canvas>
+
+    <div style="position:relative;z-index:1;padding:1.5rem;">
+
+      {{-- Top row: group name + status pill --}}
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+        <div style="display:flex;align-items:center;gap:.6rem;">
+          <div style="width:8px;height:8px;border-radius:50%;background:#C8102E;animation:pulse 1.5s infinite;flex-shrink:0;"></div>
+          <span style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.5);">{{ $groupName }}</span>
         </div>
+        <div id="statusPill" class="status-pill pill-pre">⏳ Pre-slot</div>
+      </div>
+
+      {{-- Main callsign display --}}
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+        <div>
+          <div style="font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.15em;color:rgba(255,255,255,.35);margin-bottom:.2rem;">Net Control Portal</div>
+          <div style="font-family:monospace;font-size:3rem;font-weight:900;letter-spacing:.06em;line-height:1;color:#fff;text-shadow:0 0 30px rgba(200,16,46,.4);">{{ $net['callsign'] ?: 'NET' }}</div>
+          <div style="display:flex;align-items:center;gap:.75rem;margin-top:.5rem;flex-wrap:wrap;">
+            @if($net['frequency'])
+            <span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:700;color:rgba(255,255,255,.7);background:rgba(255,255,255,.08);padding:.2rem .6rem;border-radius:999px;border:1px solid rgba(255,255,255,.12);">
+              📡 {{ $net['frequency'] }} MHz
+            </span>
+            @endif
+            @if($net['name'])
+            <span style="font-size:.78rem;color:rgba(255,255,255,.45);font-weight:600;">{{ $net['name'] }}</span>
+            @endif
+          </div>
+        </div>
+
+        {{-- Controller info box --}}
+        <div style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:.85rem 1.1rem;text-align:center;backdrop-filter:blur(8px);min-width:140px;">
+          <div style="font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.35);margin-bottom:.35rem;">Your Callsign</div>
+          <div style="font-family:monospace;font-size:1.5rem;font-weight:900;color:#fff;letter-spacing:.05em;">{{ $user->callsign }}</div>
+          <div style="font-size:.7rem;color:rgba(255,255,255,.4);margin-top:.2rem;">{{ $user->name }}</div>
+        </div>
+      </div>
+
+      {{-- Slot info strip --}}
+      <div style="display:flex;align-items:center;gap:.5rem;margin-top:1.1rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,.08);flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:.4rem;background:rgba(255,255,255,.06);border-radius:8px;padding:.3rem .75rem;border:1px solid rgba(255,255,255,.1);">
+          <span style="font-size:.65rem;color:rgba(255,255,255,.4);font-weight:700;text-transform:uppercase;letter-spacing:.08em;">Your slot</span>
+          <span style="font-family:monospace;font-weight:900;color:#fff;font-size:.88rem;">{{ $slot['from'] }} – {{ $slot['to'] }}</span>
+        </div>
+        @if($prevSlot)
+        <div style="display:flex;align-items:center;gap:.4rem;font-size:.72rem;color:rgba(255,255,255,.4);">
+          <span>← Takeover from</span>
+          <span style="font-family:monospace;font-weight:800;color:rgba(255,255,255,.65);">{{ $prevSlot['callsign'] }}</span>
+        </div>
+        @endif
+        @if($nextSlot)
+        <div style="display:flex;align-items:center;gap:.4rem;font-size:.72rem;color:rgba(255,255,255,.4);">
+          <span>Handover to</span>
+          <span style="font-family:monospace;font-weight:800;color:rgba(255,255,255,.65);">{{ $nextSlot['callsign'] }}</span>
+          <span>→</span>
+        </div>
+        @endif
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // Animated sine wave header background
+  (function(){
+    var c = document.getElementById('ncHeaderCanvas');
+    if (!c) return;
+    var ctx = c.getContext('2d');
+    var t = 0;
+    function resize() { c.width = c.offsetWidth; c.height = c.offsetHeight; }
+    resize();
+    window.addEventListener('resize', resize);
+    function draw() {
+      ctx.clearRect(0,0,c.width,c.height);
+      var lines = 4;
+      for (var l=0; l<lines; l++) {
+        ctx.beginPath();
+        ctx.strokeStyle = l===0 ? '#C8102E' : 'rgba(255,255,255,0.4)';
+        ctx.lineWidth   = l===0 ? 1.5 : .8;
+        var amp   = 8 + l*6;
+        var freq  = .012 + l*.004;
+        var speed = .03 + l*.01;
+        var yBase = c.height * (0.3 + l*0.15);
+        ctx.moveTo(0, yBase);
+        for (var x=0; x<c.width; x++) {
+          var y = yBase + Math.sin(x*freq + t*(speed*(l%2===0?1:-1))) * amp
+                       + Math.sin(x*.02 + t*.02) * (amp*.4);
+          ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+      t += .5;
+      requestAnimationFrame(draw);
+    }
+    draw();
+  })();
+  </script>
+
+  {{-- Sticky countdown banner (desktop only) --}}
+  <div class="nc-sticky-banner">
+    <div style="display:flex;align-items:center;gap:1.5rem;">
+      <div id="statusPillSticky" class="status-pill pill-pre" style="font-size:.72rem;">⏳ Pre-slot</div>
+      <div>
+        <div style="font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.4);" id="stickyLabel">Time until slot starts</div>
+        <div style="font-family:monospace;font-weight:900;font-size:1.2rem;letter-spacing:.06em;" id="stickyTime">--:--:--</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:1.5rem;">
+      <div style="text-align:center;">
+        <div style="font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.35);">Your slot</div>
+        <div style="font-family:monospace;font-weight:800;font-size:.85rem;">{{ $slot['from'] }} – {{ $slot['to'] }}</div>
+      </div>
+      @if($prevSlot)
+      <div style="font-size:.75rem;color:rgba(255,255,255,.45);">← <span style="font-family:monospace;font-weight:800;color:rgba(255,255,255,.7);">{{ $prevSlot['callsign'] }}</span></div>
+      @endif
+      <div style="font-family:monospace;font-size:1.1rem;font-weight:900;background:rgba(255,255,255,.1);padding:.25rem .85rem;border-radius:8px;letter-spacing:.05em;">{{ $net['callsign'] }}</div>
+      @if($nextSlot)
+      <div style="font-size:.75rem;color:rgba(255,255,255,.45);"><span style="font-family:monospace;font-weight:800;color:rgba(255,255,255,.7);">{{ $nextSlot['callsign'] }}</span> →</div>
+      @endif
+      <div id="stickyLogBtn" style="display:none;">
+        <span style="font-size:.72rem;font-weight:800;color:#22c55e;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);padding:.25rem .65rem;border-radius:999px;">🔴 ON AIR</span>
       </div>
     </div>
   </div>
@@ -220,6 +340,22 @@
     <div id="ncError" style="color:#C8102E;font-size:.78rem;margin-top:.5rem;display:none;padding:.35rem .6rem;background:#fff1f2;border-radius:6px;border:1px solid #fecdd3;"></div>
   </div>
 
+
+  {{-- Live station log --}}
+  <div class="nc-card" style="padding:0;overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.25rem;border-bottom:1px solid var(--border);">
+      <div style="font-weight:800;color:var(--navy);">Live Station Log</div>
+      <div id="ncLogCount" style="font-size:.8rem;color:var(--muted);font-weight:700;">0 stations</div>
+    </div>
+    <div class="log-row hdr">
+      <div>#</div><div>Time</div><div>Callsign</div><div>Name</div><div>Licence</div><div>Signal</div><div></div>
+    </div>
+    <div id="ncLog" style="min-height:60px;"></div>
+    <div id="ncLogEmpty" style="text-align:center;padding:2rem;color:var(--muted);font-size:.85rem;">No stations logged yet</div>
+  </div>
+
+</div>
+
   </div>{{-- /nc-right --}}
   </div>{{-- /nc-desktop-grid --}}
 
@@ -269,20 +405,6 @@
     </div>
   </div>
 
-  {{-- Live station log --}}
-  <div class="nc-card" style="padding:0;overflow:hidden;">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.25rem;border-bottom:1px solid var(--border);">
-      <div style="font-weight:800;color:var(--navy);">Live Station Log</div>
-      <div id="ncLogCount" style="font-size:.8rem;color:var(--muted);font-weight:700;">0 stations</div>
-    </div>
-    <div class="log-row hdr">
-      <div>#</div><div>Time</div><div>Callsign</div><div>Name</div><div>Licence</div><div>Signal</div><div></div>
-    </div>
-    <div id="ncLog" style="min-height:60px;"></div>
-    <div id="ncLogEmpty" style="text-align:center;padding:2rem;color:var(--muted);font-size:.85rem;">No stations logged yet</div>
-  </div>
-
-</div>
 
 <script>
 var SLOT_FROM      = '{{ $slot['from'] }}';
@@ -363,11 +485,16 @@ function tick() {
         ctL.textContent='Time remaining in your slot'; ctT.textContent=fmt(diff);
         if(pill){pill.className='status-pill pill-live';pill.textContent='🔴 ON AIR';}
         box.style.background='linear-gradient(135deg,#C8102E,#8b0000)';
-        CAN_LOG=true;
         if(isOffline()){
+            CAN_LOG=true;
             bnr.style.cssText='border-radius:8px;padding:.65rem .85rem;margin-bottom:.85rem;font-size:.8rem;font-weight:700;background:#1e293b;color:#fbbf24;';
             bnr.innerHTML='📴 <strong>Offline mode</strong> — entries will sync when reconnected';
+        } else if (window._ncLoggingEnabled === false) {
+            CAN_LOG=false;
+            bnr.style.cssText='border-radius:8px;padding:.65rem .85rem;margin-bottom:.85rem;font-size:.8rem;font-weight:700;background:#fff7ed;color:#c2410c;';
+            bnr.innerHTML='⚠️ Station logging is <strong>disabled</strong> by the net controller — contact them to enable it';
         } else {
+            CAN_LOG=true;
             bnr.style.cssText='border-radius:8px;padding:.65rem .85rem;margin-bottom:.85rem;font-size:.8rem;font-weight:700;background:#f0fdf4;color:#15803d;';
             bnr.innerHTML='🟢 You are <strong>ON AIR</strong> — log stations below';
         }
@@ -384,6 +511,17 @@ function tick() {
     }
 
     if(btn) btn.disabled=!CAN_LOG;
+
+    // Sync sticky banner
+    var stickyTime  = document.getElementById('stickyTime');
+    var stickyLabel = document.getElementById('stickyLabel');
+    var stickyPill  = document.getElementById('statusPillSticky');
+    var stickyBtn   = document.getElementById('stickyLogBtn');
+    if (stickyTime)  stickyTime.textContent  = ctT.textContent;
+    if (stickyLabel) stickyLabel.textContent = ctL.textContent;
+    if (stickyPill && pill) { stickyPill.className=pill.className; stickyPill.textContent=pill.textContent; }
+    if (stickyBtn)   stickyBtn.style.display = CAN_LOG ? '' : 'none';
+
     setTimeout(tick,1000);
 }
 
@@ -638,6 +776,24 @@ document.addEventListener('DOMContentLoaded', function(){
         var raw = localStorage.getItem(NC_OFFLINE_KEY);
         if (raw) { var q=JSON.parse(raw); var c=q.filter(function(e){return e&&e.callsign&&e.logged_at&&!e.id;}); if(c.length!==q.length) saveQueue(c); }
     } catch(e) { clearQueue(); }
+
+    // Poll logging status from server every 5s
+    window._ncLoggingEnabled = true;
+    function pollLoggingStatus() {
+        fetch('/net-status-json', {cache:'no-store'})
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            var prev = window._ncLoggingEnabled;
+            window._ncLoggingEnabled = !!d.station_logging;
+            // If status changed, update button immediately
+            if (prev !== window._ncLoggingEnabled) {
+                var btn = document.getElementById('ncSubmitBtn');
+                if (btn) btn.disabled = !window._ncLoggingEnabled || !CAN_LOG;
+            }
+        }).catch(function(){});
+    }
+    pollLoggingStatus();
+    setInterval(pollLoggingStatus, 5000);
 
     tick();
     loadLog();
