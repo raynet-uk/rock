@@ -7,7 +7,7 @@ $bands     = NetSchedule::$bands;
 $priorities= NetSchedule::$priorities;
 
 $sevenDay = [];
-foreach ($schedules as $s) {
+foreach ($schedules->where('is_active', true) as $s) {
     foreach ($s->nextOccurrences(7) as $occ) {
         $sevenDay[] = $occ;
     }
@@ -748,8 +748,19 @@ function switchTab(name,el){
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nc-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
-  el.classList.add('active');
+  if (el) el.classList.add('active');
+  history.replaceState(null,'','#'+name);
 }
+
+// Restore tab from URL hash on load
+document.addEventListener('DOMContentLoaded', function(){
+  var hash = window.location.hash.replace('#','');
+  var validTabs = ['live','schedules','calendar','sessions','checkins','loghistory'];
+  if (hash && validTabs.indexOf(hash) !== -1) {
+    var tabEl = document.querySelector('.nc-tab[onclick*="\'' + hash + '\'"]');
+    switchTab(hash, tabEl);
+  }
+});
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 document.querySelectorAll('.modal-backdrop').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});});

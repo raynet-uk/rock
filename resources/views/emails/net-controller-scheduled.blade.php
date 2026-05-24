@@ -73,7 +73,12 @@ body{font-family:Arial,sans-serif;background:#f4f6f9;margin:0;padding:0;color:#1
 
     @if($netUrl)
     <div style="text-align:center;">
-      <a href="{{ $netUrl }}" class="btn">View Net Details →</a>
+      <div style="background:#f0f4ff;border:1px solid #c7d7ff;border-radius:10px;padding:1rem;margin:1rem 0;text-align:center;">
+      <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#6366f1;margin-bottom:.35rem;">Your Net Control Portal</div>
+      <a href="{{ $netUrl }}" style="font-family:monospace;font-size:.95rem;font-weight:900;color:#003366;text-decoration:none;">{{ $netUrl }}</a>
+      <div style="font-size:.72rem;color:#64748b;margin-top:.35rem;">Log in and visit this URL during your slot</div>
+    </div>
+    <a href="{{ $netUrl }}" class="btn">Open Net Control Portal →</a>
     </div>
     @endif
 

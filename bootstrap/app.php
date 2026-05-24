@@ -50,6 +50,7 @@ return Application::configure(
         'not.installed' => \App\Http\Middleware\NotInstalled::class,
         'block.page.editor' => \App\Http\Middleware\BlockPageEditor::class,
         'offline.token'     => \App\Http\Middleware\OfflineTokenOrAdmin::class,
+        'net.controller'    => \App\Http\Middleware\NetControllerAccess::class,
     ]);
 })->withExceptions(function (Exceptions $exceptions) {
     //

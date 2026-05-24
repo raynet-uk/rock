@@ -696,7 +696,7 @@ class EventAdminController extends Controller
                         groupName:          $groupName,
                         description:        $netInfo['description'] ?? null,
                         announcement:       $netInfo['announcement'] ?? null,
-                        netUrl:             url('/admin/events/net-status'),
+                        netUrl:             url('/net-control'),
                     )
                 );
             } catch (\Throwable $e) {

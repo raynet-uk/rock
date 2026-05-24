@@ -943,7 +943,7 @@ Route::middleware('admin')->group(function () {
     Route::patch('/admin/events/net-schedule/{schedule}', [EventAdminController::class, 'updateNetSchedule'])->name('admin.events.net-schedule.update');
     Route::delete('/admin/events/net-schedule/{schedule}',[EventAdminController::class, 'destroyNetSchedule'])->name('admin.events.net-schedule.destroy');
     Route::post('/admin/events/net-schedule/{schedule}/clone',[EventAdminController::class, 'cloneNetSchedule'])->name('admin.events.net-schedule.clone');
-    Route::post('/admin/events/net-schedule/{schedule}/toggle',[EventAdminController::class, 'toggleNetSchedule'])->name('admin.events.net-schedule.toggle');
+    Route::match(['POST','PATCH'],'/admin/events/net-schedule/{schedule}/toggle',[EventAdminController::class, 'toggleNetSchedule'])->name('admin.events.net-schedule.toggle');
     Route::post('/admin/events/net-status',     [EventAdminController::class, 'updateNetStatus'])->name('admin.events.net-status.update');
         Route::get('/admin/events',            [EventAdminController::class, 'index'])         ->name('admin.events');
     Route::post('/admin/events/{event}/availability-request', [EventAdminController::class, 'sendAvailabilityRequest'])->name('admin.events.availability-request');
@@ -1113,6 +1113,14 @@ Route::prefix('admin/temporary-guests')->name('admin.temporary-guests.')->middle
     Route::delete('/{user}',        [TemporaryGuestController::class, 'destroy'])  ->name('destroy');
     Route::post  ('/{user}/disable',   [TemporaryGuestController::class, 'disable'])   ->name('disable');
     Route::post  ('/{user}/reinstate', [TemporaryGuestController::class, 'reinstate']) ->name('reinstate');
+});
+
+// Net Controller Portal
+Route::middleware(['web','auth','net.controller'])->prefix('net-control')->name('net-control.')->group(function() {
+    Route::get('/',             [\App\Http\Controllers\NetControllerPortalController::class, 'index'])       ->name('portal');
+    Route::get('/stations',     [\App\Http\Controllers\NetControllerPortalController::class, 'stationLog'])  ->name('stations');
+    Route::post('/log',         [\App\Http\Controllers\NetControllerPortalController::class, 'logStation'])  ->name('log');
+    Route::get('/status',       [\App\Http\Controllers\NetControllerPortalController::class, 'netStatus'])   ->name('status');
 });
 
 // Offline token issuance — requires active admin session
