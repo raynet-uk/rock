@@ -236,137 +236,222 @@
 </div>
 
 <script>
-var SLOT_FROM    = '{{ $slot['from'] }}';
-var SLOT_TO      = '{{ $slot['to'] }}';
-var WINDOW_MINS  = {{ $windowMins }};
-var LOG_HASH     = '';
-var CAN_LOG      = false;
+var SLOT_FROM      = '{{ $slot['from'] }}';
+var SLOT_TO        = '{{ $slot['to'] }}';
+var WINDOW_MINS    = {{ $windowMins }};
+var LOG_HASH       = '';
+var CAN_LOG        = false;
+var NC_QRZ         = {};
+var NC_INVITE_CS   = '';
+var NC_OFFLINE_KEY = 'raynet_nc_offline_log';
+var ncQrzTimer;
 
+// ── Helpers ───────────────────────────────────────────────────────────────
 function parseTime(t) {
-    var now = new Date();
-    var p   = t.split(':');
-    now.setHours(parseInt(p[0]), parseInt(p[1]), 0, 0);
-    return now;
+    var d = new Date(); var p = t.split(':');
+    d.setHours(parseInt(p[0]), parseInt(p[1]), 0, 0); return d;
 }
-
-var slotFrom = parseTime(SLOT_FROM);
-var slotTo   = parseTime(SLOT_TO);
-// Handle midnight crossover
-if (slotTo <= slotFrom) { slotTo = new Date(slotTo.getTime() + 86400000); }
-var windowStart = new Date(slotFrom.getTime() - WINDOW_MINS * 60000);
-var windowEnd   = new Date(slotTo.getTime()   + WINDOW_MINS * 60000);
-
-function tick() {
-    var now     = new Date();
-    var diff    = 0;
-    var label   = '';
-    var pill    = document.getElementById('statusPill');
-    var box     = document.getElementById('countdownBox');
-    var ctLabel = document.getElementById('countdownLabel');
-    var ctTime  = document.getElementById('countdownTime');
-    var ctSub   = document.getElementById('countdownSub');
-    var btn     = document.getElementById('ncSubmitBtn');
-    var banner  = document.getElementById('logBanner');
-
-    // Update script times
-    var hhmm = now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-    ['scriptTime','scriptTime2'].forEach(function(id){
-        var el = document.getElementById(id); if(el) el.textContent = hhmm;
-    });
-
-    if (now < slotFrom) {
-        // Pre-slot
-        diff = Math.floor((slotFrom - now) / 1000);
-        var h = Math.floor(diff/3600), m = Math.floor((diff%3600)/60), s = diff%60;
-        ctLabel.textContent = 'Time until your slot starts';
-        ctTime.textContent  = (h?String(h).padStart(2,'0')+':':'') + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
-        if (pill) { pill.className='status-pill pill-pre'; pill.textContent='⏳ Slot starts '+SLOT_FROM; }
-        box.style.background = 'linear-gradient(135deg,#1e293b,#334155)';
-        CAN_LOG = false;
-        banner.style.cssText = 'border-radius:8px;padding:.65rem .85rem;margin-bottom:.85rem;font-size:.8rem;font-weight:700;background:#fff7ed;color:#c2410c;';
-        banner.innerHTML     = '⏳ Logging opens at <strong>' + SLOT_FROM + '</strong> — monitor the frequency until then';
-    } else if (now >= slotFrom && now <= slotTo) {
-        // Live slot
-        diff = Math.floor((slotTo - now) / 1000);
-        var h = Math.floor(diff/3600), m = Math.floor((diff%3600)/60), s = diff%60;
-        ctLabel.textContent = 'Time remaining in your slot';
-        ctTime.textContent  = (h?String(h).padStart(2,'0')+':':'') + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
-        if (pill) { pill.className='status-pill pill-live'; pill.textContent='🔴 ON AIR'; }
-        box.style.background = 'linear-gradient(135deg,#C8102E,#8b0000)';
-        CAN_LOG = true;
-        banner.style.cssText = 'border-radius:8px;padding:.65rem .85rem;margin-bottom:.85rem;font-size:.8rem;font-weight:700;background:#f0fdf4;color:#15803d;';
-        banner.innerHTML     = '🟢 You are <strong>ON AIR</strong> — log stations below';
-    } else if (now > slotTo && now <= windowEnd) {
-        // Post-slot
-        ctLabel.textContent = 'Your slot has ended';
-        ctTime.textContent  = 'ENDED';
-        ctSub.textContent   = 'Monitoring period — ' + WINDOW_MINS + ' min(s) remaining';
-        if (pill) { pill.className='status-pill pill-post'; pill.textContent='✓ Slot ended'; }
-        box.style.background = 'linear-gradient(135deg,#334155,#1e293b)';
-        CAN_LOG = false;
-        banner.style.cssText = 'border-radius:8px;padding:.65rem .85rem;margin-bottom:.85rem;font-size:.8rem;font-weight:700;background:#f1f5f9;color:#64748b;';
-        banner.innerHTML     = '✓ Your slot has ended — logging disabled. Page closes access in ' + Math.ceil((windowEnd-now)/60000) + ' min(s)';
-    } else {
-        // Window expired — reload to show no-access page
-        location.reload();
-        return;
-    }
-
-    if (btn) btn.disabled = !CAN_LOG;
-    setTimeout(tick, 1000);
-}
-
 function escHtml(s) {
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
+function isOffline() { return !navigator.onLine; }
+function csrf() { return document.querySelector('meta[name="csrf-token"]').content; }
 
-function loadLog() {
-    fetch('{{ route("net-control.stations") }}', {cache:'no-store'})
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-        var hash = data.map(function(e){ return e.id+':'+e.callsign; }).join(',');
-        if (hash === LOG_HASH) return;
-        LOG_HASH = hash;
-        var log   = document.getElementById('ncLog');
-        var empty = document.getElementById('ncLogEmpty');
-        var cnt   = document.getElementById('ncLogCount');
-        if (cnt) cnt.textContent = data.length + ' station' + (data.length!==1?'s':'');
-        if (!data.length) {
-            log.innerHTML = '';
-            empty.style.display = '';
-            return;
+// ── Slot times ────────────────────────────────────────────────────────────
+var slotFrom = parseTime(SLOT_FROM);
+var slotTo   = parseTime(SLOT_TO);
+if (slotTo <= slotFrom) { slotTo = new Date(slotTo.getTime() + 86400000); }
+var windowStart = new Date(slotFrom.getTime() - WINDOW_MINS*60000);
+var windowEnd   = new Date(slotTo.getTime()   + WINDOW_MINS*60000);
+
+// ── Offline queue ─────────────────────────────────────────────────────────
+function getQueue() {
+    try {
+        var q = JSON.parse(localStorage.getItem(NC_OFFLINE_KEY)||'[]');
+        return q.filter(function(e){ return e&&e.callsign&&e.logged_at&&!e.id; });
+    } catch(e){ return []; }
+}
+function saveQueue(q) { localStorage.setItem(NC_OFFLINE_KEY, JSON.stringify(q)); }
+function addToQueue(cs, rep, notes) {
+    var q = getQueue();
+    q.push({callsign:cs, signal_report:rep, notes:notes, logged_at:new Date().toISOString()});
+    saveQueue(q);
+}
+function clearQueue() { localStorage.removeItem(NC_OFFLINE_KEY); }
+
+// ── Countdown tick ────────────────────────────────────────────────────────
+function tick() {
+    var now  = new Date();
+    var pill = document.getElementById('statusPill');
+    var box  = document.getElementById('countdownBox');
+    var ctL  = document.getElementById('countdownLabel');
+    var ctT  = document.getElementById('countdownTime');
+    var ctS  = document.getElementById('countdownSub');
+    var btn  = document.getElementById('ncSubmitBtn');
+    var bnr  = document.getElementById('logBanner');
+    var hhmm = now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    ['scriptTime','scriptTime2'].forEach(function(id){
+        var el=document.getElementById(id); if(el) el.textContent=hhmm;
+    });
+
+    function fmt(sec) {
+        var h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;
+        return (h?String(h).padStart(2,'0')+':':'')+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+    }
+
+    if (now < windowStart) {
+        location.reload(); return;
+    } else if (now >= windowStart && now < slotFrom) {
+        var diff=Math.floor((slotFrom-now)/1000);
+        ctL.textContent='Time until your slot starts'; ctT.textContent=fmt(diff);
+        if(pill){pill.className='status-pill pill-pre';pill.textContent='⏳ Slot starts '+SLOT_FROM;}
+        box.style.background='linear-gradient(135deg,#1e293b,#334155)';
+        CAN_LOG=false;
+        bnr.style.cssText='border-radius:8px;padding:.65rem .85rem;margin-bottom:.85rem;font-size:.8rem;font-weight:700;background:#fff7ed;color:#c2410c;';
+        bnr.innerHTML='⏳ Logging opens at <strong>'+SLOT_FROM+'</strong>';
+    } else if (now>=slotFrom && now<=slotTo) {
+        var diff=Math.floor((slotTo-now)/1000);
+        ctL.textContent='Time remaining in your slot'; ctT.textContent=fmt(diff);
+        if(pill){pill.className='status-pill pill-live';pill.textContent='🔴 ON AIR';}
+        box.style.background='linear-gradient(135deg,#C8102E,#8b0000)';
+        CAN_LOG=true;
+        if(isOffline()){
+            bnr.style.cssText='border-radius:8px;padding:.65rem .85rem;margin-bottom:.85rem;font-size:.8rem;font-weight:700;background:#1e293b;color:#fbbf24;';
+            bnr.innerHTML='📴 <strong>Offline mode</strong> — entries will sync when reconnected';
+        } else {
+            bnr.style.cssText='border-radius:8px;padding:.65rem .85rem;margin-bottom:.85rem;font-size:.8rem;font-weight:700;background:#f0fdf4;color:#15803d;';
+            bnr.innerHTML='🟢 You are <strong>ON AIR</strong> — log stations below';
         }
-        empty.style.display = 'none';
-        log.innerHTML = data.map(function(e, i) {
-            var qrz  = e.qrz_data || {};
-            if (typeof qrz === 'string') { try { qrz = JSON.parse(qrz); } catch(ex){ qrz={}; } }
-            var time = new Date(e.checked_in_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-            var bg   = i%2===0?'#fff':'#f9fafb';
-            return '<div class="log-row" style="background:'+bg+'">'
-                + '<div style="font-size:.65rem;color:#cbd5e1;text-align:center;">'+(i+1)+'</div>'
-                + '<div style="font-size:.72rem;color:#94a3b8;font-family:monospace;">'+time+'</div>'
-                + '<div style="font-family:monospace;font-weight:900;font-size:.85rem;color:#003366;">'+escHtml(e.callsign)+'</div>'
-                + '<div style="font-weight:600;color:#334155;font-size:.8rem;">'+escHtml(e.name||'—')+'</div>'
-                + '<div style="font-size:.68rem;">' + (qrz.licence_class ? '<span style="padding:.1rem .35rem;border-radius:999px;background:#dcfce7;color:#15803d;font-weight:800;font-size:.65rem;">'+escHtml(qrz.licence_class)+'</span>' : '') + '</div>'
-                + '<div style="font-family:monospace;font-weight:800;color:#059669;font-size:.8rem;">'+escHtml(e.signal_report||'—')+'</div>'
-                + '<div></div>'
-                + '</div>';
-        }).join('');
-    }).catch(function(){});
+    } else if (now>slotTo && now<=windowEnd) {
+        ctL.textContent='Your slot has ended'; ctT.textContent='ENDED';
+        ctS.textContent='Access expires in '+Math.ceil((windowEnd-now)/60000)+' min(s)';
+        if(pill){pill.className='status-pill pill-post';pill.textContent='✓ Slot ended';}
+        box.style.background='linear-gradient(135deg,#334155,#1e293b)';
+        CAN_LOG=false;
+        bnr.style.cssText='border-radius:8px;padding:.65rem .85rem;margin-bottom:.85rem;font-size:.8rem;font-weight:700;background:#f1f5f9;color:#64748b;';
+        bnr.innerHTML='✓ Slot ended — logging disabled';
+    } else {
+        location.reload(); return;
+    }
+
+    if(btn) btn.disabled=!CAN_LOG;
+    setTimeout(tick,1000);
 }
 
+// ── QRZ lookup ────────────────────────────────────────────────────────────
+function ncQrzLookup(cs) {
+    if (!cs || cs.length < 3) { ncHideQrz(); return; }
+    if (isOffline()) {
+        ncHideQrz();
+        var nm = document.getElementById('ncQrzName');
+        if (nm) { nm.textContent='📴 Offline — QRZ unavailable'; nm.style.color='#fbbf24'; }
+        return;
+    }
+    fetch('/admin/events/station-log/qrz?callsign='+encodeURIComponent(cs), {
+        headers: {'X-CSRF-TOKEN': csrf(), 'Accept':'application/json'}
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        NC_QRZ[cs] = d;
+        if (!d.found) { ncHideQrz(); return; }
+        ncShowQrz(cs, d);
+    })
+    .catch(function(){ ncHideQrz(); });
+}
+
+function ncShowQrz(cs, d) {
+    var card = document.getElementById('ncQrzCard');
+    if (!card) return;
+    document.getElementById('ncQrzCallsign').textContent = cs;
+    document.getElementById('ncQrzName').textContent     = d.name || '';
+    document.getElementById('ncQrzName').style.color     = '';
+    var ph = document.getElementById('ncQrzPhoto');
+    if (d.photo) { ph.src='/admin/events/station-log/qrz-photo?callsign='+encodeURIComponent(cs); ph.style.display=''; }
+    else { ph.style.display='none'; }
+    var lic = document.getElementById('ncQrzLicence');
+    if (d.licence_class) { lic.textContent=d.licence_class; lic.style.display=''; }
+    else { lic.style.display='none'; }
+    document.getElementById('ncQrzRegistered').style.display = d.is_registered ? '' : 'none';
+    document.getElementById('ncQrzLink').href = d.qrz_url || ('https://www.qrz.com/db/'+cs);
+    var loc = document.getElementById('ncQrzLocation');
+    if (d.location) { loc.querySelector('span').textContent=d.location; loc.style.display=''; }
+    else { loc.style.display='none'; }
+    var grid = document.getElementById('ncQrzGrid');
+    if (d.grid) { grid.querySelector('span').textContent=d.grid; grid.style.display=''; }
+    else { grid.style.display='none'; }
+    document.getElementById('ncInviteBtn').style.display = d.is_registered ? 'none' : '';
+    NC_INVITE_CS = cs;
+    card.style.display = '';
+}
+
+function ncHideQrz() {
+    var c = document.getElementById('ncQrzCard');
+    if (c) c.style.display = 'none';
+}
+
+// ── Invite ────────────────────────────────────────────────────────────────
+function ncOpenInvite() {
+    var cs = NC_INVITE_CS; var d = NC_QRZ[cs] || {};
+    document.getElementById('ncInviteCallsign').textContent = cs;
+    document.getElementById('ncInviteEmail').value = '';
+    document.getElementById('ncInviteErr').style.display = 'none';
+    document.getElementById('ncInviteOk').style.display  = 'none';
+    var btn = document.getElementById('ncInviteSendBtn');
+    btn.disabled = false; btn.textContent = 'Send Invitation';
+    var row = document.getElementById('ncInviteQrzRow');
+    if (d.email) { document.getElementById('ncInviteQrzEmail').textContent=d.email; row.style.display=''; }
+    else { row.style.display='none'; }
+    document.getElementById('ncInviteModal').style.display = 'flex';
+}
+
+function ncSendInvite() {
+    var cs  = NC_INVITE_CS; var d = NC_QRZ[cs] || {};
+    var email = document.getElementById('ncInviteEmail').value.trim();
+    var err   = document.getElementById('ncInviteErr');
+    var btn   = document.getElementById('ncInviteSendBtn');
+    if (!email) { err.textContent='Email required'; err.style.display=''; return; }
+    err.style.display='none'; btn.disabled=true; btn.textContent='Sending...';
+    fetch('/admin/events/station-log/invite', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','X-CSRF-TOKEN':csrf()},
+        body: JSON.stringify({callsign:cs, email:email, name:d.name||cs})
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+        if (res.success) {
+            document.getElementById('ncInviteOk').style.display = '';
+            btn.textContent = '✓ Sent';
+            setTimeout(function(){ document.getElementById('ncInviteModal').style.display='none'; }, 2000);
+        } else {
+            err.textContent = res.error||'Failed'; err.style.display='';
+            btn.disabled=false; btn.textContent='Send Invitation';
+        }
+    });
+}
+
+// ── Log a station ─────────────────────────────────────────────────────────
 function ncLog() {
     if (!CAN_LOG) return;
-    var cs  = document.getElementById('ncCallsign').value.trim().toUpperCase();
-    var rep = document.getElementById('ncReport').value.trim();
+    var cs    = document.getElementById('ncCallsign').value.trim().toUpperCase();
+    var rep   = document.getElementById('ncReport').value.trim();
     var notes = document.getElementById('ncNotes').value.trim();
-    var err = document.getElementById('ncError');
+    var err   = document.getElementById('ncError');
     if (!cs) { err.textContent='Callsign required'; err.style.display=''; return; }
     err.style.display = 'none';
 
-    fetch('{{ route("net-control.log") }}', {
+    if (isOffline()) {
+        addToQueue(cs, rep, notes);
+        document.getElementById('ncCallsign').value = '';
+        document.getElementById('ncReport').value   = '';
+        document.getElementById('ncNotes').value    = '';
+        ncHideQrz();
+        loadLog();
+        return;
+    }
+
+    fetch('{{ route('net-control.log') }}', {
         method: 'POST',
-        headers: {'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content},
+        headers: {'Content-Type':'application/json','X-CSRF-TOKEN':csrf()},
         body: JSON.stringify({callsign:cs, signal_report:rep, notes:notes})
     })
     .then(function(r){ return r.json(); })
@@ -375,21 +460,174 @@ function ncLog() {
             document.getElementById('ncCallsign').value = '';
             document.getElementById('ncReport').value   = '';
             document.getElementById('ncNotes').value    = '';
+            ncHideQrz();
             loadLog();
         } else {
-            err.textContent = d.error || 'Failed to log';
+            err.textContent = d.error||'Failed to log';
             err.style.display = '';
         }
     });
 }
 
+// ── Live log ──────────────────────────────────────────────────────────────
+function loadLog() {
+    if (isOffline()) { renderOfflineLog(); return; }
+    fetch('{{ route('net-control.stations') }}', {cache:'no-store'})
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+        var hash = data.map(function(e){ return e.id+':'+e.callsign; }).join(',');
+        if (hash === LOG_HASH) return;
+        LOG_HASH = hash;
+        var log   = document.getElementById('ncLog');
+        var empty = document.getElementById('ncLogEmpty');
+        var cnt   = document.getElementById('ncLogCount');
+        if (cnt) cnt.textContent = data.length+' station'+(data.length!==1?'s':'');
+        if (!data.length) { log.innerHTML=''; empty.style.display=''; return; }
+        empty.style.display = 'none';
+        log.innerHTML = data.map(function(e,i){
+            var qrz = e.qrz_data || {};
+            if (typeof qrz==='string') { try{ qrz=JSON.parse(qrz); }catch(x){ qrz={}; } }
+            var time = new Date(e.checked_in_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+            var bg   = i%2===0 ? '#fff' : '#f9fafb';
+            return '<div class="log-row" style="background:'+bg+'">'
+                +'<div style="font-size:.65rem;color:#cbd5e1;text-align:center;">'+(i+1)+'</div>'
+                +'<div style="font-size:.72rem;color:#94a3b8;font-family:monospace;">'+time+'</div>'
+                +'<div style="font-family:monospace;font-weight:900;font-size:.85rem;color:#003366;">'+escHtml(e.callsign)+'</div>'
+                +'<div style="font-weight:600;color:#334155;font-size:.8rem;">'+escHtml(e.name||'—')+'</div>'
+                +'<div>'+(qrz.licence_class?'<span style="padding:.1rem .35rem;border-radius:999px;background:#dcfce7;color:#15803d;font-weight:800;font-size:.65rem;">'+escHtml(qrz.licence_class)+'</span>':'')+'</div>'
+                +'<div style="font-family:monospace;font-weight:800;color:#059669;font-size:.8rem;">'+escHtml(e.signal_report||'—')+'</div>'
+                +'<div></div>'
+                +'</div>';
+        }).join('');
+    }).catch(function(){});
+}
+
+function renderOfflineLog() {
+    var q = getQueue();
+    var log=document.getElementById('ncLog'), empty=document.getElementById('ncLogEmpty'), cnt=document.getElementById('ncLogCount');
+    if (cnt) cnt.textContent = q.length+' station'+(q.length!==1?'s':'')+' (offline)';
+    if (!q.length) { log.innerHTML=''; empty.style.display=''; return; }
+    empty.style.display = 'none';
+    log.innerHTML = q.map(function(e,i){
+        var time = new Date(e.logged_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+        return '<div class="log-row" style="background:'+(i%2===0?'#fffbeb':'#fef9c3')+'">'
+            +'<div style="font-size:.65rem;color:#92400e;text-align:center;">'+(i+1)+'</div>'
+            +'<div style="font-size:.72rem;color:#92400e;font-family:monospace;">'+time+'</div>'
+            +'<div style="font-family:monospace;font-weight:900;font-size:.85rem;color:#003366;">'+escHtml(e.callsign)+'</div>'
+            +'<div style="font-size:.75rem;color:#64748b;">'+escHtml(e.notes||'')+'</div>'
+            +'<div><span style="font-size:.65rem;font-weight:800;padding:.1rem .35rem;border-radius:999px;background:#fbbf24;color:#1e293b;">⏳ Queued</span></div>'
+            +'<div style="font-family:monospace;font-weight:800;color:#059669;font-size:.8rem;">'+escHtml(e.signal_report||'—')+'</div>'
+            +'<div></div>'
+            +'</div>';
+    }).join('');
+}
+
+// ── Offline sync popup ────────────────────────────────────────────────────
+function ncShowSyncModal(q) {
+    var list = document.getElementById('ncOfflineList');
+    var btn  = document.getElementById('ncOfflineImportBtn');
+    var err  = document.getElementById('ncOfflineErr');
+    if (btn) { btn.disabled=false; btn.textContent='📥 Import '+q.length+' station'+(q.length!==1?'s':''); btn.style.background=''; }
+    if (err) err.style.display = 'none';
+    if (list) list.innerHTML = q.map(function(e,i){
+        var time = new Date(e.logged_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+        return '<div style="display:flex;align-items:center;gap:.75rem;padding:.55rem .85rem;'+(i%2===0?'background:#fff':'background:#f9fafb')+';border-bottom:1px solid #f1f5f9;">'
+            +'<span style="font-family:monospace;font-weight:900;color:#003366;min-width:75px;">'+escHtml(e.callsign)+'</span>'
+            +'<span style="font-size:.75rem;color:#94a3b8;font-family:monospace;">'+time+'</span>'
+            +(e.signal_report?'<span style="font-size:.75rem;font-weight:700;color:#059669;">'+escHtml(e.signal_report)+'</span>':'')
+            +'</div>';
+    }).join('');
+    document.getElementById('ncOfflineModal').style.display = 'flex';
+}
+
+function ncDiscardQueue() {
+    if (!confirm('Discard all offline entries?')) return;
+    clearQueue();
+    document.getElementById('ncOfflineModal').style.display = 'none';
+    loadLog();
+}
+
+function ncImportQueue() {
+    var q = getQueue();
+    if (!q.length) { document.getElementById('ncOfflineModal').style.display='none'; return; }
+    var btn = document.getElementById('ncOfflineImportBtn');
+    var err = document.getElementById('ncOfflineErr');
+    btn.disabled = true; err.style.display = 'none';
+    var done=0, failed=0;
+    function next(i) {
+        if (i >= q.length) {
+            loadLog();
+            if (failed === 0) {
+                btn.textContent='✓ All imported!'; btn.style.background='#15803d';
+                clearQueue();
+                setTimeout(function(){ document.getElementById('ncOfflineModal').style.display='none'; }, 1800);
+            } else {
+                saveQueue(q.slice(done));
+                err.textContent=failed+' failed — tap Retry'; err.style.display='';
+                btn.disabled=false; btn.textContent='Retry'; btn.style.background='';
+            }
+            return;
+        }
+        var e = q[i];
+        btn.textContent = 'Importing '+(i+1)+' of '+q.length+'...';
+        fetch('{{ route('net-control.log') }}', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json','X-CSRF-TOKEN':csrf(),'X-Offline-Replay':'1'},
+            body: JSON.stringify({callsign:e.callsign, signal_report:e.signal_report, notes:e.notes})
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(d){ if(d.success) done++; else failed++; next(i+1); })
+        .catch(function(){ failed++; next(i+1); });
+    }
+    next(0);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function(){
+    // Clean bad queue data
+    try {
+        var raw = localStorage.getItem(NC_OFFLINE_KEY);
+        if (raw) { var q=JSON.parse(raw); var c=q.filter(function(e){return e&&e.callsign&&e.logged_at&&!e.id;}); if(c.length!==q.length) saveQueue(c); }
+    } catch(e) { clearQueue(); }
+
     tick();
     loadLog();
     setInterval(loadLog, 3000);
 
+    window.addEventListener('offline', function(){ tick(); loadLog(); });
+    window.addEventListener('online',  function(){
+        tick();
+        setTimeout(function(){
+            var q = getQueue();
+            if (q.length > 0) ncShowSyncModal(q); else loadLog();
+        }, 800);
+    });
+
+    // Show sync modal if queue pending on load
+    (function(){
+        var q = getQueue();
+        if (q.length > 0 && navigator.onLine) setTimeout(function(){ ncShowSyncModal(q); }, 1500);
+    })();
+
+    // Callsign input
     var ci = document.getElementById('ncCallsign');
-    if (ci) ci.addEventListener('keydown', function(e){ if(e.key==='Enter') ncLog(); });
+    if (ci) {
+        ci.addEventListener('keydown', function(e){ if(e.key==='Enter') ncLog(); });
+        ci.addEventListener('input', function(){
+            ncHideQrz();
+            clearTimeout(ncQrzTimer);
+            var val = ci.value.trim().toUpperCase();
+            if (val.length >= 3) ncQrzTimer = setTimeout(function(){ ncQrzLookup(val); }, 600);
+        });
+        ci.addEventListener('blur', function(){
+            var val = ci.value.trim().toUpperCase();
+            if (val.length >= 3) ncQrzLookup(val);
+        });
+    }
+
+    // Modal backdrop closes
+    document.getElementById('ncOfflineModal').addEventListener('click', function(e){ if(e.target===this) this.style.display='none'; });
+    document.getElementById('ncInviteModal').addEventListener('click',  function(e){ if(e.target===this) this.style.display='none'; });
 });
 </script>
 @endsection
