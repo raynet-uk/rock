@@ -470,27 +470,15 @@ document.querySelectorAll('.sb-subitem.active').forEach(el=>{
 <script>
 // ── RAYNET-OS Offline Manager ──────────────────────────────────────────────
 (function(){
-  var SW_URL   = '/net-control-sw.js';
   var TOKEN_KEY = 'raynet_offline_token';
   var TOKEN_EXP = 'raynet_offline_expires';
   var queueCount = 0;
   var isOnline   = navigator.onLine;
 
-  // Register service worker
+  // Unregister any old service workers (no longer needed — offline uses localStorage)
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register(SW_URL, {scope:'/'}).then(function(reg){
-      console.log('RAYNET-OS SW registered');
-      // Request background sync permission
-      if (reg.sync) reg.sync.register('net-control-sync').catch(function(){});
-    }).catch(function(e){ console.warn('SW registration failed:', e); });
-
-    // Listen for messages from SW
-    navigator.serviceWorker.addEventListener('message', function(e) {
-      var d = e.data;
-      if (!d) return;
-      if (d.type === 'SYNC_STATUS')    updateBar(d.online, d.queued || 0);
-      if (d.type === 'SYNC_COMPLETE')  { onSyncComplete(d); } // loadLog handled by popup import
-      if (d.type === 'AUTH_FAILED')    showAuthFailed(d.message);
+    navigator.serviceWorker.getRegistrations().then(function(regs){
+      regs.forEach(function(reg){ reg.unregister(); });
     });
   }
 
@@ -503,18 +491,12 @@ document.querySelectorAll('.sb-subitem.active').forEach(el=>{
       if (!d || !d.token) return;
       localStorage.setItem(TOKEN_KEY, d.token);
       localStorage.setItem(TOKEN_EXP, d.expires_at);
-      // Store in SW IndexedDB too
-      sendToSW({type:'STORE_TOKEN', token: d.token, expires_at: d.expires_at});
       updateTokenInfo(d.expires_at);
       console.log('RAYNET-OS: offline token refreshed, expires', new Date(d.expires_at*1000).toLocaleTimeString());
     }).catch(function(){});
   }
 
-  function sendToSW(msg) {
-    if (navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage(msg);
-    }
-  }
+
 
   function updateTokenInfo(expiresAt) {
     var el = document.getElementById('offline-token-info');
@@ -578,11 +560,7 @@ document.querySelectorAll('.sb-subitem.active').forEach(el=>{
   }
 
   // Public API
-  window.raynetSyncNow = function() {
-    if (navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({type:'SYNC_NOW'});
-    }
-  };
+  window.raynetSyncNow = function() { /* no-op: sync handled by offline popup */ };
 
   window.raynetRefreshToken = function() {
     fetchToken();
@@ -605,12 +583,7 @@ document.querySelectorAll('.sb-subitem.active').forEach(el=>{
     // Refresh token every 10 hours
     setInterval(fetchToken, 36000000);
 
-    // Clear SW IndexedDB queue — we now use localStorage for offline entries
-    setTimeout(function(){
-        if (navigator.serviceWorker.controller) {
-            navigator.serviceWorker.controller.postMessage({type:'CLEAR_QUEUE'});
-        }
-    }, 2000);
+
 
     // Show stored token expiry
     var exp = localStorage.getItem(TOKEN_EXP);

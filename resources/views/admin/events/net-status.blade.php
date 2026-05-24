@@ -966,6 +966,24 @@ function logCheckin() {
 // ── Offline local store ───────────────────────────────────────────────────
 var OFFLINE_STORE_KEY = 'raynet_offline_log';
 
+// Self-heal: clear any corrupted data from old service worker on first load
+(function(){
+    try {
+        var raw = localStorage.getItem(OFFLINE_STORE_KEY);
+        if (!raw) return;
+        var q = JSON.parse(raw);
+        if (!Array.isArray(q)) { localStorage.removeItem(OFFLINE_STORE_KEY); return; }
+        // Valid entries must have callsign + logged_at and NOT have id or checked_in_at (server format)
+        var clean = q.filter(function(e){
+            return e && typeof e.callsign === 'string' && e.logged_at && !e.id && !e.checked_in_at;
+        });
+        if (clean.length !== q.length) {
+            console.warn('RAYNET-OS: cleared ' + (q.length - clean.length) + ' corrupted offline queue entries');
+            localStorage.setItem(OFFLINE_STORE_KEY, JSON.stringify(clean));
+        }
+    } catch(e) { localStorage.removeItem(OFFLINE_STORE_KEY); }
+})();
+
 function getOfflineQueue() {
     try { return JSON.parse(localStorage.getItem(OFFLINE_STORE_KEY) || '[]'); } catch(e) { return []; }
 }
