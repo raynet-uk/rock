@@ -854,6 +854,10 @@ class EventAdminController extends Controller
         }
         $request->validate(['callsign' => 'required|string|max:20']);
         $cs   = strtoupper(trim($request->callsign));
+        // Prevent duplicate callsign in same session
+        if (\App\Models\NetStationLog::whereRaw('UPPER(callsign) = ?', [$cs])->exists()) {
+            return response()->json(['success' => false, 'error' => $cs . ' is already logged on this net']);
+        }
         $name = null; $qrzData = null; $photoUrl = null;
         $isRegistered = \App\Models\User::whereRaw('UPPER(callsign) = ?', [$cs])->exists();
         $user = \App\Models\User::whereRaw('UPPER(callsign) = ?', [$cs])->first();

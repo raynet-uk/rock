@@ -1190,6 +1190,38 @@ Route::get('/net-status-json', function () {
 // Net station log routes
 Route::middleware(['web','auth','admin'])->prefix('admin/events')->name('admin.events.')->group(function () {
     Route::get('/station-log',            [\App\Http\Controllers\EventAdminController::class, 'stationLogIndex'])  ->name('station-log.index');
+    Route::post('/station-log/typing', function(\Illuminate\Http\Request $request) {
+        $cs  = strtoupper(trim($request->input('callsign','')));
+        $sid = session()->getId();
+        $key = 'net_typing_' . $sid;
+        if ($cs && strlen($cs) >= 2) {
+            cache()->put($key, [
+                'callsign' => $cs,
+                'name'     => auth()->user()->name,
+                'sid'      => $sid,
+                'at'       => now()->toISOString(),
+            ], 10);
+            // Keep a registry of active sessions
+            $reg = cache()->get('net_typing_sessions', []);
+            $reg[$sid] = true;
+            cache()->put('net_typing_sessions', $reg, 60);
+        } else {
+            cache()->forget($key);
+        }
+        return response()->json(['ok'=>true]);
+    })->name('station-log.typing');
+
+    Route::get('/station-log/typing', function() {
+        $mySid = session()->getId();
+        $reg   = cache()->get('net_typing_sessions', []);
+        $result = [];
+        foreach (array_keys($reg) as $sid) {
+            if ($sid === $mySid) continue;
+            $v = cache()->get('net_typing_' . $sid);
+            if ($v) $result[] = ['name'=>$v['name'],'callsign'=>$v['callsign'],'at'=>$v['at']];
+        }
+        return response()->json($result);
+    })->name('station-log.typing.get');
     Route::get('/station-log/logging-status', function() {
         return response()->json(['enabled' => \App\Models\Setting::get('net_station_logging','0') === '1']);
     })->name('station-log.logging-status');

@@ -486,6 +486,7 @@ input:checked+.slider:before{transform:translateX(24px);}
       <div style="font-size:.65rem;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">Member</div>
       <div></div>
     </div>
+    <div id="ciTypingBar" style="display:none;padding:.4rem 1.25rem;background:#f0f4ff;border-bottom:1px solid #c7d7ff;font-size:.75rem;color:#4338ca;font-weight:600;transition:all .3s;"></div>
     <div id="ciLog"></div>
     <div id="ciEmpty" style="text-align:center;padding:2.5rem;color:var(--muted);font-size:.85rem;">
       <div style="font-size:1.5rem;margin-bottom:.5rem;">📭</div>No stations logged yet
@@ -940,6 +941,17 @@ function logCheckin() {
     var notes = document.getElementById('ciNotes').value.trim();
     var err   = document.getElementById('ciError');
     if (!cs) { err.textContent = 'Callsign is required'; err.style.display=''; return; }
+    // Client-side duplicate check against current log
+    var logEls = document.querySelectorAll('#ciLog [data-remove]');
+    var alreadyLogged = false;
+    document.querySelectorAll('#ciLog span[style*="monospace"]').forEach(function(el){
+        if (el.textContent.trim() === cs) alreadyLogged = true;
+    });
+    if (alreadyLogged) {
+        err.textContent = cs + ' is already logged on this net';
+        err.style.display = '';
+        return;
+    }
     err.style.display = 'none';
 
     // Offline mode — skip all online checks, log directly
@@ -1568,6 +1580,31 @@ function importOfflineQueue() {
     importNext(0);
 }
 
+var _lastLogHash = '';
+
+function pollTyping() {
+    fetch('{{ route("admin.events.station-log.typing.get") }}', {cache:'no-store'})
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+        var bar = document.getElementById('ciTypingBar');
+        if (!bar) return;
+        // Filter stale (>6s old)
+        var now = Date.now();
+        var active = data.filter(function(t){
+            return (now - new Date(t.at).getTime()) < 6000;
+        });
+        if (!active.length) {
+            bar.style.display = 'none';
+            return;
+        }
+        var msg = active.map(function(t){
+            return '<strong>' + escHtml(t.name) + '</strong> is logging <span style="font-family:monospace;font-weight:900;color:#003366;">' + escHtml(t.callsign) + '</span>';
+        }).join(' &nbsp;·&nbsp; ');
+        bar.innerHTML = '✏️ ' + msg;
+        bar.style.display = '';
+    }).catch(function(){});
+}
+
 function escHtml(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -1585,6 +1622,10 @@ function loadLog() {
         var empty = document.getElementById('ciEmpty');
         var cnt   = document.getElementById('ciLiveCount');
         if (!log) return;
+        // Smart diff — only re-render if data changed
+        var hash = data.map(function(e){ return e.id + ':' + e.callsign; }).join(',');
+        if (hash === _lastLogHash) return;
+        _lastLogHash = hash;
         if (cnt) cnt.textContent = data.length + ' station' + (data.length !== 1 ? 's' : '');
         if (!data.length) {
             log.innerHTML = '';
@@ -1671,7 +1712,12 @@ function updateStatusBanner() {
 document.addEventListener('DOMContentLoaded', function(){
     updateStatusBanner();
     loadLog();
-    setInterval(function(){ updateStatusBanner(); loadLog(); }, 10000);
+    // Fast log poll — every 3s, smart diff
+    setInterval(loadLog, 3000);
+    // Slow banner poll — every 10s
+    setInterval(updateStatusBanner, 10000);
+    // Typing indicator poll — every 2s
+    setInterval(pollTyping, 2000);
 
     // On page load, if there's a pending offline queue and we're online, prompt sync
     (function(){
