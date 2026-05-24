@@ -5,6 +5,8 @@
 <style>
 :root{--navy:#003366;--red:#C8102E;--border:#dde2e8;--muted:#6b7f96;}
 *{box-sizing:border-box;}
+
+/* ── Mobile (default) ── */
 .nc-wrap{max-width:900px;margin:0 auto;padding:1.5rem 1rem 4rem;}
 .nc-header{background:linear-gradient(135deg,#003366,#001a33);color:#fff;border-radius:16px;padding:1.5rem;margin-bottom:1.5rem;position:relative;overflow:hidden;}
 .nc-header h1{font-size:1.3rem;font-weight:900;margin:0 0 .25rem;}
@@ -36,6 +38,43 @@
 .handover-arrow{display:flex;align-items:center;gap:.75rem;padding:.75rem;background:#f8fafc;border-radius:10px;border:1px solid var(--border);margin-bottom:.75rem;}
 .log-row{display:grid;grid-template-columns:2rem 3.5rem 5.5rem 1fr 4rem 4rem 2rem;gap:.4rem;align-items:center;padding:.5rem .75rem;border-bottom:1px solid #f1f5f9;}
 .log-row.hdr{background:#f8fafc;font-size:.62rem;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;}
+
+/* ── Desktop (≥1024px) ── */
+@media (min-width:1024px) {
+  body{background:#f0f4f8;}
+  .nc-wrap{max-width:1400px;padding:1.5rem 2rem 3rem;}
+
+  /* Full-width header */
+  .nc-header{border-radius:16px;padding:1.75rem 2rem;margin-bottom:1.75rem;}
+  .nc-header .cs{font-size:2.5rem;}
+
+  /* Two-column grid */
+  .nc-desktop-grid{display:grid;grid-template-columns:340px 1fr;gap:1.5rem;align-items:start;}
+
+  /* Left column: countdown + handover + script */
+  .nc-left{display:flex;flex-direction:column;gap:0;}
+
+  /* Right column: log form + live log */
+  .nc-right{display:flex;flex-direction:column;gap:0;}
+
+  /* Countdown bigger on desktop */
+  .countdown-box{padding:2rem;margin-bottom:0;border-radius:12px 12px 0 0;}
+  .countdown-time{font-size:3.5rem;}
+  .countdown-label{font-size:.75rem;}
+
+  /* Handover joins countdown */
+  .nc-handover-card{border-radius:0 0 12px 12px;margin-top:0;border-top:none;}
+
+  /* Script card */
+  .nc-script-card{margin-top:1.5rem;}
+
+  /* Right column sticky log */
+  .nc-log-card{flex:1;}
+
+  /* Wider log table on desktop */
+  .log-row{grid-template-columns:2rem 3.5rem 7rem 1fr 5rem 5rem 2rem;}
+  .log-row.hdr{font-size:.65rem;}
+}
 </style>
 
 <div class="nc-wrap">
@@ -57,6 +96,10 @@
     </div>
   </div>
 
+  {{-- Desktop two-column grid --}}
+  <div class="nc-desktop-grid">
+  <div class="nc-left">
+
   {{-- Countdown --}}
   <div class="countdown-box" id="countdownBox">
     <div class="countdown-label" id="countdownLabel">Time until your slot starts</div>
@@ -65,7 +108,7 @@
   </div>
 
   {{-- Handover info --}}
-  <div class="nc-card">
+  <div class="nc-card nc-handover-card">
     <div class="nc-card-title">🔄 Handover</div>
     <div class="handover-arrow">
       <div style="flex:1;text-align:center;">
@@ -97,7 +140,7 @@
   </div>
 
   {{-- Net Controller Script --}}
-  <div class="nc-card">
+  <div class="nc-card nc-script-card">
     <div class="nc-card-title">📋 Net Controller Script</div>
     <div class="script-box">
       @if($prevSlot)
@@ -123,6 +166,9 @@
       @endif
     </div>
   </div>
+
+  </div>{{-- /nc-left --}}
+  <div class="nc-right">
 
   {{-- Log a station --}}
   <div class="nc-card" id="logCard">
@@ -173,6 +219,9 @@
     </div>
     <div id="ncError" style="color:#C8102E;font-size:.78rem;margin-top:.5rem;display:none;padding:.35rem .6rem;background:#fff1f2;border-radius:6px;border:1px solid #fecdd3;"></div>
   </div>
+
+  </div>{{-- /nc-right --}}
+  </div>{{-- /nc-desktop-grid --}}
 
   {{-- Offline sync popup --}}
   <div id="ncOfflineModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1002;align-items:center;justify-content:center;">
