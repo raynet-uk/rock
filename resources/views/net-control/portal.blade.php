@@ -1220,21 +1220,49 @@ document.addEventListener('DOMContentLoaded', function(){
 
     // Web Audio beep for incoming messages
     var _audioCtx = null;
+
+    // Initialise AudioContext on first user gesture so browser allows it
+    function _ncInitAudio() {
+        if (_audioCtx) return;
+        try {
+            _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            // Play a silent buffer to unlock it
+            var buf = _audioCtx.createBuffer(1, 1, 22050);
+            var src = _audioCtx.createBufferSource();
+            src.buffer = buf;
+            src.connect(_audioCtx.destination);
+            src.start(0);
+        } catch(e) {}
+    }
+    ['click','keydown','touchstart'].forEach(function(evt) {
+        document.addEventListener(evt, _ncInitAudio, {once: true, passive: true});
+    });
+
     function ncChatBeep() {
         try {
-            if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            var osc  = _audioCtx.createOscillator();
-            var gain = _audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(_audioCtx.destination);
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(880, _audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(660, _audioCtx.currentTime + 0.12);
-            gain.gain.setValueAtTime(0.25, _audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, _audioCtx.currentTime + 0.25);
-            osc.start(_audioCtx.currentTime);
-            osc.stop(_audioCtx.currentTime + 0.25);
-        } catch(e) {}
+            if (!_audioCtx) {
+                _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            // Resume context if suspended (some browsers suspend after inactivity)
+            var play = function() {
+                var osc  = _audioCtx.createOscillator();
+                var gain = _audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(_audioCtx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, _audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(660, _audioCtx.currentTime + 0.12);
+                gain.gain.setValueAtTime(0.3, _audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, _audioCtx.currentTime + 0.3);
+                osc.start(_audioCtx.currentTime);
+                osc.stop(_audioCtx.currentTime + 0.3);
+            };
+            if (_audioCtx.state === 'suspended') {
+                _audioCtx.resume().then(play);
+            } else {
+                play();
+            }
+        } catch(e) { console.warn('ncChatBeep error:', e); }
     }
 
     function ncChatRender(msgs) {
