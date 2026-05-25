@@ -1356,25 +1356,41 @@ document.addEventListener('DOMContentLoaded', function(){
     function ncChatRender(msgs) {
         var container = document.getElementById('ncChatMessages');
         var empty     = document.getElementById('ncChatEmpty');
-        if (!container) return;
-        if (!msgs.length) return;
+        var typing    = document.getElementById('ncChatTyping');
+        if (!container || !msgs.length) return;
         if (empty) empty.style.display = 'none';
 
-        var wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 40;
+        var wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
 
         msgs.forEach(function(m) {
-            var mine = m.cs === NC_USER_CS;
-            var div  = document.createElement('div');
-            div.className = 'nc-chat-msg ' + (mine ? 'mine' : 'theirs');
-            div.innerHTML = '<div>' + m.text.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>'
-                          + '<div class="nc-chat-meta">' + (mine ? '' : '<strong>' + m.cs + '</strong> · ') + m.time + '</div>';
-            container.appendChild(div);
+            var system = (m.type === 'system' || m.cs === '__system__');
+            var mine   = !system && m.cs === NC_USER_CS;
+            var text   = String(m.text).replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            var div    = document.createElement('div');
+            div.className = 'nc-chat-msg ' + (system ? 'system' : mine ? 'mine' : 'theirs');
+            if (system) {
+                div.innerHTML = '<div class="nc-chat-bubble">' + text + '</div>';
+            } else {
+                div.innerHTML = '<div class="nc-chat-bubble">' + text + '</div>'
+                    + '<div class="nc-chat-meta">'
+                    + (!mine ? '<span class="nc-chat-cs">' + m.cs + '</span>' : '')
+                    + '<span>' + m.time + '</span>'
+                    + (mine ? '<span class="nc-chat-tick">✓✓</span>' : '')
+                    + '</div>';
+            }
+            if (typing && typing.parentNode === container) {
+                container.insertBefore(div, typing);
+            } else {
+                container.appendChild(div);
+            }
         });
 
         if (wasAtBottom) container.scrollTop = container.scrollHeight;
 
-        // Count only messages from the other controller
-        var incoming = msgs.filter(function(m){ return m.cs !== NC_USER_CS; });
+        // Only beep for real incoming messages — not system, not own
+        var incoming = msgs.filter(function(m){
+            return m.cs !== NC_USER_CS && m.cs !== '__system__' && m.type !== 'system';
+        });
         if (incoming.length) {
             window.ncChatBeep();
             if (!_chatOpen) {
