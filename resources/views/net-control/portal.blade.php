@@ -714,7 +714,12 @@ function tick() {
         if(box){ box.classList.remove('nc-warning','nc-danger','nc-pulse'); box.classList.add('nc-warning'); }
         CAN_LOG=false;
         bnr.style.cssText='border-radius:8px;padding:.65rem .85rem;margin-bottom:.85rem;font-size:.8rem;font-weight:700;background:#eff6ff;color:#1d4ed8;';
-        bnr.innerHTML='⏳ <strong>Standing by</strong> — your slot starts at <strong>' + NC_SLOT_FROM + '</strong>. Logging will enable automatically.';
+        if (window._ncLoggingEnabled === false) {
+            bnr.style.cssText='border-radius:8px;padding:.65rem .85rem;margin-bottom:.85rem;font-size:.8rem;font-weight:700;background:#fff7ed;color:#c2410c;';
+            bnr.innerHTML='⚠️ <strong>Logging is currently disabled</strong> by the net controller. Your slot starts at <strong>' + NC_SLOT_FROM + '</strong>.';
+        } else {
+            bnr.innerHTML='⏳ <strong>Standing by</strong> — your slot starts at <strong>' + NC_SLOT_FROM + '</strong>. Logging will enable automatically.';
+        }
         if(ctS) ctS.textContent = 'Your slot: ' + NC_SLOT_FROM + ' – ' + NC_SLOT_TO;
     } else if (inSlot || true) {  // server already validated slot — always show live state
         var diff=Math.max(0,Math.floor((SLOT_TO_MS > 0 ? SLOT_TO_MS - nowMs : slotTo - now)/1000));
