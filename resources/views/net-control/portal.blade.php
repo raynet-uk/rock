@@ -91,7 +91,15 @@
 .nc-chat-emoji-bar{display:flex;gap:.2rem;}
 .nc-chat-emoji{cursor:pointer;font-size:.9rem;padding:.1rem;border-radius:4px;transition:transform .15s;line-height:1;}
 .nc-chat-emoji:hover{transform:scale(1.3);}
-.nc-handover-banner{display:none;position:sticky;top:0;left:0;right:0;z-index:1000;background:#d97706;color:#fff;text-align:center;padding:.55rem 1rem;font-weight:900;font-size:.82rem;animation:nc-handover-pulse 1s ease-in-out infinite;align-items:center;justify-content:center;gap:1rem;}
+.nc-handover-banner{
+  display:none;position:fixed;top:52px;left:0;right:0;z-index:988;
+  background:linear-gradient(135deg,#92400e,#d97706);
+  color:#fff;padding:.5rem 1.1rem;font-weight:800;font-size:.78rem;
+  animation:nc-handover-pulse 1.2s ease-in-out infinite;
+  align-items:center;justify-content:space-between;gap:.75rem;
+  box-shadow:0 3px 12px rgba(0,0,0,.25);
+  border-bottom:1px solid rgba(255,255,255,.15);
+}
 .nc-handover-banner.active{display:flex;}
 .countdown-box{text-align:center;padding:1.25rem;background:linear-gradient(135deg,#003366,#004080);border-radius:12px;color:#fff;margin-bottom:1.25rem;transition:background .8s ease,box-shadow .3s ease;}
 @keyframes nc-pulse-glow{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.0);}50%{box-shadow:0 0 18px 8px rgba(220,38,38,.55);}}
