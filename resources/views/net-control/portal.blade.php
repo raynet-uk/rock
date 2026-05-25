@@ -180,63 +180,52 @@
     {{-- Animated background canvas --}}
     <canvas id="ncHeaderCanvas" style="position:absolute;inset:0;width:100%;height:100%;opacity:.18;pointer-events:none;"></canvas>
 
-    <div style="position:relative;z-index:1;padding:1.5rem;">
+    <div style="position:relative;z-index:1;padding:1rem 1.25rem 1.1rem;">
 
-      {{-- Top row: group name + status pill --}}
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
-        <div style="display:flex;align-items:center;gap:.6rem;">
-          <div style="width:8px;height:8px;border-radius:50%;background:#C8102E;animation:pulse 1.5s infinite;flex-shrink:0;"></div>
-          <span style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.5);">{{ $groupName }}</span>
+      {{-- Row 1: group name + status pill --}}
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem;">
+        <div style="display:flex;align-items:center;gap:.5rem;">
+          <div style="width:7px;height:7px;border-radius:50%;background:#C8102E;animation:pulse 1.5s infinite;flex-shrink:0;"></div>
+          <span style="font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.45);">{{ $groupName }}</span>
         </div>
         <div id="statusPill" class="status-pill pill-live">🔴 ON AIR</div>
       </div>
 
-      {{-- Main callsign display --}}
-      <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
-        <div>
-          <div style="font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.15em;color:rgba(255,255,255,.35);margin-bottom:.2rem;">Net Control Portal</div>
-          <div style="font-family:monospace;font-size:3rem;font-weight:900;letter-spacing:.06em;line-height:1;color:#fff;text-shadow:0 0 30px rgba(200,16,46,.4);">{{ $net['callsign'] ?: 'NET' }}</div>
-          <div style="display:flex;align-items:center;gap:.75rem;margin-top:.5rem;flex-wrap:wrap;">
-            @if($net['frequency'])
-            <span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:700;color:rgba(255,255,255,.7);background:rgba(255,255,255,.08);padding:.2rem .6rem;border-radius:999px;border:1px solid rgba(255,255,255,.12);">
-              📡 {{ $net['frequency'] }} MHz
-            </span>
-            @endif
-            @if($net['name'])
-            <span style="font-size:.78rem;color:rgba(255,255,255,.45);font-weight:600;">{{ $net['name'] }}</span>
-            @endif
+      {{-- Row 2: net callsign (left) + your callsign (right) --}}
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;margin-bottom:.85rem;">
+        <div style="min-width:0;">
+          <div style="font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.3);margin-bottom:.15rem;">Net</div>
+          <div style="font-family:monospace;font-size:2rem;font-weight:900;letter-spacing:.04em;line-height:1;color:#fff;text-shadow:0 0 20px rgba(200,16,46,.4);white-space:nowrap;">{{ $net['callsign'] ?: 'NET' }}</div>
+          @if($net['frequency'])
+          <div style="margin-top:.35rem;">
+            <span style="display:inline-flex;align-items:center;gap:.25rem;font-size:.72rem;font-weight:700;color:rgba(255,255,255,.65);background:rgba(255,255,255,.08);padding:.18rem .55rem;border-radius:999px;border:1px solid rgba(255,255,255,.1);">📡 {{ $net['frequency'] }} MHz</span>
           </div>
+          @endif
         </div>
-
-        {{-- Controller info box --}}
-        <div style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:.85rem 1.1rem;text-align:center;backdrop-filter:blur(8px);min-width:140px;">
-          <div style="font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.35);margin-bottom:.35rem;">Your Callsign</div>
-          <div style="font-family:monospace;font-size:1.5rem;font-weight:900;color:#fff;letter-spacing:.05em;">{{ $user->callsign }}</div>
-          <div style="font-size:.7rem;color:rgba(255,255,255,.4);margin-top:.2rem;">{{ $user->name }}</div>
+        <div style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:.65rem .9rem;text-align:center;flex-shrink:0;">
+          <div style="font-size:.55rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.3);margin-bottom:.2rem;">You</div>
+          <div style="font-family:monospace;font-size:1.25rem;font-weight:900;color:#fff;letter-spacing:.04em;">{{ $user->callsign }}</div>
+          <div style="font-size:.62rem;color:rgba(255,255,255,.35);margin-top:.1rem;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $user->name }}</div>
         </div>
       </div>
 
-      {{-- Slot info strip --}}
-      <div style="display:flex;align-items:center;gap:.5rem;margin-top:1.1rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,.08);flex-wrap:wrap;">
-        <div style="display:flex;align-items:center;gap:.4rem;background:rgba(255,255,255,.06);border-radius:8px;padding:.3rem .75rem;border:1px solid rgba(255,255,255,.1);">
-          <span style="font-size:.65rem;color:rgba(255,255,255,.4);font-weight:700;text-transform:uppercase;letter-spacing:.08em;">Your slot</span>
-          <span id="slotTimeBanner" style="font-family:monospace;font-weight:900;color:#fff;font-size:.88rem;">{{ $slot['from'] }} – {{ $slot['to'] }}</span>
+      {{-- Row 3: slot strip + handover button --}}
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding-top:.85rem;border-top:1px solid rgba(255,255,255,.08);">
+        <div style="display:flex;flex-direction:column;gap:.25rem;min-width:0;">
+          <div style="display:flex;align-items:center;gap:.4rem;background:rgba(255,255,255,.06);border-radius:7px;padding:.28rem .65rem;border:1px solid rgba(255,255,255,.1);width:fit-content;">
+            <span style="font-size:.6rem;color:rgba(255,255,255,.4);font-weight:700;text-transform:uppercase;letter-spacing:.07em;">Slot</span>
+            <span id="slotTimeBanner" style="font-family:monospace;font-weight:900;color:#fff;font-size:.82rem;">{{ $slot['from'] }} – {{ $slot['to'] }}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
+            @if($prevSlot)
+            <span style="font-size:.65rem;color:rgba(255,255,255,.35);">← <span style="font-family:monospace;font-weight:800;color:rgba(255,255,255,.55);">{{ $prevSlot['callsign'] }}</span></span>
+            @endif
+            @if($nextSlot)
+            <span style="font-size:.65rem;color:rgba(255,255,255,.35);"><span style="font-family:monospace;font-weight:800;color:rgba(255,255,255,.55);">{{ $nextSlot['callsign'] }}</span> →</span>
+            @endif
+          </div>
         </div>
-
-        @if($prevSlot)
-        <div style="display:flex;align-items:center;gap:.4rem;font-size:.72rem;color:rgba(255,255,255,.4);">
-          <span>← Takeover from</span>
-          <span style="font-family:monospace;font-weight:800;color:rgba(255,255,255,.65);">{{ $prevSlot['callsign'] }}</span>
-        </div>
-        @endif
-        @if($nextSlot)
-        <div style="display:flex;align-items:center;gap:.4rem;font-size:.72rem;color:rgba(255,255,255,.4);">
-          <span>Handover to</span>
-          <span style="font-family:monospace;font-weight:800;color:rgba(255,255,255,.65);">{{ $nextSlot['callsign'] }}</span>
-          <span>→</span>
-        </div>
-        @endif
-        <button onclick="ncOpenHandoverDialog()" style="margin-left:auto;display:inline-flex;align-items:center;gap:.35rem;background:rgba(200,16,46,.18);border:1px solid rgba(200,16,46,.35);color:#fca5a5;padding:.3rem .8rem;border-radius:999px;font-size:.72rem;font-weight:800;cursor:pointer;transition:all .2s;white-space:nowrap;" onmouseover="this.style.background='rgba(200,16,46,.32)'" onmouseout="this.style.background='rgba(200,16,46,.18)'">🔄 Request Handover</button>
+        <button onclick="ncOpenHandoverDialog()" style="flex-shrink:0;display:inline-flex;align-items:center;gap:.3rem;background:rgba(200,16,46,.18);border:1px solid rgba(200,16,46,.35);color:#fca5a5;padding:.35rem .75rem;border-radius:999px;font-size:.7rem;font-weight:800;cursor:pointer;transition:all .2s;white-space:nowrap;" onmouseover="this.style.background='rgba(200,16,46,.32)'" onmouseout="this.style.background='rgba(200,16,46,.18)'">🔄 Handover</button>
       </div>
     </div>
   </div>
