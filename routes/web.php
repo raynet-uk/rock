@@ -1201,6 +1201,41 @@ Route::get('/net-control/presence', function(\Illuminate\Http\Request $request) 
     return response()->json(['online' => $online, 'notified' => $notified]);
 })->middleware(['web', 'auth'])->name('net-control.presence');
 
+// Typing indicator — store who is typing in a room
+Route::post('/net-control/chat/typing', function(\Illuminate\Http\Request $request) {
+    $user = $request->user();
+    if (!$user) return response()->json(['ok' => false]);
+    $room = $request->input('room');
+    if (!$room) return response()->json(['ok' => false]);
+    $cs  = strtoupper($user->callsign ?? '');
+    $key = 'nc_typing_' . preg_replace('/[^A-Z0-9_]/', '', strtoupper($room)) . '_' . $cs;
+    if ($request->input('typing')) {
+        \Illuminate\Support\Facades\Cache::put($key, $cs, now()->addSeconds(5));
+    } else {
+        \Illuminate\Support\Facades\Cache::forget($key);
+    }
+    return response()->json(['ok' => true]);
+})->middleware(['web', 'auth'])->name('net-control.chat.typing');
+
+Route::get('/net-control/chat/typing', function(\Illuminate\Http\Request $request) {
+    $user = $request->user();
+    if (!$user) return response()->json(['typing' => []]);
+    $room = $request->input('room');
+    if (!$room) return response()->json(['typing' => []]);
+    $cs       = strtoupper($user->callsign ?? '');
+    $roomKey  = preg_replace('/[^A-Z0-9_]/', '', strtoupper($room));
+    $slots    = json_decode(\App\Models\Setting::get('net_controller_slots', '[]'), true) ?? [];
+    $typing   = [];
+    foreach ($slots as $slot) {
+        $other = strtoupper($slot['callsign'] ?? '');
+        if ($other && $other !== $cs) {
+            $key = 'nc_typing_' . $roomKey . '_' . $other;
+            if (\Illuminate\Support\Facades\Cache::get($key)) $typing[] = $other;
+        }
+    }
+    return response()->json(['typing' => $typing]);
+})->middleware(['web', 'auth'])->name('net-control.chat.typing.get');
+
 // Access check — lets the portal JS verify the user still has an active slot right now
 Route::get('/net-control/access-check', function(\Illuminate\Http\Request $request) {
     $user = $request->user();

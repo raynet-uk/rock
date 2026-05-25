@@ -1278,12 +1278,63 @@ document.addEventListener('DOMContentLoaded', function(){
         }
     }
 
+    // ── Typing indicator ─────────────────────────────────────────────────────
+    var _typingTimer    = null;
+    var _isTyping       = false;
+    var _typingPollInt  = null;
+
+    function ncChatSetTyping(typing) {
+        if (_isTyping === typing) return;
+        _isTyping = typing;
+        fetch('/net-control/chat/typing', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json','X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content},
+            body: JSON.stringify({room: CHAT_ROOM, typing: typing})
+        }).catch(function(){});
+    }
+
+    function ncChatPollTyping() {
+        if (!CHAT_ROOM || CHAT_ROOM === '_') return;
+        fetch('/net-control/chat/typing?room=' + encodeURIComponent(CHAT_ROOM), {cache:'no-store'})
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            var indicator = document.getElementById('ncChatTyping');
+            if (!indicator) return;
+            if (d.typing && d.typing.length > 0) {
+                indicator.style.display = 'flex';
+                // Scroll to show it
+                var container = document.getElementById('ncChatMessages');
+                if (container) container.scrollTop = container.scrollHeight;
+            } else {
+                indicator.style.display = 'none';
+            }
+        }).catch(function(){});
+    }
+
+    // Hook input event on textarea for typing detection
+    document.addEventListener('DOMContentLoaded', function() {
+        var input = document.getElementById('ncChatInput');
+        if (!input) return;
+        input.addEventListener('input', function() {
+            if (!CHAT_ROOM || CHAT_ROOM === '_') return;
+            ncChatSetTyping(true);
+            clearTimeout(_typingTimer);
+            _typingTimer = setTimeout(function() {
+                ncChatSetTyping(false);
+            }, 4000);
+        });
+    });
+
     window.ncChatSend = function() {
         var input = document.getElementById('ncChatInput');
         var text  = input ? input.value.trim() : '';
         if (!text) return;
         input.value = '';
         input.style.height = 'auto';
+
+        // Clear typing indicator on send
+        clearTimeout(_typingTimer);
+        ncChatSetTyping(false);
 
         // Render immediately — don't wait for poll
         var now = new Date();
@@ -1469,11 +1520,13 @@ document.addEventListener('DOMContentLoaded', function(){
             widget.classList.add('nc-chat-animate');
             _chatVisible = true;
             if (!_chatInterval) _chatInterval = setInterval(ncChatPoll, 3000);
+            if (!_typingPollInt) _typingPollInt = setInterval(ncChatPollTyping, 2000);
             ncChatPoll();
         } else if (!should && _chatVisible && !_chatHideAt) {
             widget.style.display = 'none';
             _chatVisible = false;
             if (_chatInterval) { clearInterval(_chatInterval); _chatInterval = null; }
+            if (_typingPollInt) { clearInterval(_typingPollInt); _typingPollInt = null; }
         }
 
         if (!CHAT_ROOM || CHAT_ROOM === '_') return;
