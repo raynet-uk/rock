@@ -329,7 +329,12 @@
         <div style="flex:1;min-width:0;">
           <div style="font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-bottom:.1rem;">After you</div>
           <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap;">
-            <span style="font-family:monospace;font-weight:900;font-size:.95rem;color:#475569;">{{ $nextSlot['callsign'] }}</span>
+            <span style="display:flex;align-items:center;gap:.4rem;">
+              <span style="font-family:monospace;font-weight:900;font-size:.95rem;color:#475569;">{{ $nextSlot['callsign'] }}</span>
+              <span id="nextCtrlPresenceDot" data-cs="{{ strtoupper($nextSlot['callsign']) }}" style="display:none;align-items:center;gap:.25rem;font-size:.62rem;font-weight:800;color:#16a34a;background:#dcfce7;padding:.1rem .4rem;border-radius:999px;border:1px solid #bbf7d0;">
+                <span style="width:6px;height:6px;border-radius:50%;background:#16a34a;display:inline-block;animation:pulse 1.2s infinite;"></span> Online
+              </span>
+            </span>
             <span style="font-family:monospace;font-size:.78rem;color:#94a3b8;background:#f1f5f9;padding:.1rem .45rem;border-radius:4px;">{{ $nextSlot['from'] }} – {{ $nextSlot['to'] }}</span>
           </div>
         </div>
@@ -500,9 +505,13 @@ var NC_NET_NAME    = '{{ addslashes($net['callsign'] ?? '') }}';
 var NC_FREQUENCY   = '{{ addslashes($net['frequency'] ?? '') }}';
 var NC_USER_CS     = '{{ addslashes($user->callsign ?? '') }}';
 var NC_USER_NAME   = '{{ addslashes($user->name ?? '') }}';
-var NC_SLOT_FROM   = '{{ addslashes($slot['from'] ?? '') }}';
-var NC_SLOT_TO     = '{{ addslashes($slot['to'] ?? '') }}';
-var CAN_LOG        = {{ $slot['can_log'] ? 'true' : 'false' }};
+var NC_SLOT_FROM     = '{{ addslashes($slot['from'] ?? '') }}';
+var NC_SLOT_TO       = '{{ addslashes($slot['to'] ?? '') }}';
+var CAN_LOG          = {{ $slot['can_log'] ? 'true' : 'false' }};
+var SLOT_FROM_MS     = {{ $slot['from_dt'] ? $slot['from_dt']->getTimestampMs() : 0 }};
+var SLOT_TO_MS       = {{ $slot['to_dt'] ? $slot['to_dt']->getTimestampMs() : 0 }};
+var WINDOW_START_MS  = {{ isset($slot['window_start']) ? $slot['window_start']->getTimestampMs() : 0 }};
+var IS_PRE_SLOT      = {{ (!$slot['can_log'] && now('Europe/London')->lt($slot['from_dt'] ?? now())) ? 'true' : 'false' }};
 var NC_QRZ         = {};
 var NC_INVITE_CS   = '';
 var NC_OFFLINE_KEY = 'raynet_nc_offline_log';
@@ -690,8 +699,25 @@ function tick() {
     }
 
 
-    if (true) {  // server already validated slot — always show live state
-        var diff=Math.max(0,Math.floor((slotTo-now)/1000));
+    var nowMs     = now.getTime();
+    var inSlot    = SLOT_FROM_MS > 0 && nowMs >= SLOT_FROM_MS && nowMs < SLOT_TO_MS;
+    var preSlot   = SLOT_FROM_MS > 0 && nowMs < SLOT_FROM_MS;
+    var postSlot  = SLOT_TO_MS > 0 && nowMs >= SLOT_TO_MS;
+
+    if (preSlot) {
+        // In the 15-min pre-window — slot hasn't started yet
+        var diffToStart = Math.max(0, Math.floor((SLOT_FROM_MS - nowMs) / 1000));
+        ctL.textContent = 'Your slot starts in';
+        ctT.textContent = fmt(diffToStart);
+        if(pill){pill.className='status-pill pill-pre';pill.textContent='⏳ STANDING BY';}
+        var box=document.getElementById('countdownBox');
+        if(box){ box.classList.remove('nc-warning','nc-danger','nc-pulse'); box.classList.add('nc-warning'); }
+        CAN_LOG=false;
+        bnr.style.cssText='border-radius:8px;padding:.65rem .85rem;margin-bottom:.85rem;font-size:.8rem;font-weight:700;background:#eff6ff;color:#1d4ed8;';
+        bnr.innerHTML='⏳ <strong>Standing by</strong> — your slot starts at <strong>' + NC_SLOT_FROM + '</strong>. Logging will enable automatically.';
+        if(ctS) ctS.textContent = 'Your slot: ' + NC_SLOT_FROM + ' – ' + NC_SLOT_TO;
+    } else if (inSlot || true) {  // server already validated slot — always show live state
+        var diff=Math.max(0,Math.floor((SLOT_TO_MS > 0 ? SLOT_TO_MS - nowMs : slotTo - now)/1000));
         ctL.textContent='Time remaining in your slot'; ctT.textContent=fmt(diff);
         if(pill){pill.className='status-pill pill-live';pill.textContent='🔴 ON AIR';}
         var box=document.getElementById('countdownBox');
@@ -704,6 +730,10 @@ function tick() {
             CAN_LOG=true;
             bnr.style.cssText='border-radius:8px;padding:.65rem .85rem;margin-bottom:.85rem;font-size:.8rem;font-weight:700;background:#1e293b;color:#fbbf24;';
             bnr.innerHTML='📴 <strong>Offline mode</strong> — entries will sync when reconnected';
+        } else if (preSlot || IS_PRE_SLOT) {
+            CAN_LOG=false;
+            bnr.style.cssText='border-radius:8px;padding:.65rem .85rem;margin-bottom:.85rem;font-size:.8rem;font-weight:700;background:#eff6ff;color:#1d4ed8;';
+            bnr.innerHTML='⏳ <strong>Standing by</strong> — your slot starts at <strong>' + NC_SLOT_FROM + '</strong>. Logging will enable automatically.';
         } else if (window._ncLoggingEnabled === false) {
             CAN_LOG=false;
             bnr.style.cssText='border-radius:8px;padding:.65rem .85rem;margin-bottom:.85rem;font-size:.8rem;font-weight:700;background:#fff7ed;color:#c2410c;';
@@ -1055,6 +1085,35 @@ document.addEventListener('DOMContentLoaded', function(){
         pollAccessCheck();
         setInterval(pollAccessCheck, 15000);
     }, 5000); // slight delay so it doesn't fire on initial load
+
+    // ── Heartbeat: tell server this controller is on the portal ──────────────
+    function sendHeartbeat() {
+        fetch('/net-control/heartbeat', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json','X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content},
+            body: JSON.stringify({})
+        }).catch(function(){});
+    }
+    sendHeartbeat();
+    setInterval(sendHeartbeat, 30000);
+
+    // ── Presence: show green dot if next controller is on the portal ─────────
+    function pollPresence() {
+        var dot = document.getElementById('nextCtrlPresenceDot');
+        if (!dot) return; // no next slot, skip
+        fetch('/net-control/presence', {cache:'no-store'})
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            var cs = dot.getAttribute('data-cs');
+            if (d.online && d.online.indexOf(cs) !== -1) {
+                dot.style.display = 'inline-flex';
+            } else {
+                dot.style.display = 'none';
+            }
+        }).catch(function(){});
+    }
+    pollPresence();
+    setInterval(pollPresence, 20000);
 
     tick();
     loadLog();

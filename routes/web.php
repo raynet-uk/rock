@@ -1134,6 +1134,29 @@ Route::get('/net-control/handover-poll', function(\Illuminate\Http\Request $requ
     ]);
 })->middleware(['web', 'auth'])->name('net-control.handover-poll');
 
+// Heartbeat — portal pings this every 30s so other controllers can see presence
+Route::post('/net-control/heartbeat', function(\Illuminate\Http\Request $request) {
+    $user = $request->user();
+    if (!$user) return response()->json(['ok' => false]);
+    \Illuminate\Support\Facades\Cache::put('nc_online_' . strtoupper($user->callsign ?? ''), true, now()->addSeconds(60));
+    return response()->json(['ok' => true]);
+})->middleware(['web', 'auth'])->name('net-control.heartbeat');
+
+// Presence check — returns which callsigns are currently on the portal
+Route::get('/net-control/presence', function(\Illuminate\Http\Request $request) {
+    $user = $request->user();
+    if (!$user) return response()->json(['online' => []]);
+    $slots = json_decode(\App\Models\Setting::get('net_controller_slots', '[]'), true) ?? [];
+    $online = [];
+    foreach ($slots as $slot) {
+        $cs = strtoupper($slot['callsign'] ?? '');
+        if ($cs && \Illuminate\Support\Facades\Cache::get('nc_online_' . $cs)) {
+            $online[] = $cs;
+        }
+    }
+    return response()->json(['online' => $online]);
+})->middleware(['web', 'auth'])->name('net-control.presence');
+
 // Access check — lets the portal JS verify the user still has an active slot right now
 Route::get('/net-control/access-check', function(\Illuminate\Http\Request $request) {
     $user = $request->user();
