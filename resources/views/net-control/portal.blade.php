@@ -35,27 +35,62 @@
 @keyframes nc-handover-pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
 
 /* Handover chat widget */
-@keyframes ncChatSlideUp{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
-.nc-chat-widget{position:fixed;bottom:1.25rem;right:1.25rem;z-index:8888;display:none;flex-direction:column;width:310px;max-width:calc(100vw - 2rem);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.22);overflow:hidden;border:1px solid rgba(255,255,255,.12);}
-.nc-chat-widget.nc-chat-animate{animation:ncChatSlideUp .35s cubic-bezier(.22,.68,0,1.2) both;}
-.nc-chat-widget.open .nc-chat-body{display:flex;}
-.nc-chat-header{background:linear-gradient(135deg,#003366,#004080);color:#fff;padding:.65rem 1rem;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
-.nc-chat-header-left{display:flex;align-items:center;gap:.5rem;font-weight:900;font-size:.82rem;}
-.nc-chat-badge{background:#C8102E;color:#fff;font-size:.62rem;font-weight:900;border-radius:999px;padding:.1rem .45rem;min-width:18px;text-align:center;display:none;}
-.nc-chat-toggle{font-size:.72rem;color:rgba(255,255,255,.6);font-weight:700;}
+@keyframes ncChatSlideUp{from{opacity:0;transform:translateY(32px) scale(.96);}to{opacity:1;transform:translateY(0) scale(1);}}
+@keyframes ncChatMsgIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+@keyframes ncChatPulse{0%,100%{box-shadow:0 0 0 0 rgba(200,16,46,.4);}70%{box-shadow:0 0 0 8px rgba(200,16,46,0);}}
+@keyframes ncChatTyping{0%,80%,100%{transform:scale(0);opacity:.4;}40%{transform:scale(1);opacity:1;}}
+.nc-chat-widget{position:fixed;bottom:1.5rem;right:1.5rem;z-index:8888;display:none;flex-direction:column;width:340px;max-width:calc(100vw - 2rem);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.3),0 0 0 1px rgba(255,255,255,.08);overflow:hidden;backdrop-filter:blur(2px);}
+.nc-chat-widget.nc-chat-animate{animation:ncChatSlideUp .4s cubic-bezier(.22,.68,0,1.2) both;}
+.nc-chat-header{background:linear-gradient(135deg,#001a33 0%,#003366 60%,#004d99 100%);color:#fff;padding:.8rem 1.1rem;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;position:relative;overflow:hidden;}
+.nc-chat-header::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Ccircle cx='20' cy='20' r='10'/%3E%3C/g%3E%3C/svg%3E");pointer-events:none;}
+.nc-chat-header-left{display:flex;align-items:center;gap:.6rem;font-weight:900;font-size:.85rem;position:relative;}
+.nc-chat-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#C8102E,#8b0000);display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;border:2px solid rgba(255,255,255,.2);}
+.nc-chat-header-info{display:flex;flex-direction:column;gap:.05rem;}
+.nc-chat-header-title{font-size:.82rem;font-weight:900;line-height:1;}
+.nc-chat-header-sub{font-size:.62rem;color:rgba(255,255,255,.5);font-weight:600;}
+.nc-chat-badge{background:#C8102E;color:#fff;font-size:.6rem;font-weight:900;border-radius:999px;padding:.15rem .5rem;min-width:20px;text-align:center;display:none;animation:ncChatPulse 1.5s infinite;position:absolute;top:-4px;right:-4px;line-height:1.4;}
+.nc-chat-header-right{display:flex;align-items:center;gap:.75rem;position:relative;}
+.nc-chat-online-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 2px rgba(34,197,94,.3);animation:ncChatPulse 2s infinite;}
+.nc-chat-chevron{font-size:.7rem;color:rgba(255,255,255,.5);transition:transform .25s;}
+.nc-chat-chevron.open{transform:rotate(180deg);}
 .nc-chat-body{display:none;flex-direction:column;background:#fff;}
-.nc-chat-messages{height:220px;overflow-y:auto;padding:.75rem;display:flex;flex-direction:column;gap:.5rem;background:#f8fafc;}
-.nc-chat-msg{max-width:85%;padding:.45rem .7rem;border-radius:10px;font-size:.8rem;line-height:1.4;}
-.nc-chat-msg.mine{align-self:flex-end;background:#003366;color:#fff;border-bottom-right-radius:3px;}
-.nc-chat-msg.theirs{align-self:flex-start;background:#fff;color:#1e293b;border:1px solid #e2e8f0;border-bottom-left-radius:3px;}
-.nc-chat-msg .nc-chat-meta{font-size:.62rem;opacity:.6;margin-top:.2rem;}
-.nc-chat-msg.mine .nc-chat-meta{text-align:right;}
-.nc-chat-input-row{display:flex;gap:.5rem;padding:.65rem;border-top:1px solid #e2e8f0;background:#fff;}
-.nc-chat-input{flex:1;border:1px solid #dde2e8;border-radius:8px;padding:.4rem .65rem;font-size:.82rem;outline:none;}
-.nc-chat-input:focus{border-color:#003366;}
-.nc-chat-send{background:#003366;color:#fff;border:none;border-radius:8px;padding:.4rem .75rem;font-weight:800;font-size:.8rem;cursor:pointer;}
-.nc-chat-send:hover{background:#004080;}
-.nc-chat-empty{text-align:center;color:#94a3b8;font-size:.78rem;padding:1.5rem .5rem;}
+.nc-chat-toolbar{display:flex;align-items:center;gap:.35rem;padding:.5rem .75rem;background:#f8fafc;border-bottom:1px solid #e2e8f0;flex-wrap:wrap;}
+.nc-chat-toolbar-label{font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-right:.15rem;}
+.nc-chat-quick{background:#fff;border:1px solid #e2e8f0;border-radius:999px;padding:.2rem .6rem;font-size:.72rem;cursor:pointer;transition:all .15s;color:#475569;font-weight:700;white-space:nowrap;}
+.nc-chat-quick:hover{background:#003366;color:#fff;border-color:#003366;}
+.nc-chat-messages{height:260px;overflow-y:auto;padding:.85rem .75rem;display:flex;flex-direction:column;gap:.6rem;background:linear-gradient(180deg,#f0f4f8 0%,#f8fafc 100%);scroll-behavior:smooth;}
+.nc-chat-messages::-webkit-scrollbar{width:4px;}
+.nc-chat-messages::-webkit-scrollbar-track{background:transparent;}
+.nc-chat-messages::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:999px;}
+.nc-chat-msg{max-width:82%;animation:ncChatMsgIn .2s ease both;display:flex;flex-direction:column;}
+.nc-chat-msg.mine{align-self:flex-end;align-items:flex-end;}
+.nc-chat-msg.theirs{align-self:flex-start;align-items:flex-start;}
+.nc-chat-bubble{padding:.55rem .85rem;border-radius:16px;font-size:.82rem;line-height:1.5;word-break:break-word;}
+.nc-chat-msg.mine .nc-chat-bubble{background:linear-gradient(135deg,#003366,#004d99);color:#fff;border-bottom-right-radius:4px;box-shadow:0 2px 8px rgba(0,51,102,.25);}
+.nc-chat-msg.theirs .nc-chat-bubble{background:#fff;color:#1e293b;border:1px solid #e2e8f0;border-bottom-left-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+.nc-chat-msg.system .nc-chat-bubble{background:transparent;color:#94a3b8;font-size:.72rem;font-style:italic;text-align:center;border:none;box-shadow:none;padding:.25rem .5rem;}
+.nc-chat-msg.system{align-self:center;max-width:100%;}
+.nc-chat-meta{font-size:.6rem;color:#94a3b8;margin-top:.2rem;display:flex;align-items:center;gap:.3rem;}
+.nc-chat-msg.mine .nc-chat-meta{flex-direction:row-reverse;}
+.nc-chat-cs{font-weight:800;color:#475569;}
+.nc-chat-tick{color:#22c55e;font-size:.65rem;}
+.nc-chat-empty{text-align:center;color:#94a3b8;font-size:.8rem;padding:2rem .75rem;display:flex;flex-direction:column;align-items:center;gap:.5rem;}
+.nc-chat-empty-icon{font-size:2rem;}
+.nc-chat-typing{display:none;align-self:flex-start;padding:.5rem .75rem;background:#fff;border-radius:16px;border-bottom-left-radius:4px;border:1px solid #e2e8f0;gap:.3rem;align-items:center;}
+.nc-chat-typing span{width:6px;height:6px;border-radius:50%;background:#94a3b8;animation:ncChatTyping 1.2s infinite;}
+.nc-chat-typing span:nth-child(2){animation-delay:.15s;}
+.nc-chat-typing span:nth-child(3){animation-delay:.3s;}
+.nc-chat-input-wrap{padding:.65rem .75rem;border-top:1px solid #e2e8f0;background:#fff;display:flex;flex-direction:column;gap:.5rem;}
+.nc-chat-input-row{display:flex;gap:.5rem;align-items:flex-end;}
+.nc-chat-input{flex:1;border:1.5px solid #e2e8f0;border-radius:12px;padding:.5rem .75rem;font-size:.82rem;outline:none;resize:none;font-family:inherit;line-height:1.4;max-height:80px;transition:border-color .2s;}
+.nc-chat-input:focus{border-color:#003366;box-shadow:0 0 0 3px rgba(0,51,102,.08);}
+.nc-chat-send{background:linear-gradient(135deg,#003366,#004d99);color:#fff;border:none;border-radius:10px;padding:.5rem .85rem;font-weight:900;font-size:.85rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:.3rem;white-space:nowrap;}
+.nc-chat-send:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,51,102,.3);}
+.nc-chat-send:active{transform:translateY(0);}
+.nc-chat-footer{display:flex;align-items:center;justify-content:space-between;font-size:.6rem;color:#94a3b8;}
+.nc-chat-emoji-bar{display:flex;gap:.2rem;}
+.nc-chat-emoji{cursor:pointer;font-size:.9rem;padding:.1rem;border-radius:4px;transition:transform .15s;line-height:1;}
+.nc-chat-emoji:hover{transform:scale(1.3);}
 .nc-handover-banner{display:none;position:sticky;top:0;left:0;right:0;z-index:1000;background:#d97706;color:#fff;text-align:center;padding:.55rem 1rem;font-weight:900;font-size:.82rem;animation:nc-handover-pulse 1s ease-in-out infinite;align-items:center;justify-content:center;gap:1rem;}
 .nc-handover-banner.active{display:flex;}
 .countdown-box{text-align:center;padding:1.25rem;background:linear-gradient(135deg,#003366,#004080);border-radius:12px;color:#fff;margin-bottom:1.25rem;transition:background .8s ease,box-shadow .3s ease;}
@@ -280,18 +315,57 @@
   <div class="nc-chat-widget" id="ncChatWidget">
     <div class="nc-chat-header" onclick="ncChatToggle()">
       <div class="nc-chat-header-left">
-        <span>🎙️ Handover Chat</span>
-        <span class="nc-chat-badge" id="ncChatBadge">0</span>
+        <div class="nc-chat-avatar" style="position:relative;">🎙️<span class="nc-chat-badge" id="ncChatBadge">0</span></div>
+        <div class="nc-chat-header-info">
+          <div class="nc-chat-header-title">Handover Chat</div>
+          <div class="nc-chat-header-sub" id="ncChatHeaderSub">Connecting to other controller…</div>
+        </div>
       </div>
-      <span class="nc-chat-toggle" id="ncChatToggleLabel">▲ Open</span>
+      <div class="nc-chat-header-right">
+        <div class="nc-chat-online-dot" id="ncChatOnlineDot" style="display:none;"></div>
+        <div class="nc-chat-chevron" id="ncChatChevron">▼</div>
+      </div>
     </div>
     <div class="nc-chat-body">
-      <div class="nc-chat-messages" id="ncChatMessages">
-        <div class="nc-chat-empty" id="ncChatEmpty">No messages yet — say hello to the other controller!</div>
+      <div class="nc-chat-toolbar">
+        <span class="nc-chat-toolbar-label">Quick:</span>
+        <button class="nc-chat-quick" onclick="ncChatQuick('👋 Standing by and ready to take over')">👋 Ready</button>
+        <button class="nc-chat-quick" onclick="ncChatQuick('📡 Frequency checks out, signal good')">📡 Signal good</button>
+        <button class="nc-chat-quick" onclick="ncChatQuick('⏳ 5 mins to handover — are you ready?')">⏳ 5 mins</button>
+        <button class="nc-chat-quick" onclick="ncChatQuick('✅ Confirmed, I have control')">✅ Confirmed</button>
+        <button class="nc-chat-quick" onclick="ncChatQuick('🔇 QRM on frequency, stand by')">🔇 QRM</button>
+        <button class="nc-chat-quick" onclick="ncChatQuick('73 — good shift! 📻')">73 👋</button>
       </div>
-      <div class="nc-chat-input-row">
-        <input type="text" class="nc-chat-input" id="ncChatInput" placeholder="Type a message…" maxlength="500" onkeydown="if(event.key==='Enter')ncChatSend()">
-        <button class="nc-chat-send" onclick="ncChatSend()">Send</button>
+      <div class="nc-chat-messages" id="ncChatMessages">
+        <div class="nc-chat-empty" id="ncChatEmpty">
+          <div class="nc-chat-empty-icon">🎙️</div>
+          <div>Handover chat ready</div>
+          <div style="font-size:.72rem;">Say hello to the other controller!</div>
+        </div>
+        <div class="nc-chat-typing" id="ncChatTyping">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+      <div class="nc-chat-input-wrap">
+        <div class="nc-chat-input-row">
+          <textarea class="nc-chat-input" id="ncChatInput" placeholder="Type a message… (Enter to send)" maxlength="500" rows="1"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();ncChatSend();}"
+            oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,80)+'px';"></textarea>
+          <button class="nc-chat-send" onclick="ncChatSend()">Send ➤</button>
+        </div>
+        <div class="nc-chat-footer">
+          <div class="nc-chat-emoji-bar">
+            <span class="nc-chat-emoji" onclick="ncChatEmoji('👋')">👋</span>
+            <span class="nc-chat-emoji" onclick="ncChatEmoji('✅')">✅</span>
+            <span class="nc-chat-emoji" onclick="ncChatEmoji('📡')">📡</span>
+            <span class="nc-chat-emoji" onclick="ncChatEmoji('🔇')">🔇</span>
+            <span class="nc-chat-emoji" onclick="ncChatEmoji('⚠️')">⚠️</span>
+            <span class="nc-chat-emoji" onclick="ncChatEmoji('73')">7️⃣3️⃣</span>
+            <span class="nc-chat-emoji" onclick="ncChatEmoji('🎙️')">🎙️</span>
+            <span class="nc-chat-emoji" onclick="ncChatEmoji('📻')">📻</span>
+          </div>
+          <div style="font-size:.6rem;color:#94a3b8;">RAYNET Secure Chat</div>
+        </div>
       </div>
     </div>
   </div>
@@ -1158,17 +1232,23 @@ document.addEventListener('DOMContentLoaded', function(){
 
     // ── Presence: show green dot if next controller is on the portal ─────────
     function pollPresence() {
-        var dot = document.getElementById('nextCtrlPresenceDot');
-        if (!dot) return; // no next slot, skip
         fetch('/net-control/presence', {cache:'no-store'})
         .then(function(r){ return r.json(); })
         .then(function(d){
-            var cs = dot.getAttribute('data-cs');
-            if (d.online && d.online.indexOf(cs) !== -1) {
-                dot.style.display = 'inline-flex';
-            } else {
-                dot.style.display = 'none';
+            // Schedule card dot
+            var dot = document.getElementById('nextCtrlPresenceDot');
+            if (dot) {
+                var cs = dot.getAttribute('data-cs');
+                dot.style.display = (d.online && d.online.indexOf(cs) !== -1) ? 'inline-flex' : 'none';
             }
+            // Chat widget online dot + header sub
+            var chatDot = document.getElementById('ncChatOnlineDot');
+            var chatSub = document.getElementById('ncChatHeaderSub');
+            var otherOnline = d.online && d.online.indexOf(CHAT_OTHER_CS) !== -1;
+            if (chatDot) chatDot.style.display = otherOnline ? 'block' : 'none';
+            if (chatSub) chatSub.textContent = CHAT_OTHER_CS
+                ? (otherOnline ? '🟢 ' + CHAT_OTHER_CS + ' is online' : CHAT_OTHER_CS + ' — not yet connected')
+                : 'Handover channel';
         }).catch(function(){});
     }
     pollPresence();
@@ -1325,6 +1405,8 @@ document.addEventListener('DOMContentLoaded', function(){
             _chatVisible = true;
             if (!_chatInterval) _chatInterval = setInterval(ncChatPoll, 3000);
             ncChatPoll();
+            // Post a system welcome message locally
+            ncChatRender([{cs:'system',type:'system',text:'🔐 Handover channel open — 15 minutes to go',time:'',ts:Date.now()}]);
         } else if (!should && _chatVisible) {
             widget.style.display = 'none';
             _chatVisible = false;
