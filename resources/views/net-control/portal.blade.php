@@ -150,21 +150,25 @@
   .log-row{grid-template-columns:2rem 3.5rem 7rem 1fr 5rem 5rem 2rem;}
   .log-row.hdr{font-size:.65rem;}
 
-  /* Sticky countdown banner */
-  .nc-sticky-banner{display:flex;position:sticky;top:60px;z-index:999;}
   .nc-sticky-banner .status-pill{background:rgba(255,255,255,.15)!important;color:#fff!important;border-color:rgba(255,255,255,.3)!important;}
   .nc-wrap{padding-top:.5rem;}
 }
 
 .nc-sticky-banner{
   display:none;
-  background:linear-gradient(135deg,#003366,#004080);
-  color:#fff;padding:.6rem 2rem;
-  align-items:center;justify-content:space-between;gap:1rem;
+  position:sticky;
+  top:0;
+  z-index:990;
+  background:linear-gradient(135deg,#001a33,#003366);
+  color:#fff;
+  padding:.55rem 1.1rem;
+  align-items:center;justify-content:space-between;gap:.75rem;
   border-bottom:1px solid rgba(255,255,255,.08);
-  box-shadow:0 2px 12px rgba(0,0,0,.3);
-  margin-bottom:1.5rem;
+  box-shadow:0 3px 16px rgba(0,0,0,.35);
+  margin-bottom:1rem;
+  transition:opacity .2s;
 }
+.nc-sticky-banner.visible{display:flex;}
 
 .nc-offline-bar{display:none;position:fixed;bottom:1.25rem;left:50%;transform:translateX(-50%);
   z-index:2000;padding:.6rem 1.25rem;border-radius:999px;font-size:.82rem;font-weight:800;
@@ -266,30 +270,21 @@
   })();
   </script>
 
-  {{-- Sticky countdown banner (desktop only) --}}
-  <div class="nc-sticky-banner">
-    <div style="display:flex;align-items:center;gap:1.5rem;">
-      <div id="statusPillSticky" class="status-pill pill-live" style="font-size:.72rem;">🔴 ON AIR</div>
-      <div>
-        <div style="font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.4);" id="stickyLabel">Time until slot starts</div>
-        <div style="font-family:monospace;font-weight:900;font-size:1.2rem;letter-spacing:.06em;" id="stickyTime">--:--:--</div>
+  {{-- Sticky countdown banner — appears when countdown card scrolls out of view --}}
+  <div class="nc-sticky-banner" id="ncStickyBanner">
+    <div style="display:flex;align-items:center;gap:.65rem;min-width:0;">
+      <div id="statusPillSticky" class="status-pill pill-live" style="font-size:.68rem;flex-shrink:0;">🔴 ON AIR</div>
+      <div style="min-width:0;">
+        <div style="font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.4);" id="stickyLabel">Time remaining</div>
+        <div style="font-family:monospace;font-weight:900;font-size:1.1rem;letter-spacing:.05em;line-height:1;" id="stickyTime">--:--:--</div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:1.5rem;">
-      <div style="text-align:center;">
-        <div style="font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.35);">Your slot</div>
-        <div id="slotTimeInfo" style="font-family:monospace;font-weight:800;font-size:.85rem;">{{ $slot['from'] }} – {{ $slot['to'] }}</div>
+    <div style="display:flex;align-items:center;gap:.65rem;flex-shrink:0;">
+      <div style="text-align:right;">
+        <div style="font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.35);">Slot</div>
+        <div id="slotTimeInfo" style="font-family:monospace;font-weight:800;font-size:.78rem;color:#fff;">{{ $slot['from'] }} – {{ $slot['to'] }}</div>
       </div>
-      @if($prevSlot)
-      <div style="font-size:.75rem;color:rgba(255,255,255,.45);">← <span style="font-family:monospace;font-weight:800;color:rgba(255,255,255,.7);">{{ $prevSlot['callsign'] }}</span></div>
-      @endif
-      <div style="font-family:monospace;font-size:1.1rem;font-weight:900;background:rgba(255,255,255,.1);padding:.25rem .85rem;border-radius:8px;letter-spacing:.05em;">{{ $net['callsign'] }}</div>
-      @if($nextSlot)
-      <div style="font-size:.75rem;color:rgba(255,255,255,.45);"><span style="font-family:monospace;font-weight:800;color:rgba(255,255,255,.7);">{{ $nextSlot['callsign'] }}</span> →</div>
-      @endif
-      <div id="stickyLogBtn" style="display:none;">
-        <span style="font-size:.72rem;font-weight:800;color:#22c55e;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);padding:.25rem .65rem;border-radius:999px;">🔴 ON AIR</span>
-      </div>
+      <div style="font-family:monospace;font-size:.95rem;font-weight:900;background:rgba(255,255,255,.1);padding:.2rem .65rem;border-radius:7px;letter-spacing:.04em;color:#fff;">{{ $net['callsign'] }}</div>
     </div>
   </div>
 
@@ -1587,6 +1582,23 @@ document.addEventListener('DOMContentLoaded', function(){
     tick();
     loadLog();
     setInterval(loadLog, 3000);
+
+    // ── Sticky countdown banner — show when countdownBox out of view ─────────
+    (function() {
+        var box    = document.getElementById('countdownBox');
+        var banner = document.getElementById('ncStickyBanner');
+        if (!box || !banner) return;
+        var obs = new IntersectionObserver(function(entries) {
+            entries.forEach(function(e) {
+                if (e.isIntersecting) {
+                    banner.classList.remove('visible');
+                } else {
+                    banner.classList.add('visible');
+                }
+            });
+        }, { threshold: 0, rootMargin: '0px' });
+        obs.observe(box);
+    })();
 
     window.addEventListener('offline', function(){ tick(); loadLog(); });
 
