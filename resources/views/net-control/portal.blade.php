@@ -658,6 +658,7 @@ function pollNetActive() {
                     NC_SLOT_TO = slot.to;
                     slotTo     = parseTime(slot.to);
                     if (slotTo <= slotFrom) { slotTo = new Date(slotTo.getTime() + 86400000); }
+                    SLOT_TO_MS = slotTo.getTime();
                     var slotStr = SLOT_FROM + ' – ' + slot.to;
                     var sub = document.getElementById('countdownSub');
                     if (sub) sub.textContent = 'Your slot: ' + slotStr;
@@ -675,6 +676,7 @@ function pollNetActive() {
                     NC_SLOT_FROM = slot.from;
                     slotFrom  = parseTime(slot.from);
                     windowStart = new Date(slotFrom.getTime() - WINDOW_MINS * 60000);
+                    SLOT_FROM_MS = slotFrom.getTime();
                     var slotStr2 = slot.from + ' – ' + SLOT_TO;
                     var sub = document.getElementById('countdownSub');
                     if (sub) sub.textContent = 'Your slot: ' + slotStr2;
