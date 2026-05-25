@@ -1348,6 +1348,19 @@ document.addEventListener('DOMContentLoaded', function(){
             method: 'POST',
             headers: {'Content-Type':'application/json','X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content},
             body: JSON.stringify({room: CHAT_ROOM, message: text})
+        }).then(function() {
+            // Poll immediately after send to advance _chatLastTs past the server timestamp
+            // so the regular poll doesn't re-render the message we already rendered locally
+            setTimeout(function() {
+                fetch('/net-control/chat/messages?room=' + encodeURIComponent(CHAT_ROOM) + '&since=' + _chatLastTs, {cache:'no-store'})
+                .then(function(r){ return r.json(); })
+                .then(function(d){
+                    if (d.messages && d.messages.length) {
+                        // Advance ts without rendering — message already shown
+                        _chatLastTs = d.messages[d.messages.length - 1].ts;
+                    }
+                }).catch(function(){});
+            }, 300);
         }).catch(function(){});
     };
 
