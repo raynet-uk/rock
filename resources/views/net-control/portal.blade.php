@@ -438,8 +438,11 @@ var ncQrzTimer;
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function parseTime(t) {
-    var d = new Date(); var p = t.split(':');
-    d.setHours(parseInt(p[0]), parseInt(p[1]), 0, 0); return d;
+    var now = new Date(); var p = t.split(':');
+    var d = new Date(); d.setHours(parseInt(p[0]), parseInt(p[1]), 0, 0);
+    // If more than 12h in the future, it's probably yesterday
+    if (d - now > 12 * 3600000) { d = new Date(d.getTime() - 86400000); }
+    return d;
 }
 function escHtml(s) {
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
