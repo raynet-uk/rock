@@ -509,24 +509,25 @@
       </div>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr 2fr auto;gap:.65rem;align-items:start;">
-      <div>
-        <label class="label">Callsign *</label>
-        <input type="text" id="ncCallsign" class="input" placeholder="G4BDS"
-               style="text-transform:uppercase;font-family:monospace;font-weight:800;font-size:.95rem;"
-               maxlength="20" autocomplete="off">
-      </div>
-      <div>
-        <label class="label">Signal Report</label>
-        <input type="text" id="ncReport" class="input" placeholder="59" maxlength="10" style="font-family:monospace;font-weight:700;">
+    {{-- Mobile: callsign + signal on one row, notes full width, button full width --}}
+    <div style="display:flex;flex-direction:column;gap:.65rem;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem;">
+        <div>
+          <label class="label">Callsign *</label>
+          <input type="text" id="ncCallsign" class="input" placeholder="G4BDS"
+                 style="text-transform:uppercase;font-family:monospace;font-weight:800;font-size:.95rem;"
+                 maxlength="20" autocomplete="off">
+        </div>
+        <div>
+          <label class="label">Signal Report</label>
+          <input type="text" id="ncReport" class="input" placeholder="59" maxlength="10" style="font-family:monospace;font-weight:700;">
+        </div>
       </div>
       <div>
         <label class="label">Notes</label>
-        <input type="text" id="ncNotes" class="input" placeholder="Optional">
+        <input type="text" id="ncNotes" class="input" placeholder="Optional notes…">
       </div>
-      <div style="padding-top:1.6rem;">
-        <button onclick="ncLog()" id="ncSubmitBtn" class="btn-primary" style="width:100%;white-space:nowrap;" disabled>+ Log</button>
-      </div>
+      <button onclick="ncLog()" id="ncSubmitBtn" class="btn-primary" style="width:100%;padding:.75rem;font-size:.95rem;font-weight:900;letter-spacing:.03em;" disabled>+ Log Station</button>
     </div>
     <div id="ncError" style="color:#C8102E;font-size:.78rem;margin-top:.5rem;display:none;padding:.35rem .6rem;background:#fff1f2;border-radius:6px;border:1px solid #fecdd3;"></div>
   </div>
