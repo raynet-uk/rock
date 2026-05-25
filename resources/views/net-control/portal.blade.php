@@ -35,7 +35,9 @@
 @keyframes nc-handover-pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
 
 /* Handover chat widget */
+@keyframes ncChatSlideUp{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
 .nc-chat-widget{position:fixed;bottom:1.25rem;right:1.25rem;z-index:8888;display:none;flex-direction:column;width:310px;max-width:calc(100vw - 2rem);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.22);overflow:hidden;border:1px solid rgba(255,255,255,.12);}
+.nc-chat-widget.nc-chat-animate{animation:ncChatSlideUp .35s cubic-bezier(.22,.68,0,1.2) both;}
 .nc-chat-widget.open .nc-chat-body{display:flex;}
 .nc-chat-header{background:linear-gradient(135deg,#003366,#004080);color:#fff;padding:.65rem 1rem;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
 .nc-chat-header-left{display:flex;align-items:center;gap:.5rem;font-weight:900;font-size:.82rem;}
@@ -1287,6 +1289,9 @@ document.addEventListener('DOMContentLoaded', function(){
         }
         if (should && !_chatVisible) {
             widget.style.display = 'flex';
+            widget.classList.remove('nc-chat-animate');
+            void widget.offsetWidth; // force reflow so animation replays
+            widget.classList.add('nc-chat-animate');
             _chatVisible = true;
             if (!_chatInterval) _chatInterval = setInterval(ncChatPoll, 3000);
             ncChatPoll();
@@ -1299,7 +1304,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
     // Check every 30s whether the chat should appear/disappear
     ncChatCheckVisibility();
-    setInterval(ncChatCheckVisibility, 30000);
+    setInterval(ncChatCheckVisibility, 5000);
 
     tick();
     loadLog();

@@ -45,4 +45,18 @@
     <a href="{{ url('/') }}" style="font-size:.85rem;color:#6366f1;text-decoration:none;font-weight:700;">← Back to Home</a>
   </div>
 </div>
+<script>
+// Poll access-check every 10s regardless of whether a nextSlot is shown
+// Catches cases where admin activates the net or changes slots manually
+(function(){
+    function checkAccess() {
+        fetch('/net-control/access-check', {cache:'no-store'})
+        .then(function(r){ return r.json(); })
+        .then(function(d){ if (d.active) { window.location.href = '/net-control'; } })
+        .catch(function(){});
+    }
+    setTimeout(checkAccess, 3000);
+    setInterval(checkAccess, 10000);
+})();
+</script>
 @endsection
