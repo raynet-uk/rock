@@ -538,10 +538,18 @@ function pollNetActive() {
                 }
                 if (slot && slot.from && slot.from !== SLOT_FROM) {
                     SLOT_FROM = slot.from;
+                    NC_SLOT_FROM = slot.from;
                     slotFrom  = parseTime(slot.from);
                     windowStart = new Date(slotFrom.getTime() - WINDOW_MINS * 60000);
+                    var slotStr2 = slot.from + ' – ' + SLOT_TO;
                     var sub = document.getElementById('countdownSub');
-                    if (sub) sub.textContent = 'Your slot: ' + slot.from + ' – ' + SLOT_TO;
+                    if (sub) sub.textContent = 'Your slot: ' + slotStr2;
+                    var banner = document.getElementById('slotTimeBanner');
+                    if (banner) banner.textContent = slotStr2;
+                    var info = document.getElementById('slotTimeInfo');
+                    if (info) info.textContent = slotStr2;
+                    var handover = document.getElementById('slotTimeHandover');
+                    if (handover) handover.textContent = slotStr2;
                 }
             }
         }
