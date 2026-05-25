@@ -110,7 +110,7 @@
           <div style="width:8px;height:8px;border-radius:50%;background:#C8102E;animation:pulse 1.5s infinite;flex-shrink:0;"></div>
           <span style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.5);">{{ $groupName }}</span>
         </div>
-        <div id="statusPill" class="status-pill pill-pre">⏳ Pre-slot</div>
+        <div id="statusPill" class="status-pill pill-live">🔴 ON AIR</div>
       </div>
 
       {{-- Main callsign display --}}
@@ -200,7 +200,7 @@
   {{-- Sticky countdown banner (desktop only) --}}
   <div class="nc-sticky-banner">
     <div style="display:flex;align-items:center;gap:1.5rem;">
-      <div id="statusPillSticky" class="status-pill pill-pre" style="font-size:.72rem;">⏳ Pre-slot</div>
+      <div id="statusPillSticky" class="status-pill pill-live" style="font-size:.72rem;">🔴 ON AIR</div>
       <div>
         <div style="font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.4);" id="stickyLabel">Time until slot starts</div>
         <div style="font-family:monospace;font-weight:900;font-size:1.2rem;letter-spacing:.06em;" id="stickyTime">--:--:--</div>
@@ -230,7 +230,7 @@
 
   {{-- Countdown --}}
   <div class="countdown-box" id="countdownBox">
-    <div class="countdown-label" id="countdownLabel">Time until your slot starts</div>
+    <div class="countdown-label" id="countdownLabel">Time remaining in your slot</div>
     <div class="countdown-time" id="countdownTime">--:--:--</div>
     <div class="countdown-sub" id="countdownSub">Your slot: {{ $slot['from'] }} – {{ $slot['to'] }}</div>
   </div>
@@ -714,8 +714,8 @@ function loadLog() {
         if (!r.ok) { return null; }
         return r.json();
     })
-    .then(function(data){ if (!data) return;
     .then(function(data){
+        if (!data) return;
         var hash = data.map(function(e){ return e.id+':'+e.callsign; }).join(',');
         if (hash === LOG_HASH) return;
         LOG_HASH = hash;
