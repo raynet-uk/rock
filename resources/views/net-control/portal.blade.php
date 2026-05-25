@@ -550,7 +550,48 @@ function tick() {
         var el=document.getElementById(id); if(el) el.textContent=hhmm;
     });
 
-    function fmt(sec) {
+    window.scrambleCountdown = function scrambleCountdown(finalSec) {
+            var ctT = document.getElementById('countdownTime');
+            var ctL = document.getElementById('countdownLabel');
+            if (!ctT) return;
+            if (window._scrambleTimer) clearInterval(window._scrambleTimer);
+            var chars = '0123456789';
+            var duration = 3000;
+            var interval = 40;
+            var totalSteps = Math.floor(duration / interval);
+            var target = fmt(finalSec);
+            var locked = new Array(target.length).fill(false);
+            if (ctL) { ctL.textContent = 'Recalculating…'; ctL.style.color = '#fbbf24'; }
+            var step = 0;
+            window._scrambleTimer = setInterval(function() {
+                step++;
+                var progress = step / totalSteps;
+                // Lock chars in left-to-right during final 40% of animation
+                for (var ci = 0; ci < target.length; ci++) {
+                    if (target[ci] === ':') { locked[ci] = true; continue; }
+                    var lockThreshold = 0.6 + (ci / target.replace(/:/g,'').length) * 0.38;
+                    if (progress >= lockThreshold) locked[ci] = true;
+                }
+                var scrambled = '';
+                for (var ci = 0; ci < target.length; ci++) {
+                    if (target[ci] === ':') { scrambled += ':'; continue; }
+                    if (locked[ci]) {
+                        scrambled += target[ci];
+                    } else {
+                        scrambled += chars[Math.floor(Math.random() * chars.length)];
+                    }
+                }
+                ctT.textContent = scrambled;
+                if (step >= totalSteps) {
+                    clearInterval(window._scrambleTimer);
+                    window._scrambleTimer = null;
+                    ctT.textContent = target;
+                    if (ctL) { ctL.textContent = 'Time remaining in your slot'; ctL.style.color = ''; }
+                }
+            }, interval);
+        }
+
+        function fmt(sec) {
         var h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;
         return (h?String(h).padStart(2,'0')+':':'')+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
     }
@@ -928,45 +969,4 @@ document.addEventListener('DOMContentLoaded', function(){
     document.getElementById('ncInviteModal').addEventListener('click',  function(e){ if(e.target===this) this.style.display='none'; });
 });
 </script>
-@endsection        function scrambleCountdown(finalSec) {
-            var ctT = document.getElementById('countdownTime');
-            var ctL = document.getElementById('countdownLabel');
-            if (!ctT) return;
-            if (window._scrambleTimer) clearInterval(window._scrambleTimer);
-            var chars = '0123456789';
-            var duration = 3000;
-            var interval = 40;
-            var totalSteps = Math.floor(duration / interval);
-            var target = fmt(finalSec);
-            var locked = new Array(target.length).fill(false);
-            if (ctL) { ctL.textContent = 'Recalculating…'; ctL.style.color = '#fbbf24'; }
-            var step = 0;
-            window._scrambleTimer = setInterval(function() {
-                step++;
-                var progress = step / totalSteps;
-                // Lock chars in left-to-right during final 40% of animation
-                for (var ci = 0; ci < target.length; ci++) {
-                    if (target[ci] === ':') { locked[ci] = true; continue; }
-                    var lockThreshold = 0.6 + (ci / target.replace(/:/g,'').length) * 0.38;
-                    if (progress >= lockThreshold) locked[ci] = true;
-                }
-                var scrambled = '';
-                for (var ci = 0; ci < target.length; ci++) {
-                    if (target[ci] === ':') { scrambled += ':'; continue; }
-                    if (locked[ci]) {
-                        scrambled += target[ci];
-                    } else {
-                        scrambled += chars[Math.floor(Math.random() * chars.length)];
-                    }
-                }
-                ctT.textContent = scrambled;
-                if (step >= totalSteps) {
-                    clearInterval(window._scrambleTimer);
-                    window._scrambleTimer = null;
-                    ctT.textContent = target;
-                    if (ctL) { ctL.textContent = 'Time remaining in your slot'; ctL.style.color = ''; }
-                }
-            }, interval);
-        }
-
-
+@endsection
