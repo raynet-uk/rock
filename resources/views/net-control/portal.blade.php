@@ -520,6 +520,7 @@ function pollNetActive() {
                     SLOT_TO    = slot.to;
                     NC_SLOT_TO = slot.to;
                     slotTo     = parseTime(slot.to);
+                    if (slotTo <= slotFrom) { slotTo = new Date(slotTo.getTime() + 86400000); }
                     var slotStr = SLOT_FROM + ' – ' + slot.to;
                     var sub = document.getElementById('countdownSub');
                     if (sub) sub.textContent = 'Your slot: ' + slotStr;
