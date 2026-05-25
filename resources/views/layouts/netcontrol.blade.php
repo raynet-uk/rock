@@ -65,7 +65,7 @@
     </div>
     <div class="nc-appbar-right">
         @isset($net)
-        <span class="nc-appbar-cs">{{ $net['callsign'] }}</span>
+        <span class="nc-appbar-cs">{{ is_array($net) ? $net['callsign'] : $net }}</span>
         @endisset
         @auth
         <span class="nc-appbar-user">{{ auth()->user()->callsign }}</span>

@@ -1135,6 +1135,31 @@ Route::middleware(['web','auth','admin'])->get('/admin/net-control/offline-token
 // Public net status JSON — used by homepage banner polling
 Route::get('/net-status-json', function () {
     $active = \App\Models\Setting::get('net_active', '0') === '1';
+
+    // Auto-deactivate if all slots have ended
+    if ($active) {
+        $slots = json_decode(\App\Models\Setting::get('net_controller_slots', '[]'), true) ?? [];
+        if (count($slots) > 0) {
+            $now = \Carbon\Carbon::now('Europe/London');
+            $nowTime = $now->format('H:i');
+            $allEnded = true;
+            foreach ($slots as $slot) {
+                $to = $slot['to'] ?? '';
+                if (!$to) continue;
+                // Handle midnight-crossing slots
+                $fromDt = $now->copy()->setTimeFromTimeString(($slot['from'] ?? '00:00') . ':00');
+                $toDt   = $now->copy()->setTimeFromTimeString($to . ':00');
+                if ($toDt->lte($fromDt)) $toDt->addDay();
+                if ($now->lt($toDt)) { $allEnded = false; break; }
+            }
+            if ($allEnded) {
+                \App\Models\Setting::set('net_active', '0');
+                \App\Models\Setting::set('net_controller_slots', '[]');
+                $active = false;
+            }
+        }
+    }
+
     if (!$active) {
         return response()->json(['active' => false, 'controller' => '', 'callsign' => '', 'frequency' => '', 'announcement' => '']);
     }
