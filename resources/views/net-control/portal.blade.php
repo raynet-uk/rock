@@ -419,6 +419,13 @@ var SLOT_FROM      = '{{ $slot['from'] }}';
 var SLOT_TO        = '{{ $slot['to'] }}';
 var WINDOW_MINS    = {{ $windowMins }};
 var LOG_HASH       = '';
+var NC_START_TIME  = Date.now();
+var NC_NET_NAME    = '{{ addslashes($net['callsign'] ?? '') }}';
+var NC_FREQUENCY   = '{{ addslashes($net['frequency'] ?? '') }}';
+var NC_USER_CS     = '{{ addslashes($user->callsign ?? '') }}';
+var NC_USER_NAME   = '{{ addslashes($user->name ?? '') }}';
+var NC_SLOT_FROM   = '{{ addslashes($slot['from'] ?? '') }}';
+var NC_SLOT_TO     = '{{ addslashes($slot['to'] ?? '') }}';
 var CAN_LOG        = false;
 var NC_QRZ         = {};
 var NC_INVITE_CS   = '';
@@ -478,8 +485,23 @@ function pollNetActive() {
     fetch('/net-status-json', {cache:'no-store'})
     .then(function(r){ return r.json(); })
     .then(function(d){
-        if (d.active === false) { showNetEndedOverlay(); }
-        else { hideNetEndedOverlay(); }
+        if (d.active === false) {
+            if (window._ncNetEnded) return;
+            window._ncNetEnded = true;
+            var mins = Math.round((Date.now() - NC_START_TIME) / 60000);
+            var params = new URLSearchParams({
+                net:      NC_NET_NAME,
+                freq:     NC_FREQUENCY,
+                cs:       NC_USER_CS,
+                name:     NC_USER_NAME,
+                from:     NC_SLOT_FROM,
+                to:       NC_SLOT_TO,
+                duration: mins
+            });
+            window.location.href = '/net-control/thankyou?' + params.toString();
+        } else {
+            window._ncNetEnded = false;
+        }
     }).catch(function(){});
 }
 
@@ -696,8 +718,13 @@ function ncLog() {
 // ── Live log ──────────────────────────────────────────────────────────────
 function loadLog() {
     if (isOffline()) { renderOfflineLog(); return; }
+    if (window._ncNetEnded) return;
     fetch('{{ route('net-control.stations') }}', {cache:'no-store'})
-    .then(function(r){ return r.json(); })
+    .then(function(r){
+        if (!r.ok) { return null; }
+        return r.json();
+    })
+    .then(function(data){ if (!data) return;
     .then(function(data){
         var hash = data.map(function(e){ return e.id+':'+e.callsign; }).join(',');
         if (hash === LOG_HASH) return;

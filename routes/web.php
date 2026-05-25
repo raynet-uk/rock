@@ -1116,6 +1116,10 @@ Route::prefix('admin/temporary-guests')->name('admin.temporary-guests.')->middle
 });
 
 // Net Controller Portal
+Route::get('/net-control/thankyou', function() {
+    return view('net-control.thankyou');
+})->middleware('web')->name('net-control.thankyou');
+
 Route::middleware(['web','auth','net.controller'])->prefix('net-control')->name('net-control.')->group(function() {
     Route::get('/',             [\App\Http\Controllers\NetControllerPortalController::class, 'index'])       ->name('portal');
     Route::get('/stations',     [\App\Http\Controllers\NetControllerPortalController::class, 'stationLog'])  ->name('stations');
