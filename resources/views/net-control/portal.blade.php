@@ -1,7 +1,6 @@
-@extends('layouts.app')
+@extends('layouts.netcontrol')
 @section('title','Net Control — ' . $net['callsign'])
 @section('content')
-<meta name="csrf-token" content="{{ csrf_token() }}">
 <style>
 :root{--navy:#003366;--red:#C8102E;--border:#dde2e8;--muted:#6b7f96;}
 *{box-sizing:border-box;}
@@ -807,7 +806,9 @@ document.addEventListener('DOMContentLoaded', function(){
         }).catch(function(){});
     }
     pollLoggingStatus();
-    setInterval(pollLoggingStatus, 5000);
+    setInterval(pollLoggingStatus, 10000);
+    pollNetActive();
+    setInterval(pollNetActive, 15000);
 
     tick();
     loadLog();
