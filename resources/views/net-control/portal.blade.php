@@ -74,17 +74,26 @@
   .log-row.hdr{font-size:.65rem;}
 
   /* Sticky countdown banner */
-  .nc-sticky-banner{display:flex;}
+  .nc-sticky-banner{display:flex;position:sticky;top:60px;z-index:999;}
+  .nc-sticky-banner .status-pill{background:rgba(255,255,255,.15)!important;color:#fff!important;border-color:rgba(255,255,255,.3)!important;}
   .nc-wrap{padding-top:.5rem;}
 }
 
-/* Hidden on mobile */
-.nc-sticky-banner{display:none;position:sticky;top:0;z-index:100;
-  background:linear-gradient(135deg,#001a33,#003366);
+.nc-sticky-banner{
+  display:none;
+  background:linear-gradient(135deg,#003366,#004080);
   color:#fff;padding:.6rem 2rem;
   align-items:center;justify-content:space-between;gap:1rem;
   border-bottom:1px solid rgba(255,255,255,.08);
-  box-shadow:0 2px 12px rgba(0,0,0,.3);}
+  box-shadow:0 2px 12px rgba(0,0,0,.3);
+  margin-bottom:1.5rem;
+}
+
+.nc-offline-bar{display:none;position:fixed;bottom:1.25rem;left:50%;transform:translateX(-50%);
+  z-index:2000;padding:.6rem 1.25rem;border-radius:999px;font-size:.82rem;font-weight:800;
+  white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.25);}
+.nc-offline-bar.offline{background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;}
+.nc-offline-bar.online{background:#f0fdf4;color:#15803d;border:1px solid #86efac;}
 </style>
 
 <div class="nc-wrap">
@@ -627,6 +636,11 @@ function ncLog() {
     err.style.display = 'none';
 
     if (isOffline()) {
+        if (window._ncLoggingEnabled === false) {
+            err.textContent='Station logging is disabled by the net controller';
+            err.style.display='';
+            return;
+        }
         addToQueue(cs, rep, notes);
         document.getElementById('ncCallsign').value = '';
         document.getElementById('ncReport').value   = '';
