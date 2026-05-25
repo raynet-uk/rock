@@ -253,6 +253,19 @@
     <button onclick="document.getElementById('ncHandoverBanner').classList.remove('active')" style="background:rgba(0,0,0,.2);border:none;color:#fff;border-radius:999px;padding:.2rem .65rem;font-size:.75rem;font-weight:800;cursor:pointer;margin-left:.5rem;" id="ncHandoverDismiss">Dismiss</button>
   </div>
 
+  {{-- Access revoked dialog --}}
+  <div class="nc-dialog-overlay" id="ncAccessRevokedOverlay" style="display:none;background:rgba(0,0,0,.75);position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;">
+    <div class="nc-dialog" style="max-width:380px;text-align:center;">
+      <div style="font-size:2.5rem;margin-bottom:.75rem;">⚠️</div>
+      <h2 style="margin-bottom:.5rem;">Slot No Longer Active</h2>
+      <p style="color:#64748b;font-size:.88rem;margin-bottom:1.25rem;">Your net control slot has ended or been reassigned. You will be redirected in <strong id="ncAccessRevokedCount">10</strong> seconds.</p>
+      <div style="background:#f1f5f9;border-radius:8px;height:6px;overflow:hidden;margin-bottom:1.25rem;">
+        <div id="ncAccessRevokedBar" style="height:100%;background:#C8102E;border-radius:8px;width:100%;transition:width 1s linear;"></div>
+      </div>
+      <button onclick="window.location.reload()" style="background:#003366;color:#fff;border:none;border-radius:8px;padding:.6rem 1.5rem;font-weight:800;cursor:pointer;font-size:.88rem;">Leave now →</button>
+    </div>
+  </div>
+
   {{-- Confirm dialog --}}
   <div class="nc-dialog-overlay" id="ncHandoverOverlay">
     <div class="nc-dialog">
@@ -1016,8 +1029,24 @@ document.addEventListener('DOMContentLoaded', function(){
         .then(function(r){ return r.json(); })
         .then(function(d){
             if (!d.active) {
-                // No longer authorised — reload so middleware redirects correctly
-                window.location.reload();
+                // Show the access revoked modal with countdown
+                var overlay = document.getElementById('ncAccessRevokedOverlay');
+                if (overlay && overlay.style.display !== 'flex') {
+                    overlay.style.display = 'flex';
+                    var countEl = document.getElementById('ncAccessRevokedCount');
+                    var barEl   = document.getElementById('ncAccessRevokedBar');
+                    var secs = 10;
+                    if (barEl) barEl.style.width = '100%';
+                    var revokedTick = setInterval(function() {
+                        secs--;
+                        if (countEl) countEl.textContent = secs;
+                        if (barEl) barEl.style.width = ((secs / 10) * 100) + '%';
+                        if (secs <= 0) {
+                            clearInterval(revokedTick);
+                            window.location.reload();
+                        }
+                    }, 1000);
+                }
             }
         })
         .catch(function(){});
