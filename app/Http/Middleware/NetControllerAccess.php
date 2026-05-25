@@ -8,7 +8,7 @@ use Carbon\Carbon;
 class NetControllerAccess
 {
     // Minutes before/after slot to allow access (1 for testing, 30 for production)
-    const WINDOW_MINUTES = 2;
+    const WINDOW_MINUTES = 15;
 
     public function handle(Request $request, Closure $next)
     {
