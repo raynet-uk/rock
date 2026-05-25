@@ -17,6 +17,22 @@ class NetControllerAccess
 
         $slot = self::findActiveSlot($user);
         if (!$slot) {
+            // If the net has just ended, redirect to thank-you page
+            $recentSlot = self::findRecentlyEndedSlot($user);
+            if ($recentSlot) {
+                $net  = $recentSlot['_net'] ?? [];
+                $from = $recentSlot['from'] ?? '';
+                $to   = $recentSlot['to'] ?? '';
+                return redirect()->route('net-control.thankyou', [
+                    'cs'       => $user->callsign,
+                    'name'     => $user->name,
+                    'net'      => $net['callsign'] ?? '',
+                    'freq'     => $net['frequency'] ?? '',
+                    'from'     => $from,
+                    'to'       => $to,
+                    'duration' => 0,
+                ]);
+            }
             return response()->view('net-control.no-access', [
                 'user'      => $user,
                 'nextSlot'  => self::findNextSlot($user),
@@ -105,6 +121,33 @@ class NetControllerAccess
     private static function allSlotsForCallsign(string $cs): array
     {
         return self::allSlotsWithMeta($cs);
+    }
+
+    public static function findRecentlyEndedSlot($user): ?array
+    {
+        $cs  = strtoupper($user->callsign ?? '');
+        if (!$cs) return null;
+        $now = Carbon::now('Europe/London');
+
+        // Look for a slot that ended within the last 30 minutes
+        foreach (self::allSlotsForCallsign($cs) as $slot) {
+            $from = $slot['from'] ?? '';
+            $to   = $slot['to'] ?? '';
+            if (!$from || !$to) continue;
+
+            foreach ([-1, 0] as $dayOffset) {
+                $base   = $now->copy()->addDays($dayOffset);
+                $fromDt = $base->copy()->setTimeFromTimeString($from . ':00');
+                $toDt   = $now->copy()->setTimeFromTimeString($to . ':00');
+                if ($toDt->lte($fromDt)) $toDt->addDay();
+
+                $windowEnd = $toDt->copy()->addMinutes(30);
+                if ($now->between($toDt, $windowEnd)) {
+                    return $slot;
+                }
+            }
+        }
+        return null;
     }
 
     private static function parseSlotTime(string $time, Carbon $ref): ?Carbon
