@@ -459,6 +459,30 @@ function addToQueue(cs, rep, notes) {
 function clearQueue() { localStorage.removeItem(NC_OFFLINE_KEY); }
 
 // ── Countdown tick ────────────────────────────────────────────────────────
+function showNetEndedOverlay() {
+    if (document.getElementById('ncNetEndedOverlay')) return;
+    var o = document.createElement('div');
+    o.id = 'ncNetEndedOverlay';
+    o.style.cssText = 'position:fixed;inset:0;background:rgba(240,244,248,.97);z-index:9000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;font-family:sans-serif;';
+    o.innerHTML = '<div style="font-size:3rem;">📻</div>'
+        + '<div style="font-size:1.4rem;font-weight:900;color:#003366;">Net has ended</div>'
+        + '<div style="color:#6b7f96;font-size:.9rem;">This net session has been closed by the administrator.</div>'
+        + '<a href="/" style="margin-top:1rem;padding:.6rem 1.5rem;background:#003366;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;">Return home</a>';
+    document.body.appendChild(o);
+}
+function hideNetEndedOverlay() {
+    var o = document.getElementById('ncNetEndedOverlay');
+    if (o) o.remove();
+}
+function pollNetActive() {
+    fetch('/net-status-json', {cache:'no-store'})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if (d.active === false) { showNetEndedOverlay(); }
+        else { hideNetEndedOverlay(); }
+    }).catch(function(){});
+}
+
 function tick() {
     var now  = new Date();
     var pill = document.getElementById('statusPill');
