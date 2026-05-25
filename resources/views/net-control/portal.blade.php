@@ -435,10 +435,7 @@ var ncQrzTimer;
 // ── Helpers ───────────────────────────────────────────────────────────────
 function parseTime(t) {
     var d = new Date(); var p = t.split(':');
-    d.setHours(parseInt(p[0]), parseInt(p[1]), 0, 0);
-    // If the parsed time is more than 12h in the past, it started yesterday
-    if (d.getTime() < Date.now() - 12*3600*1000) { d.setDate(d.getDate() - 1); }
-    return d;
+    d.setHours(parseInt(p[0]), parseInt(p[1]), 0, 0); return d;
 }
 function escHtml(s) {
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -527,18 +524,7 @@ function tick() {
         return (h?String(h).padStart(2,'0')+':':'')+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
     }
 
-    if (now < windowStart) {
-        // Outside window entirely — do nothing, pollNetActive handles redirect
-        return;
-    } else if (now >= windowStart && now < slotFrom) {
-        var diff=Math.floor((slotFrom-now)/1000);
-        ctL.textContent='Time until your slot starts'; ctT.textContent=fmt(diff);
-        if(pill){pill.className='status-pill pill-pre';pill.textContent='⏳ Slot starts '+SLOT_FROM;}
-        box.style.background='linear-gradient(135deg,#1e293b,#334155)';
-        CAN_LOG=false;
-        bnr.style.cssText='border-radius:8px;padding:.65rem .85rem;margin-bottom:.85rem;font-size:.8rem;font-weight:700;background:#fff7ed;color:#c2410c;';
-        bnr.innerHTML='⏳ Logging opens at <strong>'+SLOT_FROM+'</strong>';
-    } else if (now>=slotFrom && now<=slotTo) {
+    if (true) {  // server already validated slot — always show live state
         var diff=Math.floor((slotTo-now)/1000);
         ctL.textContent='Time remaining in your slot'; ctT.textContent=fmt(diff);
         if(pill){pill.className='status-pill pill-live';pill.textContent='🔴 ON AIR';}
