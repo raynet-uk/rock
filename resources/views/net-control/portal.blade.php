@@ -155,9 +155,10 @@
 }
 
 .nc-sticky-banner{
-  display:none;
-  position:sticky;
+  display:flex;
+  position:fixed;
   top:0;
+  left:0;right:0;
   z-index:990;
   background:linear-gradient(135deg,#001a33,#003366);
   color:#fff;
@@ -165,10 +166,10 @@
   align-items:center;justify-content:space-between;gap:.75rem;
   border-bottom:1px solid rgba(255,255,255,.08);
   box-shadow:0 3px 16px rgba(0,0,0,.35);
-  margin-bottom:1rem;
-  transition:opacity .2s;
+  transform:translateY(-110%);
+  transition:transform .2s ease;
 }
-.nc-sticky-banner.visible{display:flex;}
+.nc-sticky-banner.visible{display:flex;transform:translateY(0);}
 
 .nc-offline-bar{display:none;position:fixed;bottom:1.25rem;left:50%;transform:translateX(-50%);
   z-index:2000;padding:.6rem 1.25rem;border-radius:999px;font-size:.82rem;font-weight:800;
