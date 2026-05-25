@@ -301,7 +301,7 @@
   {{-- Early handover banner --}}
   <div class="nc-handover-banner" id="ncHandoverBanner">
     <span id="ncHandoverBannerText">🔄 Early Handover Requested — Waiting for next controller to accept…</span>
-    <button onclick="(function(){document.getElementById('ncHandoverBanner').classList.remove('active');var sb=document.getElementById('ncStickyBanner');if(sb)sb.classList.remove('handover-pushed');localStorage.removeItem('nc_handover_requested_'+NC_USER_CS);})()" style="background:rgba(0,0,0,.2);border:none;color:#fff;border-radius:999px;padding:.2rem .65rem;font-size:.75rem;font-weight:800;cursor:pointer;margin-left:.5rem;" id="ncHandoverDismiss">Dismiss</button>
+    <button onclick="(function(){document.getElementById('ncHandoverBanner').classList.remove('active');var sb=document.getElementById('ncStickyBanner');if(sb)sb.classList.remove('handover-pushed');localStorage.removeItem('nc_handover_requested_{{ strtoupper($user->callsign ?? '') }}');})()" style="background:rgba(0,0,0,.2);border:none;color:#fff;border-radius:999px;padding:.2rem .65rem;font-size:.75rem;font-weight:800;cursor:pointer;margin-left:.5rem;" id="ncHandoverDismiss">Dismiss</button>
   </div>
 
   {{-- Handover chat widget --}}
