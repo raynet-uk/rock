@@ -183,7 +183,7 @@ class NetControllerAccess
         foreach ([-1, 0, 1] as $dayOffset) {
             $base   = $ref->copy()->addDays($dayOffset);
             $fromDt = self::parseSlotTime($from, $base);
-            $toDt   = self::parseSlotTime($to,   $ref->copy()); // always relative to now's date
+            $toDt   = self::parseSlotTime($to,   $base->copy());
             if (!$fromDt || !$toDt) continue;
 
             // Handle midnight crossover — if to <= from, to is next calendar day
