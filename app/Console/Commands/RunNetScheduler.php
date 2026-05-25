@@ -118,6 +118,7 @@ class RunNetScheduler extends Command {
 
                     // Mark as sent for 2 hours so it doesn't fire again
                     \Illuminate\Support\Facades\Cache::put($cacheKey, true, now()->addHours(2));
+                    \Illuminate\Support\Facades\Cache::put('standby_notified_' . $cs, true, now()->addHours(2));
                     $this->info("Standby alert sent to {$cs} for slot {$fromStr}");
                 }
             }

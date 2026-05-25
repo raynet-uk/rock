@@ -1175,7 +1175,9 @@ Route::get('/net-control/chat/messages', function(\Illuminate\Http\Request $requ
 Route::post('/net-control/heartbeat', function(\Illuminate\Http\Request $request) {
     $user = $request->user();
     if (!$user) return response()->json(['ok' => false]);
-    \Illuminate\Support\Facades\Cache::put('nc_online_' . strtoupper($user->callsign ?? ''), true, now()->addSeconds(20));
+    $cs = strtoupper($user->callsign ?? '');
+    \Illuminate\Support\Facades\Cache::put('nc_online_' . $cs, true, now()->addSeconds(20));
+    \Illuminate\Support\Facades\Cache::forget('standby_notified_' . $cs);
     return response()->json(['ok' => true]);
 })->middleware(['web', 'auth'])->name('net-control.heartbeat');
 
@@ -1184,14 +1186,19 @@ Route::get('/net-control/presence', function(\Illuminate\Http\Request $request) 
     $user = $request->user();
     if (!$user) return response()->json(['online' => []]);
     $slots = json_decode(\App\Models\Setting::get('net_controller_slots', '[]'), true) ?? [];
-    $online = [];
+    $online   = [];
+    $notified = [];
     foreach ($slots as $slot) {
         $cs = strtoupper($slot['callsign'] ?? '');
-        if ($cs && \Illuminate\Support\Facades\Cache::get('nc_online_' . $cs)) {
+        if (!$cs) continue;
+        if (\Illuminate\Support\Facades\Cache::get('nc_online_' . $cs)) {
             $online[] = $cs;
         }
+        if (\Illuminate\Support\Facades\Cache::get('standby_notified_' . $cs)) {
+            $notified[] = $cs;
+        }
     }
-    return response()->json(['online' => $online]);
+    return response()->json(['online' => $online, 'notified' => $notified]);
 })->middleware(['web', 'auth'])->name('net-control.presence');
 
 // Access check — lets the portal JS verify the user still has an active slot right now

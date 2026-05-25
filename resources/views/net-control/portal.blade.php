@@ -428,10 +428,13 @@
         <div style="flex:1;min-width:0;">
           <div style="font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-bottom:.1rem;">After you</div>
           <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap;">
-            <span style="display:flex;align-items:center;gap:.4rem;">
+            <span style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;">
               <span style="font-family:monospace;font-weight:900;font-size:.95rem;color:#475569;">{{ $nextSlot['callsign'] }}</span>
               <span id="nextCtrlPresenceDot" data-cs="{{ strtoupper($nextSlot['callsign']) }}" style="display:none;align-items:center;gap:.25rem;font-size:.62rem;font-weight:800;color:#16a34a;background:#dcfce7;padding:.1rem .4rem;border-radius:999px;border:1px solid #bbf7d0;">
                 <span style="width:6px;height:6px;border-radius:50%;background:#16a34a;display:inline-block;animation:pulse 1.2s infinite;"></span> Online
+              </span>
+              <span id="nextCtrlNotifiedBadge" data-cs="{{ strtoupper($nextSlot['callsign']) }}" style="display:none;align-items:center;gap:.25rem;font-size:.62rem;font-weight:800;color:#92400e;background:#fef3c7;padding:.1rem .4rem;border-radius:999px;border:1px solid #fde68a;">
+                📧 Notified
               </span>
             </span>
             <span style="font-family:monospace;font-size:.78rem;color:#94a3b8;background:#f1f5f9;padding:.1rem .45rem;border-radius:4px;">{{ $nextSlot['from'] }} – {{ $nextSlot['to'] }}</span>
@@ -1217,11 +1220,18 @@ document.addEventListener('DOMContentLoaded', function(){
         fetch('/net-control/presence', {cache:'no-store'})
         .then(function(r){ return r.json(); })
         .then(function(d){
-            // Schedule card dot
+            // Schedule card online dot
             var dot = document.getElementById('nextCtrlPresenceDot');
+            var notifiedBadge = document.getElementById('nextCtrlNotifiedBadge');
             if (dot) {
                 var cs = dot.getAttribute('data-cs');
-                dot.style.display = (d.online && d.online.indexOf(cs) !== -1) ? 'inline-flex' : 'none';
+                var isOnline   = d.online   && d.online.indexOf(cs)   !== -1;
+                var isNotified = d.notified && d.notified.indexOf(cs) !== -1;
+                dot.style.display           = isOnline ? 'inline-flex' : 'none';
+                if (notifiedBadge) {
+                    // Show notified badge only if not yet online
+                    notifiedBadge.style.display = (!isOnline && isNotified) ? 'inline-flex' : 'none';
+                }
             }
             // Chat widget online dot + header sub
             var chatDot = document.getElementById('ncChatOnlineDot');
