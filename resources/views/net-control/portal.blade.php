@@ -817,6 +817,9 @@ function tick() {
     var preSlot   = SLOT_FROM_MS > 0 && nowMs < SLOT_FROM_MS;
     var postSlot  = SLOT_TO_MS > 0 && nowMs >= SLOT_TO_MS;
 
+    // Update IS_PRE_SLOT live so it reflects actual time not just page-load state
+    IS_PRE_SLOT = preSlot;
+
     if (preSlot) {
         // In the 15-min pre-window — slot hasn't started yet
         var diffToStart = Math.max(0, Math.floor((SLOT_FROM_MS - nowMs) / 1000));
