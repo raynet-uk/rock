@@ -1614,6 +1614,19 @@ document.addEventListener('DOMContentLoaded', function(){
     // ── Early Handover ────────────────────────────────────────────────────────
     var _handoverRequested = false;
 
+    // Restore handover banner state after refresh
+    (function() {
+        var saved = localStorage.getItem('nc_handover_requested_' + NC_USER_CS);
+        if (saved) {
+            _handoverRequested = true;
+            var banner = document.getElementById('ncHandoverBanner');
+            if (banner) banner.classList.add('active');
+            var sb = document.getElementById('ncStickyBanner');
+            if (sb) sb.classList.add('handover-pushed');
+            pollHandoverAccepted();
+        }
+    })();
+
     window.ncOpenHandoverDialog = function() {
         document.getElementById('ncHandoverOverlay').classList.add('active');
     };
@@ -1633,6 +1646,7 @@ document.addEventListener('DOMContentLoaded', function(){
             if (d.success) {
                 ncCloseHandoverDialog();
                 _handoverRequested = true;
+                localStorage.setItem('nc_handover_requested_' + NC_USER_CS, '1');
                 document.getElementById('ncHandoverBanner').classList.add('active');
                 var sb = document.getElementById('ncStickyBanner');
                 if (sb) sb.classList.add('handover-pushed');
