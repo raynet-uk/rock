@@ -202,8 +202,10 @@ class NetControllerPortalController extends Controller
             'to'   => $nowTime,
         ], now()->addMinutes(30));
 
-        // Signal requester's page to redirect
-        \Illuminate\Support\Facades\Cache::put('handover_accepted_' . $payload['requester_id'], true, now()->addMinutes(10));
+        // Signal requester's page to redirect — store redirect_at timestamp for sync
+        $redirectAt = now('Europe/London')->addSeconds(15)->getTimestampMs();
+        \Illuminate\Support\Facades\Cache::put('handover_accepted_' . $payload['requester_id'], $redirectAt, now()->addMinutes(10));
+        \Illuminate\Support\Facades\Cache::put('handover_redirect_at', $redirectAt, now()->addMinutes(10));
 
         return view('net-control.handover-accepted', [
             'requesterCallsign' => $payload['requester_cs'],

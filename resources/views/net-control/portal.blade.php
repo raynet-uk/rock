@@ -249,8 +249,8 @@
   {{-- Desktop two-column grid --}}
   {{-- Early handover banner --}}
   <div class="nc-handover-banner" id="ncHandoverBanner">
-    <span>🔄 Early Handover Requested — Waiting for next controller to accept…</span>
-    <button onclick="document.getElementById('ncHandoverBanner').classList.remove('active')" style="background:rgba(0,0,0,.2);border:none;color:#fff;border-radius:999px;padding:.2rem .65rem;font-size:.75rem;font-weight:800;cursor:pointer;margin-left:.5rem;">Dismiss</button>
+    <span id="ncHandoverBannerText">🔄 Early Handover Requested — Waiting for next controller to accept…</span>
+    <button onclick="document.getElementById('ncHandoverBanner').classList.remove('active')" style="background:rgba(0,0,0,.2);border:none;color:#fff;border-radius:999px;padding:.2rem .65rem;font-size:.75rem;font-weight:800;cursor:pointer;margin-left:.5rem;" id="ncHandoverDismiss">Dismiss</button>
   </div>
 
   {{-- Confirm dialog --}}
@@ -1054,7 +1054,20 @@ document.addEventListener('DOMContentLoaded', function(){
         fetch('/net-control/handover-poll', {cache:'no-store'})
         .then(function(r){ return r.json(); })
         .then(function(d){
-            if (d.handover_accepted) {
+            if (d.handover_accepted && d.redirect_at) {
+                // Accepted — count down to the synced redirect_at timestamp
+                var _redirectAt = d.redirect_at;
+                var _bannerText = document.getElementById('ncHandoverBannerText');
+                var _dismissBtn = document.getElementById('ncHandoverDismiss');
+                if (_dismissBtn) _dismissBtn.style.display = 'none';
+
+                // Change banner colour to green
+                var _banner = document.getElementById('ncHandoverBanner');
+                if (_banner) {
+                    _banner.style.background = '#15803d';
+                    _banner.style.animationPlayState = 'paused';
+                }
+
                 var _p = new URLSearchParams({
                     handover: '1',
                     cs:   '{{ strtoupper($user->callsign ?? "") }}',
@@ -1065,7 +1078,19 @@ document.addEventListener('DOMContentLoaded', function(){
                     to:   SLOT_TO || '{{ $slot["to"] ?? "" }}',
                     duration: '0',
                 });
-                window.location.href = '/net-control/thankyou?' + _p.toString();
+                var _url = '/net-control/thankyou?' + _p.toString();
+
+                (function tickBanner() {
+                    var secsLeft = Math.max(0, Math.ceil((_redirectAt - Date.now()) / 1000));
+                    if (_bannerText) {
+                        _bannerText.textContent = '✅ Handover accepted — handing over in ' + secsLeft + 's…';
+                    }
+                    if (secsLeft <= 0) {
+                        window.location.href = _url;
+                    } else {
+                        setTimeout(tickBanner, 500);
+                    }
+                })();
             } else {
                 setTimeout(pollHandoverAccepted, 5000);
             }

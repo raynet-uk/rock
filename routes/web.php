@@ -1127,9 +1127,18 @@ Route::get('/net-control/thankyou', function() {
 Route::get('/net-control/handover-poll', function(\Illuminate\Http\Request $request) {
     $user = $request->user();
     if (!$user) return response()->json(['handover_accepted' => false]);
-    $accepted = \Illuminate\Support\Facades\Cache::get('handover_accepted_' . $user->id, false);
-    return response()->json(['handover_accepted' => $accepted]);
+    $redirectAt = \Illuminate\Support\Facades\Cache::get('handover_accepted_' . $user->id, false);
+    return response()->json([
+        'handover_accepted' => (bool) $redirectAt,
+        'redirect_at'       => $redirectAt ?: null,
+    ]);
 })->middleware(['web', 'auth'])->name('net-control.handover-poll');
+
+// Incoming controller syncs their countdown to same redirect_at
+Route::get('/net-control/handover-redirect-at', function() {
+    $redirectAt = \Illuminate\Support\Facades\Cache::get('handover_redirect_at');
+    return response()->json(['redirect_at' => $redirectAt]);
+})->middleware(['web', 'auth'])->name('net-control.handover-redirect-at');
 
 Route::middleware(['web','auth','net.controller'])->prefix('net-control')->name('net-control.')->group(function() {
     Route::get('/',             [\App\Http\Controllers\NetControllerPortalController::class, 'index'])       ->name('portal');

@@ -140,23 +140,37 @@
 </div>
 <script>
 (function(){
-  const total = 15;
-  let remaining = total;
-  const numEl  = document.getElementById('cdNum');
-  const barEl  = document.getElementById('cdBar');
+  const numEl = document.getElementById('cdNum');
+  const barEl = document.getElementById('cdBar');
+  const FALLBACK = 15;
 
-  const tick = () => {
-    remaining--;
-    numEl.textContent = remaining;
-    barEl.style.width = ((remaining / total) * 100) + '%';
-    if (remaining <= 0) {
-      window.location.href = '/net-control';
-    } else {
-      setTimeout(tick, 1000);
+  function startCountdown(redirectAt) {
+    function tick() {
+      var secsLeft = Math.max(0, Math.ceil((redirectAt - Date.now()) / 1000));
+      if (numEl) numEl.textContent = secsLeft;
+      if (barEl) barEl.style.width = Math.min(100, (secsLeft / FALLBACK) * 100) + '%';
+      if (secsLeft <= 0) {
+        window.location.href = '/net-control';
+      } else {
+        setTimeout(tick, 500);
+      }
     }
-  };
+    tick();
+  }
 
-  setTimeout(tick, 1000);
+  // Fetch the shared redirect_at timestamp so both sides are in sync
+  fetch('/net-control/handover-redirect-at', {cache:'no-store'})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.redirect_at) {
+        startCountdown(d.redirect_at);
+      } else {
+        startCountdown(Date.now() + FALLBACK * 1000);
+      }
+    })
+    .catch(function(){
+      startCountdown(Date.now() + FALLBACK * 1000);
+    });
 })();
 </script>
 @endsection
