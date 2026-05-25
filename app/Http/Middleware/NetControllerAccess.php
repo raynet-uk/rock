@@ -8,12 +8,27 @@ use Carbon\Carbon;
 class NetControllerAccess
 {
     // Minutes before/after slot to allow access (1 for testing, 30 for production)
-    const WINDOW_MINUTES = 1;
+    const WINDOW_MINUTES = 2;
 
     public function handle(Request $request, Closure $next)
     {
         $user = $request->user();
         if (!$user) return redirect()->route('login');
+
+        // Hard-block: outgoing controller completed a handover — prevent re-entry for 30 min
+        $handoverDone = \Illuminate\Support\Facades\Cache::get('handover_done_' . $user->id);
+        if ($handoverDone) {
+            return redirect()->route('net-control.thankyou', [
+                'cs'       => $handoverDone['cs'] ?? strtoupper($user->callsign ?? ''),
+                'name'     => $user->name ?? $user->callsign,
+                'net'      => \App\Models\Setting::get('net_callsign', ''),
+                'freq'     => \App\Models\Setting::get('net_frequency', ''),
+                'from'     => $handoverDone['from'] ?? '',
+                'to'       => $handoverDone['to'] ?? '',
+                'duration' => 0,
+                'handover' => 1,
+            ]);
+        }
 
         $slot = self::findActiveSlot($user);
         if (!$slot) {

@@ -74,19 +74,26 @@
   $hrs      = intdiv($duration, 60);
   $mins     = $duration % 60;
   $timeStr  = $hrs > 0 ? $hrs.'h '.$mins.'m' : $mins.'m';
+  $handover = (bool) request('handover', false);
 @endphp
 <div class="ty-wrap">
-  <div class="ty-badge">Net concluded</div>
+  <div class="ty-badge">{{ $handover ? 'Handover complete' : 'Net concluded' }}</div>
 
-  <span class="ty-icon">📻</span>
+  <span class="ty-icon">{{ \$handover ? '🤝' : '📻' }}</span>
 
   <h1 class="ty-heading">Thanks, {{ $name }}!</h1>
+  @if($handover)
+  <p class="ty-sub">Handover accepted — you're clear of the net.<br>The next controller has taken over. 73!</p>
+  @else
   <p class="ty-sub">You've just wrapped up a net control shift.<br>Your service keeps RAYNET on air.</p>
+  @endif
 
+  @if(!$handover || $duration > 0)
   <div class="ty-duration">
     <div class="ty-duration-num">{{ $timeStr }}</div>
     <div class="ty-duration-label">Time on air</div>
   </div>
+  @endif
 
   <div class="ty-card">
     @if($cs)

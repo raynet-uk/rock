@@ -177,17 +177,31 @@ class NetControllerPortalController extends Controller
 
         $nowTime = now('Europe/London')->format('H:i');
 
-        // Update the slot end time to now
-        $slots = json_decode(\App\Models\Setting::get('net_controller_slots', '[]'), true) ?? [];
+        // Update outgoing slot end; capture original end to advance incoming slot start
+        $slots      = json_decode(\App\Models\Setting::get('net_controller_slots', '[]'), true) ?? [];
+        $originalTo = null;
         foreach ($slots as &$s) {
             if (($s['from'] ?? '') === $payload['slot_from']) {
-                $s['to'] = $nowTime;
-                break;
+                $originalTo = $s['to'];
+                $s['to']    = $nowTime;
+            }
+        }
+        // Advance the incoming controller's slot start to now
+        foreach ($slots as &$s) {
+            if ($originalTo !== null && ($s['from'] ?? '') === $originalTo) {
+                $s['from'] = $nowTime;
             }
         }
         unset($s);
         \App\Models\Setting::set('net_controller_slots', json_encode(array_values($slots)));
         \App\Models\Setting::set('net_end_time', $nowTime);
+
+        // Block outgoing controller from re-entering the portal (persists 30 min)
+        \Illuminate\Support\Facades\Cache::put('handover_done_' . $payload['requester_id'], [
+            'cs'   => $payload['requester_cs'],
+            'from' => $payload['slot_from'],
+            'to'   => $nowTime,
+        ], now()->addMinutes(30));
 
         // Signal requester's page to redirect
         \Illuminate\Support\Facades\Cache::put('handover_accepted_' . $payload['requester_id'], true, now()->addMinutes(10));
