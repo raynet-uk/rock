@@ -72,6 +72,57 @@ class RunNetScheduler extends Command {
             $this->info('Net deactivated by scheduler.');
         }
 
+        // ── 15-minute standby alert for upcoming controllers ─────────────────
+        if (Setting::get('net_active', '0') === '1') {
+            $slots    = json_decode(Setting::get('net_controller_slots', '[]'), true) ?? [];
+            $netCs    = Setting::get('net_callsign', '');
+            $freq     = Setting::get('net_frequency', '');
+            $group    = \App\Helpers\RaynetSetting::groupName();
+            $portal   = config('app.url') . '/net-control';
+
+            foreach ($slots as $i => $slot) {
+                $cs      = strtoupper($slot['callsign'] ?? '');
+                $fromStr = $slot['from'] ?? '';
+                if (!$cs || !$fromStr) continue;
+
+                $fromDt = $now->copy()->setTimeFromTimeString($fromStr . ':00');
+                // Handle midnight crossover
+                if ($fromDt->lt($now->copy()->subHours(12))) $fromDt->addDay();
+
+                $minsUntil = $now->diffInMinutes($fromDt, false);
+
+                // Fire between 14:30 and 15:30 before the slot (catches every cron run)
+                if ($minsUntil < 15.5 && $minsUntil >= 14.5) {
+                    $cacheKey = 'standby_alert_sent_' . $cs . '_' . $fromStr;
+                    if (\Illuminate\Support\Facades\Cache::has($cacheKey)) continue;
+
+                    $user = \App\Models\User::whereRaw('UPPER(callsign) = ?', [$cs])->first();
+                    if (!$user || !$user->email) continue;
+
+                    // Find the previous slot's callsign
+                    $prevCs = $i > 0 ? strtoupper($slots[$i - 1]['callsign'] ?? '') : null;
+
+                    \Illuminate\Support\Facades\Mail::to($user->email)->send(
+                        new \App\Mail\NetControllerStandbyAlert(
+                            controllerName:          $user->name ?? $cs,
+                            controllerCallsign:      $cs,
+                            netCallsign:             $netCs,
+                            frequency:               $freq,
+                            slotFrom:                $fromStr,
+                            slotTo:                  $slot['to'] ?? '',
+                            groupName:               $group,
+                            portalUrl:               $portal,
+                            prevControllerCallsign:  $prevCs,
+                        )
+                    );
+
+                    // Mark as sent for 2 hours so it doesn't fire again
+                    \Illuminate\Support\Facades\Cache::put($cacheKey, true, now()->addHours(2));
+                    $this->info("Standby alert sent to {$cs} for slot {$fromStr}");
+                }
+            }
+        }
+
         return Command::SUCCESS;
     }
 }
