@@ -521,6 +521,8 @@ function pollNetActive() {
                     slotTo    = parseTime(slot.to);
                     var sub = document.getElementById('countdownSub');
                     if (sub) sub.textContent = 'Your slot: ' + SLOT_FROM + ' – ' + slot.to;
+                    var newDiff = Math.max(0, Math.floor((slotTo - new Date()) / 1000));
+                    scrambleCountdown(newDiff, 1200);
                 }
                 if (slot && slot.from && slot.from !== SLOT_FROM) {
                     SLOT_FROM = slot.from;
@@ -552,6 +554,39 @@ function tick() {
         var h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;
         return (h?String(h).padStart(2,'0')+':':'')+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
     }
+
+        function scrambleCountdown(finalSec, duration) {
+            var ctT = document.getElementById('countdownTime');
+            var ctL = document.getElementById('countdownLabel');
+            if (!ctT) return;
+            var chars = '0123456789';
+            var elapsed = 0;
+            var interval = 50;
+            var totalSteps = Math.floor((duration || 1200) / interval);
+            var origLabel = ctL ? ctL.textContent : '';
+            if (ctL) { ctL.textContent = 'Recalculating…'; ctL.style.color = '#fbbf24'; }
+            var step = 0;
+            var timer = setInterval(function() {
+                step++;
+                var progress = step / totalSteps;
+                var target = fmt(finalSec);
+                var scrambled = '';
+                for (var ci = 0; ci < target.length; ci++) {
+                    if (target[ci] === ':') { scrambled += ':'; continue; }
+                    if (progress > (ci / target.length) + 0.3) {
+                        scrambled += target[ci];
+                    } else {
+                        scrambled += chars[Math.floor(Math.random() * chars.length)];
+                    }
+                }
+                ctT.textContent = scrambled;
+                if (step >= totalSteps) {
+                    clearInterval(timer);
+                    ctT.textContent = target;
+                    if (ctL) { ctL.textContent = origLabel; ctL.style.color = ''; }
+                }
+            }, interval);
+        }
 
     if (true) {  // server already validated slot — always show live state
         var diff=Math.max(0,Math.floor((slotTo-now)/1000));
