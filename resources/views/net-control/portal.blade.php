@@ -525,7 +525,7 @@ function tick() {
     }
 
     if (true) {  // server already validated slot — always show live state
-        var diff=Math.floor((slotTo-now)/1000);
+        var diff=Math.max(0,Math.floor((slotTo-now)/1000));
         ctL.textContent='Time remaining in your slot'; ctT.textContent=fmt(diff);
         if(pill){pill.className='status-pill pill-live';pill.textContent='🔴 ON AIR';}
         box.style.background='linear-gradient(135deg,#C8102E,#8b0000)';
