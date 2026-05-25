@@ -1123,6 +1123,14 @@ Route::get('/net-control/thankyou', function() {
     return view('net-control.thankyou');
 })->middleware('web')->name('net-control.thankyou');
 
+// Handover poll — outside NetControllerAccess so outgoing controller can still reach it
+Route::get('/net-control/handover-poll', function(\Illuminate\Http\Request $request) {
+    $user = $request->user();
+    if (!$user) return response()->json(['handover_accepted' => false]);
+    $accepted = \Illuminate\Support\Facades\Cache::get('handover_accepted_' . $user->id, false);
+    return response()->json(['handover_accepted' => $accepted]);
+})->middleware(['web', 'auth'])->name('net-control.handover-poll');
+
 Route::middleware(['web','auth','net.controller'])->prefix('net-control')->name('net-control.')->group(function() {
     Route::get('/',             [\App\Http\Controllers\NetControllerPortalController::class, 'index'])       ->name('portal');
     Route::get('/stations',     [\App\Http\Controllers\NetControllerPortalController::class, 'stationLog'])  ->name('stations');

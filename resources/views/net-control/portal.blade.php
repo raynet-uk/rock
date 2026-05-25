@@ -1051,7 +1051,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
     function pollHandoverAccepted() {
         if (!_handoverRequested) return;
-        fetch('/net-control/status', {cache:'no-store'})
+        fetch('/net-control/handover-poll', {cache:'no-store'})
         .then(function(r){ return r.json(); })
         .then(function(d){
             if (d.handover_accepted) {
