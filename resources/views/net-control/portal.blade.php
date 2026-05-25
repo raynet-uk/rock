@@ -165,10 +165,6 @@
           <span id="slotTimeBanner" style="font-family:monospace;font-weight:900;color:#fff;font-size:.88rem;">{{ $slot['from'] }} – {{ $slot['to'] }}</span>
         </div>
 
-      {{-- Toolbar --}}
-      <div style="display:flex;align-items:center;justify-content:flex-end;margin-top:.85rem;padding-top:.75rem;border-top:1px solid rgba(255,255,255,.08);">
-        <button onclick="ncOpenHandoverDialog()" style="display:inline-flex;align-items:center;gap:.4rem;background:rgba(200,16,46,.2);border:1px solid rgba(200,16,46,.4);color:#fca5a5;padding:.35rem .85rem;border-radius:999px;font-size:.75rem;font-weight:800;cursor:pointer;transition:all .2s;" onmouseover="this.style.background='rgba(200,16,46,.35)'" onmouseout="this.style.background='rgba(200,16,46,.2)'">🔄 Request Early Handover</button>
-      </div>
         @if($prevSlot)
         <div style="display:flex;align-items:center;gap:.4rem;font-size:.72rem;color:rgba(255,255,255,.4);">
           <span>← Takeover from</span>
@@ -182,6 +178,7 @@
           <span>→</span>
         </div>
         @endif
+        <button onclick="ncOpenHandoverDialog()" style="margin-left:auto;display:inline-flex;align-items:center;gap:.35rem;background:rgba(200,16,46,.18);border:1px solid rgba(200,16,46,.35);color:#fca5a5;padding:.3rem .8rem;border-radius:999px;font-size:.72rem;font-weight:800;cursor:pointer;transition:all .2s;white-space:nowrap;" onmouseover="this.style.background='rgba(200,16,46,.32)'" onmouseout="this.style.background='rgba(200,16,46,.18)'">🔄 Request Handover</button>
       </div>
     </div>
   </div>
