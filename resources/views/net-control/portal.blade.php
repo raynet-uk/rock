@@ -92,10 +92,9 @@
 .nc-chat-emoji{cursor:pointer;font-size:.9rem;padding:.1rem;border-radius:4px;transition:transform .15s;line-height:1;}
 .nc-chat-emoji:hover{transform:scale(1.3);}
 .nc-handover-banner{
-  display:none;position:fixed;top:52px;left:0;right:0;z-index:988;
-  background:linear-gradient(135deg,#92400e,#d97706);
+  display:none;position:fixed;top:52px;left:0;right:0;z-index:992;
+  background:linear-gradient(135deg,#92400e,#b45309);
   color:#fff;padding:.5rem 1.1rem;font-weight:800;font-size:.78rem;
-  animation:nc-handover-pulse 1.2s ease-in-out infinite;
   align-items:center;justify-content:space-between;gap:.75rem;
   box-shadow:0 3px 12px rgba(0,0,0,.25);
   border-bottom:1px solid rgba(255,255,255,.15);
@@ -178,6 +177,7 @@
   transition:transform .2s ease;
 }
 .nc-sticky-banner.visible{display:flex;transform:translateY(0);}
+.nc-sticky-banner.handover-pushed{top:94px;}
 
 .nc-offline-bar{display:none;position:fixed;bottom:1.25rem;left:50%;transform:translateX(-50%);
   z-index:2000;padding:.6rem 1.25rem;border-radius:999px;font-size:.82rem;font-weight:800;
@@ -1634,6 +1634,8 @@ document.addEventListener('DOMContentLoaded', function(){
                 ncCloseHandoverDialog();
                 _handoverRequested = true;
                 document.getElementById('ncHandoverBanner').classList.add('active');
+                var sb = document.getElementById('ncStickyBanner');
+                if (sb) sb.classList.add('handover-pushed');
                 pollHandoverAccepted();
             } else {
                 btn.disabled = false; btn.textContent = 'Yes, Request Handover';
