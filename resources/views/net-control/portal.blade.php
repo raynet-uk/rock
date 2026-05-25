@@ -1256,10 +1256,11 @@ document.addEventListener('DOMContentLoaded', function(){
 
     function ncChatShouldShow() {
         var nowMs = Date.now();
-        // Outgoing controller: show when <= 15 min left in slot
+        // Outgoing controller: show when <= 15 min left in slot and slot hasn't ended
         var outgoing = SLOT_TO_MS > 0 && NEXT_SLOT_CS && (SLOT_TO_MS - nowMs) <= CHAT_WINDOW_MS && (SLOT_TO_MS - nowMs) > 0;
-        // Incoming controller: show when in pre-slot window
-        var incoming = IS_PRE_SLOT && PREV_SLOT_CS;
+        // Incoming controller: show when in pre-slot window BUT slot hasn't started yet
+        var stillPreSlot = SLOT_FROM_MS > 0 && nowMs < SLOT_FROM_MS;
+        var incoming = IS_PRE_SLOT && stillPreSlot && PREV_SLOT_CS;
         return (outgoing || incoming) && CHAT_ROOM && CHAT_ROOM !== '_';
     }
 
