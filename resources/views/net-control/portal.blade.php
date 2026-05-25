@@ -505,6 +505,31 @@ function pollNetActive() {
             window.location.href = '/net-control/thankyou?' + params.toString();
         } else {
             window._ncNetEnded = false;
+            // Live-update slot times if admin changed them
+            if (d.slots && d.slots.length) {
+                var myCs = (typeof NC_USER_CS !== 'undefined' ? NC_USER_CS : '').toUpperCase();
+                var matched = null;
+                for (var si = 0; si < d.slots.length; si++) {
+                    if (d.slots[si].callsign && d.slots[si].callsign.toUpperCase() === myCs) {
+                        matched = d.slots[si]; break;
+                    }
+                }
+                // Fall back to first slot if no callsign match
+                var slot = matched || d.slots[0];
+                if (slot && slot.to && slot.to !== SLOT_TO) {
+                    SLOT_TO   = slot.to;
+                    slotTo    = parseTime(slot.to);
+                    var sub = document.getElementById('countdownSub');
+                    if (sub) sub.textContent = 'Your slot: ' + SLOT_FROM + ' – ' + slot.to;
+                }
+                if (slot && slot.from && slot.from !== SLOT_FROM) {
+                    SLOT_FROM = slot.from;
+                    slotFrom  = parseTime(slot.from);
+                    windowStart = new Date(slotFrom.getTime() - WINDOW_MINS * 60000);
+                    var sub = document.getElementById('countdownSub');
+                    if (sub) sub.textContent = 'Your slot: ' + slot.from + ' – ' + SLOT_TO;
+                }
+            }
         }
     }).catch(function(){});
 }
