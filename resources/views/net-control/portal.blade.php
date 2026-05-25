@@ -1559,12 +1559,30 @@ document.addEventListener('DOMContentLoaded', function(){
             }
         }
 
-        // Handover moment
+        // Handover moment — hide chat immediately and redirect outgoing controller
         if (!_chatSentHO && SLOT_TO_MS > 0 && !IS_PRE_SLOT && nowMs >= SLOT_TO_MS) {
             _chatSentHO = true;
-            ncChatPostSystem('🔄 Handover time. This chat will close in 1 minute.');
-            ncChatDisableInput();
-            _chatHideAt = nowMs + 60000;
+            ncChatPostSystem('🔄 Handover time — redirecting now.');
+            // Hide chat immediately
+            var _cw = document.getElementById('ncChatWidget');
+            if (_cw) _cw.style.display = 'none';
+            _chatVisible = false;
+            if (_chatInterval) { clearInterval(_chatInterval); _chatInterval = null; }
+            if (_typingPollInt) { clearInterval(_typingPollInt); _typingPollInt = null; }
+            // Redirect outgoing controller to thankyou page
+            setTimeout(function() {
+                var _p = new URLSearchParams({
+                    handover: '0',
+                    cs:   NC_USER_CS,
+                    name: NC_USER_NAME,
+                    net:  NC_NET_NAME,
+                    freq: NC_FREQUENCY,
+                    from: NC_SLOT_FROM,
+                    to:   NC_SLOT_TO,
+                    duration: Math.round((Date.now() - NC_START_TIME) / 60000),
+                });
+                window.location.href = '/net-control/thankyou?' + _p.toString();
+            }, 1500);
         }
     }
 
