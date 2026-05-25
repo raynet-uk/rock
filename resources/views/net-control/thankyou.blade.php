@@ -79,7 +79,7 @@
 <div class="ty-wrap">
   <div class="ty-badge">{{ $handover ? 'Handover complete' : 'Net concluded' }}</div>
 
-  <span class="ty-icon">{{ \$handover ? '🤝' : '📻' }}</span>
+  <span class="ty-icon">{{ $handover ? '🤝' : '📻' }}</span>
 
   <h1 class="ty-heading">Thanks, {{ $name }}!</h1>
   @if($handover)

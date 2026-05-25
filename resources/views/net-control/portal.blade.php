@@ -1058,7 +1058,17 @@ document.addEventListener('DOMContentLoaded', function(){
         .then(function(r){ return r.json(); })
         .then(function(d){
             if (d.handover_accepted) {
-                window.location.href = '/net-control/thankyou?handover=1';
+                var _p = new URLSearchParams({
+                    handover: '1',
+                    cs:   '{{ strtoupper($user->callsign ?? "") }}',
+                    name: '{{ addslashes($user->name ?? $user->callsign ?? "") }}',
+                    net:  '{{ addslashes($slot["_net"]["callsign"] ?? "") }}',
+                    freq: '{{ $slot["_net"]["frequency"] ?? "" }}',
+                    from: '{{ $slot["from"] ?? "" }}',
+                    to:   SLOT_TO || '{{ $slot["to"] ?? "" }}',
+                    duration: '0',
+                });
+                window.location.href = '/net-control/thankyou?' + _p.toString();
             } else {
                 setTimeout(pollHandoverAccepted, 5000);
             }
