@@ -744,6 +744,16 @@ class EventAdminController extends Controller
         $previousSlots = json_decode(\App\Models\Setting::get('net_controller_slots', '[]'), true) ?? [];
         \App\Models\Setting::set('net_controller_slots', json_encode($slots));
 
+        // Clear any lingering handover state for all controllers when slots are manually changed
+        $allCallsigns = array_merge(
+            array_column($previousSlots, 'callsign'),
+            array_column($slots, 'callsign')
+        );
+        foreach (\App\Models\User::whereIn('callsign', $allCallsigns)->get() as $u) {
+            \Illuminate\Support\Facades\Cache::forget('handover_done_' . $u->id);
+            \Illuminate\Support\Facades\Cache::forget('handover_accepted_' . $u->id);
+        }
+
         $this->notifyControllerSlots($slots, $previousSlots, [
             'callsign'     => $request->input('net_callsign',''),
             'name'         => $request->input('net_description',''),
