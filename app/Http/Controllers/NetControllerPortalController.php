@@ -14,8 +14,16 @@ class NetControllerPortalController extends Controller
         $slot = $request->get('_controller_slot');
         $cs   = strtoupper($user->callsign ?? '');
 
-        // All slots for this callsign to find prev/next
-        $allSlots = NetControllerAccess::allSlotsWithMeta($cs);
+        // All slots (all callsigns) to find prev/next neighbours
+        $netInfo = [
+            'callsign'  => \App\Models\Setting::get('net_callsign', ''),
+            'frequency' => \App\Models\Setting::get('net_frequency', ''),
+            'name'      => \App\Models\Setting::get('net_description', ''),
+        ];
+        $allSlots = array_map(
+            fn($s) => array_merge($s, ['_net' => $netInfo, '_source' => 'live']),
+            json_decode(\App\Models\Setting::get('net_controller_slots', '[]'), true) ?? []
+        );
         usort($allSlots, fn($a, $b) => strcmp($a['from'] ?? '', $b['from'] ?? ''));
 
         $prevSlot = null;

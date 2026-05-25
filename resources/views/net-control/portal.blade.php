@@ -281,31 +281,53 @@
 
   {{-- Handover info --}}
   <div class="nc-card nc-handover-card">
-    <div class="nc-card-title">🔄 Handover</div>
-    <div class="handover-arrow">
-      <div style="flex:1;text-align:center;">
-        @if($prevSlot)
-          <div style="font-size:.7rem;color:var(--muted);font-weight:700;">BEFORE YOU</div>
-          <div class="slot-cs">{{ $prevSlot['callsign'] }}</div>
-          <div class="slot-time">{{ $prevSlot['from'] }} – {{ $prevSlot['to'] }}</div>
-        @else
-          <div style="font-size:.82rem;color:var(--muted);">Net opens</div>
-        @endif
+    <div class="nc-card-title">🔄 Controller Schedule</div>
+    <div style="display:flex;flex-direction:column;gap:.4rem;">
+
+      @if($prevSlot)
+      <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem .65rem;border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0;">
+        <div style="width:3px;align-self:stretch;border-radius:999px;background:#cbd5e1;flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-bottom:.1rem;">Before you</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap;">
+            <span style="font-family:monospace;font-weight:900;font-size:.95rem;color:#475569;">{{ $prevSlot['callsign'] }}</span>
+            <span style="font-family:monospace;font-size:.78rem;color:#94a3b8;background:#f1f5f9;padding:.1rem .45rem;border-radius:4px;">{{ $prevSlot['from'] }} – {{ $prevSlot['to'] }}</span>
+          </div>
+        </div>
       </div>
-      <div style="font-size:1.5rem;">→</div>
-      <div style="flex:1;text-align:center;background:#f0f4ff;border-radius:8px;padding:.5rem;">
-        <div style="font-size:.7rem;color:#4338ca;font-weight:800;">YOUR SLOT</div>
-        <div class="slot-cs" style="color:#003366;">{{ $user->callsign }}</div>
-        <div class="slot-time" id="slotTimeHandover">{{ $slot['from'] }} – {{ $slot['to'] }}</div>
+      @else
+      <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem .65rem;border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0;">
+        <div style="width:3px;align-self:stretch;border-radius:999px;background:#cbd5e1;flex-shrink:0;"></div>
+        <div style="font-size:.82rem;color:#94a3b8;font-style:italic;">Net opens</div>
       </div>
-      <div style="font-size:1.5rem;">→</div>
-      <div style="flex:1;text-align:center;">
-        @if($nextSlot)
-          <div style="font-size:.7rem;color:var(--muted);font-weight:700;">AFTER YOU</div>
-          <div class="slot-cs">{{ $nextSlot['callsign'] }}</div>
-          <div class="slot-time">{{ $nextSlot['from'] }} – {{ $nextSlot['to'] }}</div>
-        @else
-          <div style="font-size:.82rem;color:var(--muted);">Net closes</div>
+      @endif
+
+      <div style="display:flex;align-items:center;gap:.75rem;padding:.6rem .65rem;border-radius:8px;background:linear-gradient(135deg,#eef2ff,#e0e7ff);border:2px solid #a5b4fc;">
+        <div style="width:3px;align-self:stretch;border-radius:999px;background:#6366f1;flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#6366f1;margin-bottom:.1rem;">Your slot</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap;">
+            <span style="font-family:monospace;font-weight:900;font-size:.95rem;color:#003366;">{{ $user->callsign }}</span>
+            <span id="slotTimeHandover" style="font-family:monospace;font-size:.78rem;color:#4338ca;background:#c7d2fe;padding:.1rem .45rem;border-radius:4px;">{{ $slot['from'] }} – {{ $slot['to'] }}</span>
+          </div>
+        </div>
+      </div>
+
+      @if($nextSlot)
+      <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem .65rem;border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0;">
+        <div style="width:3px;align-self:stretch;border-radius:999px;background:#cbd5e1;flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-bottom:.1rem;">After you</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap;">
+            <span style="font-family:monospace;font-weight:900;font-size:.95rem;color:#475569;">{{ $nextSlot['callsign'] }}</span>
+            <span style="font-family:monospace;font-size:.78rem;color:#94a3b8;background:#f1f5f9;padding:.1rem .45rem;border-radius:4px;">{{ $nextSlot['from'] }} – {{ $nextSlot['to'] }}</span>
+          </div>
+        </div>
+      </div>
+      @else
+      <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem .65rem;border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0;">
+        <div style="width:3px;align-self:stretch;border-radius:999px;background:#cbd5e1;flex-shrink:0;"></div>
+        <div style="font-size:.82rem;color:#94a3b8;font-style:italic;">Net closes</div>
         @endif
       </div>
     </div>
