@@ -576,12 +576,7 @@ function pollNetActive() {
                         matched = d.slots[si]; break;
                     }
                 }
-                // If current user no longer has a slot, they shouldn't be here — reload
-                // so the middleware can decide where to send them
-                if (!matched) {
-                    window.location.reload();
-                    return;
-                }
+                // If current user no longer has a slot in list, server will confirm
                 // Fall back to first slot if no callsign match
                 var slot = matched || d.slots[0];
                 if (slot && slot.to && slot.to !== SLOT_TO) {
@@ -1013,6 +1008,24 @@ document.addEventListener('DOMContentLoaded', function(){
     setInterval(pollLoggingStatus, 10000);
     pollNetActive();
     setInterval(pollNetActive, 15000);
+
+    // Every 15s verify the server still considers this user's slot active
+    function pollAccessCheck() {
+        if (_handoverRequested) return; // already handing over, don't interfere
+        fetch('/net-control/access-check', {cache:'no-store'})
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            if (!d.active) {
+                // No longer authorised — reload so middleware redirects correctly
+                window.location.reload();
+            }
+        })
+        .catch(function(){});
+    }
+    setTimeout(function(){
+        pollAccessCheck();
+        setInterval(pollAccessCheck, 15000);
+    }, 5000); // slight delay so it doesn't fire on initial load
 
     tick();
     loadLog();

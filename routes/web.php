@@ -1134,6 +1134,14 @@ Route::get('/net-control/handover-poll', function(\Illuminate\Http\Request $requ
     ]);
 })->middleware(['web', 'auth'])->name('net-control.handover-poll');
 
+// Access check — lets the portal JS verify the user still has an active slot right now
+Route::get('/net-control/access-check', function(\Illuminate\Http\Request $request) {
+    $user = $request->user();
+    if (!$user) return response()->json(['active' => false]);
+    $slot = \App\Http\Middleware\NetControllerAccess::findActiveSlot($user);
+    return response()->json(['active' => (bool) $slot]);
+})->middleware(['web', 'auth'])->name('net-control.access-check');
+
 // Incoming controller syncs their countdown to same redirect_at
 Route::get('/net-control/handover-redirect-at', function() {
     $redirectAt = \Illuminate\Support\Facades\Cache::get('handover_redirect_at');
