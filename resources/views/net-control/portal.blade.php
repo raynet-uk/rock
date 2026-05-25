@@ -1353,19 +1353,6 @@ document.addEventListener('DOMContentLoaded', function(){
             method: 'POST',
             headers: {'Content-Type':'application/json','X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content},
             body: JSON.stringify({room: CHAT_ROOM, message: text})
-        }).then(function() {
-            // Poll immediately after send to advance _chatLastTs past the server timestamp
-            // so the regular poll doesn't re-render the message we already rendered locally
-            setTimeout(function() {
-                fetch('/net-control/chat/messages?room=' + encodeURIComponent(CHAT_ROOM) + '&since=' + _chatLastTs, {cache:'no-store'})
-                .then(function(r){ return r.json(); })
-                .then(function(d){
-                    if (d.messages && d.messages.length) {
-                        // Advance ts without rendering — message already shown
-                        _chatLastTs = d.messages[d.messages.length - 1].ts;
-                    }
-                }).catch(function(){});
-            }, 300);
         }).catch(function(){});
     };
 
@@ -1485,8 +1472,13 @@ document.addEventListener('DOMContentLoaded', function(){
         .then(function(r){ return r.json(); })
         .then(function(d){
             if (d.messages && d.messages.length) {
-                ncChatRender(d.messages);
+                // Always advance ts to avoid re-fetching
                 _chatLastTs = d.messages[d.messages.length - 1].ts;
+                // Filter out own messages — already rendered locally on send
+                var toRender = d.messages.filter(function(m) {
+                    return m.cs !== NC_USER_CS || m.type === 'system' || m.cs === '__system__';
+                });
+                if (toRender.length) ncChatRender(toRender);
             }
         }).catch(function(){});
     }
