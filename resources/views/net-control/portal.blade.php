@@ -1187,7 +1187,7 @@ document.addEventListener('DOMContentLoaded', function(){
         return (outgoing || incoming) && CHAT_ROOM && CHAT_ROOM !== '_';
     }
 
-    function ncChatToggle() {
+    window.ncChatToggle = function() {
         _chatOpen = !_chatOpen;
         var body  = document.querySelector('.nc-chat-body');
         var label = document.getElementById('ncChatToggleLabel');
@@ -1202,7 +1202,7 @@ document.addEventListener('DOMContentLoaded', function(){
         }
     }
 
-    function ncChatSend() {
+    window.ncChatSend = function() {
         var input = document.getElementById('ncChatInput');
         var text  = input ? input.value.trim() : '';
         if (!text) return;
@@ -1212,7 +1212,7 @@ document.addEventListener('DOMContentLoaded', function(){
             headers: {'Content-Type':'application/json','X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content},
             body: JSON.stringify({room: CHAT_ROOM, message: text})
         }).catch(function(){});
-    }
+    };
 
     function ncChatRender(msgs) {
         var container = document.getElementById('ncChatMessages');
