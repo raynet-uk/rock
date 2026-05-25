@@ -19,7 +19,11 @@
 .slot-cs{font-family:monospace;font-weight:900;color:var(--navy);font-size:1rem;min-width:80px;}
 .slot-time{font-family:monospace;font-size:.85rem;color:var(--muted);}
 .slot-you{font-size:.7rem;font-weight:800;padding:.15rem .45rem;border-radius:999px;background:#f0f4ff;color:#4338ca;}
-.countdown-box{text-align:center;padding:1.25rem;background:linear-gradient(135deg,#003366,#004080);border-radius:12px;color:#fff;margin-bottom:1.25rem;}
+.countdown-box{text-align:center;padding:1.25rem;background:linear-gradient(135deg,#003366,#004080);border-radius:12px;color:#fff;margin-bottom:1.25rem;transition:background .8s ease,box-shadow .3s ease;}
+@keyframes nc-pulse-glow{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.0);}50%{box-shadow:0 0 18px 8px rgba(220,38,38,.55);}}
+.countdown-box.nc-warning{background:linear-gradient(135deg,#92400e,#b45309)!important;}
+.countdown-box.nc-danger{background:linear-gradient(135deg,#7f1d1d,#991b1b)!important;}
+.countdown-box.nc-pulse{animation:nc-pulse-glow 1s ease-in-out infinite;}
 .countdown-label{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.55);}
 .countdown-time{font-size:2.5rem;font-weight:900;font-family:monospace;letter-spacing:.05em;margin:.25rem 0;}
 .countdown-sub{font-size:.78rem;color:rgba(255,255,255,.55);}
@@ -528,6 +532,12 @@ function tick() {
         var diff=Math.max(0,Math.floor((slotTo-now)/1000));
         ctL.textContent='Time remaining in your slot'; ctT.textContent=fmt(diff);
         if(pill){pill.className='status-pill pill-live';pill.textContent='🔴 ON AIR';}
+        var box=document.getElementById('countdownBox');
+        if(box){
+            box.classList.remove('nc-warning','nc-danger','nc-pulse');
+            if(diff<=60){box.classList.add('nc-danger','nc-pulse');}
+            else if(diff<=300){box.classList.add('nc-warning');}
+        }
         box.style.background='linear-gradient(135deg,#C8102E,#8b0000)';
         if(isOffline()){
             CAN_LOG=true;
