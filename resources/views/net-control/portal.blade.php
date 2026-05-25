@@ -538,7 +538,6 @@ function tick() {
             if(diff<=60){box.classList.add('nc-danger','nc-pulse');}
             else if(diff<=300){box.classList.add('nc-warning');}
         }
-        box.style.background='linear-gradient(135deg,#C8102E,#8b0000)';
         if(isOffline()){
             CAN_LOG=true;
             bnr.style.cssText='border-radius:8px;padding:.65rem .85rem;margin-bottom:.85rem;font-size:.8rem;font-weight:700;background:#1e293b;color:#fbbf24;';
