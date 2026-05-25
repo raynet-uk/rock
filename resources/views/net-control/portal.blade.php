@@ -146,7 +146,7 @@
       <div style="display:flex;align-items:center;gap:.5rem;margin-top:1.1rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,.08);flex-wrap:wrap;">
         <div style="display:flex;align-items:center;gap:.4rem;background:rgba(255,255,255,.06);border-radius:8px;padding:.3rem .75rem;border:1px solid rgba(255,255,255,.1);">
           <span style="font-size:.65rem;color:rgba(255,255,255,.4);font-weight:700;text-transform:uppercase;letter-spacing:.08em;">Your slot</span>
-          <span style="font-family:monospace;font-weight:900;color:#fff;font-size:.88rem;">{{ $slot['from'] }} – {{ $slot['to'] }}</span>
+          <span id="slotTimeBanner" style="font-family:monospace;font-weight:900;color:#fff;font-size:.88rem;">{{ $slot['from'] }} – {{ $slot['to'] }}</span>
         </div>
         @if($prevSlot)
         <div style="display:flex;align-items:center;gap:.4rem;font-size:.72rem;color:rgba(255,255,255,.4);">
@@ -213,7 +213,7 @@
     <div style="display:flex;align-items:center;gap:1.5rem;">
       <div style="text-align:center;">
         <div style="font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.35);">Your slot</div>
-        <div style="font-family:monospace;font-weight:800;font-size:.85rem;">{{ $slot['from'] }} – {{ $slot['to'] }}</div>
+        <div id="slotTimeInfo" style="font-family:monospace;font-weight:800;font-size:.85rem;">{{ $slot['from'] }} – {{ $slot['to'] }}</div>
       </div>
       @if($prevSlot)
       <div style="font-size:.75rem;color:rgba(255,255,255,.45);">← <span style="font-family:monospace;font-weight:800;color:rgba(255,255,255,.7);">{{ $prevSlot['callsign'] }}</span></div>
@@ -256,7 +256,7 @@
       <div style="flex:1;text-align:center;background:#f0f4ff;border-radius:8px;padding:.5rem;">
         <div style="font-size:.7rem;color:#4338ca;font-weight:800;">YOUR SLOT</div>
         <div class="slot-cs" style="color:#003366;">{{ $user->callsign }}</div>
-        <div class="slot-time">{{ $slot['from'] }} – {{ $slot['to'] }}</div>
+        <div class="slot-time" id="slotTimeHandover">{{ $slot['from'] }} – {{ $slot['to'] }}</div>
       </div>
       <div style="font-size:1.5rem;">→</div>
       <div style="flex:1;text-align:center;">
@@ -517,12 +517,20 @@ function pollNetActive() {
                 // Fall back to first slot if no callsign match
                 var slot = matched || d.slots[0];
                 if (slot && slot.to && slot.to !== SLOT_TO) {
-                    SLOT_TO   = slot.to;
-                    slotTo    = parseTime(slot.to);
+                    SLOT_TO    = slot.to;
+                    NC_SLOT_TO = slot.to;
+                    slotTo     = parseTime(slot.to);
+                    var slotStr = SLOT_FROM + ' – ' + slot.to;
                     var sub = document.getElementById('countdownSub');
-                    if (sub) sub.textContent = 'Your slot: ' + SLOT_FROM + ' – ' + slot.to;
+                    if (sub) sub.textContent = 'Your slot: ' + slotStr;
+                    var banner = document.getElementById('slotTimeBanner');
+                    if (banner) banner.textContent = slotStr;
+                    var info = document.getElementById('slotTimeInfo');
+                    if (info) info.textContent = slotStr;
+                    var handover = document.getElementById('slotTimeHandover');
+                    if (handover) handover.textContent = slotStr;
                     var newDiff = Math.max(0, Math.floor((slotTo - new Date()) / 1000));
-                    scrambleCountdown(newDiff, 1200);
+                    scrambleCountdown(newDiff);
                 }
                 if (slot && slot.from && slot.from !== SLOT_FROM) {
                     SLOT_FROM = slot.from;
