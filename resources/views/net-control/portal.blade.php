@@ -1100,7 +1100,7 @@ document.addEventListener('DOMContentLoaded', function(){
         }).catch(function(){});
     }
     sendHeartbeat();
-    setInterval(sendHeartbeat, 30000);
+    setInterval(sendHeartbeat, 15000);
 
     // ── Presence: show green dot if next controller is on the portal ─────────
     function pollPresence() {
@@ -1118,7 +1118,7 @@ document.addEventListener('DOMContentLoaded', function(){
         }).catch(function(){});
     }
     pollPresence();
-    setInterval(pollPresence, 20000);
+    setInterval(pollPresence, 5000);
 
     tick();
     loadLog();

@@ -1138,7 +1138,7 @@ Route::get('/net-control/handover-poll', function(\Illuminate\Http\Request $requ
 Route::post('/net-control/heartbeat', function(\Illuminate\Http\Request $request) {
     $user = $request->user();
     if (!$user) return response()->json(['ok' => false]);
-    \Illuminate\Support\Facades\Cache::put('nc_online_' . strtoupper($user->callsign ?? ''), true, now()->addSeconds(60));
+    \Illuminate\Support\Facades\Cache::put('nc_online_' . strtoupper($user->callsign ?? ''), true, now()->addSeconds(20));
     return response()->json(['ok' => true]);
 })->middleware(['web', 'auth'])->name('net-control.heartbeat');
 
