@@ -1134,6 +1134,41 @@ Route::get('/net-control/handover-poll', function(\Illuminate\Http\Request $requ
     ]);
 })->middleware(['web', 'auth'])->name('net-control.handover-poll');
 
+// ── Handover chat ────────────────────────────────────────────────────────
+Route::post('/net-control/chat/send', function(\Illuminate\Http\Request $request) {
+    $user = $request->user();
+    if (!$user) return response()->json(['ok' => false]);
+    $room = $request->input('room');
+    $text = trim($request->input('message', ''));
+    if (!$room || !$text || strlen($text) > 500) return response()->json(['ok' => false]);
+
+    $key  = 'nc_chat_' . preg_replace('/[^A-Z0-9_]/', '', strtoupper($room));
+    $msgs = \Illuminate\Support\Facades\Cache::get($key, []);
+    $msgs[] = [
+        'cs'   => strtoupper($user->callsign ?? '?'),
+        'name' => $user->name ?? $user->callsign,
+        'text' => $text,
+        'ts'   => now('Europe/London')->getTimestampMs(),
+        'time' => now('Europe/London')->format('H:i:s'),
+    ];
+    // Keep last 100 messages only
+    if (count($msgs) > 100) $msgs = array_slice($msgs, -100);
+    \Illuminate\Support\Facades\Cache::put($key, $msgs, now()->addHours(3));
+    return response()->json(['ok' => true]);
+})->middleware(['web', 'auth'])->name('net-control.chat.send');
+
+Route::get('/net-control/chat/messages', function(\Illuminate\Http\Request $request) {
+    $user = $request->user();
+    if (!$user) return response()->json(['messages' => []]);
+    $room  = $request->input('room');
+    if (!$room) return response()->json(['messages' => []]);
+    $since = (int) $request->input('since', 0);
+    $key   = 'nc_chat_' . preg_replace('/[^A-Z0-9_]/', '', strtoupper($room));
+    $msgs  = \Illuminate\Support\Facades\Cache::get($key, []);
+    $filtered = array_values(array_filter($msgs, fn($m) => ($m['ts'] ?? 0) > $since));
+    return response()->json(['messages' => $filtered]);
+})->middleware(['web', 'auth'])->name('net-control.chat.messages');
+
 // Heartbeat — portal pings this every 30s so other controllers can see presence
 Route::post('/net-control/heartbeat', function(\Illuminate\Http\Request $request) {
     $user = $request->user();

@@ -33,6 +33,27 @@
 .nc-dialog-btns .btn-confirm{background:linear-gradient(135deg,#C8102E,#8b0000);color:#fff;}
 .nc-dialog-btns .btn-cancel{background:#f1f5f9;color:#475569;}
 @keyframes nc-handover-pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+
+/* Handover chat widget */
+.nc-chat-widget{position:fixed;bottom:1.25rem;right:1.25rem;z-index:8888;display:none;flex-direction:column;width:310px;max-width:calc(100vw - 2rem);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.22);overflow:hidden;border:1px solid rgba(255,255,255,.12);}
+.nc-chat-widget.open .nc-chat-body{display:flex;}
+.nc-chat-header{background:linear-gradient(135deg,#003366,#004080);color:#fff;padding:.65rem 1rem;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
+.nc-chat-header-left{display:flex;align-items:center;gap:.5rem;font-weight:900;font-size:.82rem;}
+.nc-chat-badge{background:#C8102E;color:#fff;font-size:.62rem;font-weight:900;border-radius:999px;padding:.1rem .45rem;min-width:18px;text-align:center;display:none;}
+.nc-chat-toggle{font-size:.72rem;color:rgba(255,255,255,.6);font-weight:700;}
+.nc-chat-body{display:none;flex-direction:column;background:#fff;}
+.nc-chat-messages{height:220px;overflow-y:auto;padding:.75rem;display:flex;flex-direction:column;gap:.5rem;background:#f8fafc;}
+.nc-chat-msg{max-width:85%;padding:.45rem .7rem;border-radius:10px;font-size:.8rem;line-height:1.4;}
+.nc-chat-msg.mine{align-self:flex-end;background:#003366;color:#fff;border-bottom-right-radius:3px;}
+.nc-chat-msg.theirs{align-self:flex-start;background:#fff;color:#1e293b;border:1px solid #e2e8f0;border-bottom-left-radius:3px;}
+.nc-chat-msg .nc-chat-meta{font-size:.62rem;opacity:.6;margin-top:.2rem;}
+.nc-chat-msg.mine .nc-chat-meta{text-align:right;}
+.nc-chat-input-row{display:flex;gap:.5rem;padding:.65rem;border-top:1px solid #e2e8f0;background:#fff;}
+.nc-chat-input{flex:1;border:1px solid #dde2e8;border-radius:8px;padding:.4rem .65rem;font-size:.82rem;outline:none;}
+.nc-chat-input:focus{border-color:#003366;}
+.nc-chat-send{background:#003366;color:#fff;border:none;border-radius:8px;padding:.4rem .75rem;font-weight:800;font-size:.8rem;cursor:pointer;}
+.nc-chat-send:hover{background:#004080;}
+.nc-chat-empty{text-align:center;color:#94a3b8;font-size:.78rem;padding:1.5rem .5rem;}
 .nc-handover-banner{display:none;position:sticky;top:0;left:0;right:0;z-index:1000;background:#d97706;color:#fff;text-align:center;padding:.55rem 1rem;font-weight:900;font-size:.82rem;animation:nc-handover-pulse 1s ease-in-out infinite;align-items:center;justify-content:center;gap:1rem;}
 .nc-handover-banner.active{display:flex;}
 .countdown-box{text-align:center;padding:1.25rem;background:linear-gradient(135deg,#003366,#004080);border-radius:12px;color:#fff;margin-bottom:1.25rem;transition:background .8s ease,box-shadow .3s ease;}
@@ -251,6 +272,26 @@
   <div class="nc-handover-banner" id="ncHandoverBanner">
     <span id="ncHandoverBannerText">🔄 Early Handover Requested — Waiting for next controller to accept…</span>
     <button onclick="document.getElementById('ncHandoverBanner').classList.remove('active')" style="background:rgba(0,0,0,.2);border:none;color:#fff;border-radius:999px;padding:.2rem .65rem;font-size:.75rem;font-weight:800;cursor:pointer;margin-left:.5rem;" id="ncHandoverDismiss">Dismiss</button>
+  </div>
+
+  {{-- Handover chat widget --}}
+  <div class="nc-chat-widget" id="ncChatWidget">
+    <div class="nc-chat-header" onclick="ncChatToggle()">
+      <div class="nc-chat-header-left">
+        <span>🎙️ Handover Chat</span>
+        <span class="nc-chat-badge" id="ncChatBadge">0</span>
+      </div>
+      <span class="nc-chat-toggle" id="ncChatToggleLabel">▲ Open</span>
+    </div>
+    <div class="nc-chat-body">
+      <div class="nc-chat-messages" id="ncChatMessages">
+        <div class="nc-chat-empty" id="ncChatEmpty">No messages yet — say hello to the other controller!</div>
+      </div>
+      <div class="nc-chat-input-row">
+        <input type="text" class="nc-chat-input" id="ncChatInput" placeholder="Type a message…" maxlength="500" onkeydown="if(event.key==='Enter')ncChatSend()">
+        <button class="nc-chat-send" onclick="ncChatSend()">Send</button>
+      </div>
+    </div>
   </div>
 
   {{-- Access revoked dialog --}}
@@ -512,6 +553,15 @@ var SLOT_FROM_MS     = {{ $slot['from_dt'] ? $slot['from_dt']->getTimestampMs() 
 var SLOT_TO_MS       = {{ $slot['to_dt'] ? $slot['to_dt']->getTimestampMs() : 0 }};
 var WINDOW_START_MS  = {{ isset($slot['window_start']) ? $slot['window_start']->getTimestampMs() : 0 }};
 var IS_PRE_SLOT      = {{ (!$slot['can_log'] && now('Europe/London')->lt($slot['from_dt'] ?? now())) ? 'true' : 'false' }};
+var NEXT_SLOT_CS     = '{{ strtoupper($nextSlot['callsign'] ?? '') }}';
+var NEXT_SLOT_FROM   = '{{ $nextSlot['from'] ?? '' }}';
+var NEXT_SLOT_FROM_MS = {{ isset($nextSlot['from']) ? (\Carbon\Carbon::now('Europe/London')->setTimeFromTimeString($nextSlot['from'].':00')->getTimestampMs()) : 0 }};
+var PREV_SLOT_CS     = '{{ strtoupper($prevSlot['callsign'] ?? '') }}';
+// Chat room = two callsigns sorted alphabetically, joined with underscore
+var _chatCsA = NC_USER_CS < (IS_PRE_SLOT ? PREV_SLOT_CS : NEXT_SLOT_CS) ? NC_USER_CS : (IS_PRE_SLOT ? PREV_SLOT_CS : NEXT_SLOT_CS);
+var _chatCsB = NC_USER_CS < (IS_PRE_SLOT ? PREV_SLOT_CS : NEXT_SLOT_CS) ? (IS_PRE_SLOT ? PREV_SLOT_CS : NEXT_SLOT_CS) : NC_USER_CS;
+var CHAT_ROOM        = _chatCsA + '_' + _chatCsB;
+var CHAT_OTHER_CS    = IS_PRE_SLOT ? PREV_SLOT_CS : NEXT_SLOT_CS;
 var NC_QRZ         = {};
 var NC_INVITE_CS   = '';
 var NC_OFFLINE_KEY = 'raynet_nc_offline_log';
@@ -1119,6 +1169,113 @@ document.addEventListener('DOMContentLoaded', function(){
     }
     pollPresence();
     setInterval(pollPresence, 5000);
+
+    // ── Handover chat ─────────────────────────────────────────────────────────
+    var _chatOpen       = false;
+    var _chatLastTs     = 0;
+    var _chatUnread     = 0;
+    var _chatInterval   = null;
+    var _chatVisible    = false;
+    var CHAT_WINDOW_MS  = 15 * 60 * 1000; // 15 minutes
+
+    function ncChatShouldShow() {
+        var nowMs = Date.now();
+        // Outgoing controller: show when <= 15 min left in slot
+        var outgoing = SLOT_TO_MS > 0 && NEXT_SLOT_CS && (SLOT_TO_MS - nowMs) <= CHAT_WINDOW_MS && (SLOT_TO_MS - nowMs) > 0;
+        // Incoming controller: show when in pre-slot window
+        var incoming = IS_PRE_SLOT && PREV_SLOT_CS;
+        return (outgoing || incoming) && CHAT_ROOM && CHAT_ROOM !== '_';
+    }
+
+    function ncChatToggle() {
+        _chatOpen = !_chatOpen;
+        var body  = document.querySelector('.nc-chat-body');
+        var label = document.getElementById('ncChatToggleLabel');
+        if (body)  body.style.display  = _chatOpen ? 'flex' : 'none';
+        if (label) label.textContent   = _chatOpen ? '▼ Close' : '▲ Open';
+        if (_chatOpen) {
+            _chatUnread = 0;
+            var badge = document.getElementById('ncChatBadge');
+            if (badge) badge.style.display = 'none';
+            var msgs = document.getElementById('ncChatMessages');
+            if (msgs) msgs.scrollTop = msgs.scrollHeight;
+        }
+    }
+
+    function ncChatSend() {
+        var input = document.getElementById('ncChatInput');
+        var text  = input ? input.value.trim() : '';
+        if (!text) return;
+        input.value = '';
+        fetch('/net-control/chat/send', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json','X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content},
+            body: JSON.stringify({room: CHAT_ROOM, message: text})
+        }).catch(function(){});
+    }
+
+    function ncChatRender(msgs) {
+        var container = document.getElementById('ncChatMessages');
+        var empty     = document.getElementById('ncChatEmpty');
+        if (!container) return;
+        if (!msgs.length) return;
+        if (empty) empty.style.display = 'none';
+
+        var wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 40;
+
+        msgs.forEach(function(m) {
+            var mine = m.cs === NC_USER_CS;
+            var div  = document.createElement('div');
+            div.className = 'nc-chat-msg ' + (mine ? 'mine' : 'theirs');
+            div.innerHTML = '<div>' + m.text.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>'
+                          + '<div class="nc-chat-meta">' + (mine ? '' : '<strong>' + m.cs + '</strong> · ') + m.time + '</div>';
+            container.appendChild(div);
+        });
+
+        if (wasAtBottom) container.scrollTop = container.scrollHeight;
+
+        if (!_chatOpen) {
+            _chatUnread += msgs.length;
+            var badge = document.getElementById('ncChatBadge');
+            if (badge) { badge.textContent = _chatUnread; badge.style.display = 'inline-block'; }
+        }
+    }
+
+    function ncChatPoll() {
+        if (!CHAT_ROOM || CHAT_ROOM === '_') return;
+        fetch('/net-control/chat/messages?room=' + encodeURIComponent(CHAT_ROOM) + '&since=' + _chatLastTs, {cache:'no-store'})
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            if (d.messages && d.messages.length) {
+                ncChatRender(d.messages);
+                _chatLastTs = d.messages[d.messages.length - 1].ts;
+            }
+        }).catch(function(){});
+    }
+
+    function ncChatCheckVisibility() {
+        var widget = document.getElementById('ncChatWidget');
+        if (!widget) return;
+        var should = ncChatShouldShow();
+        // Hide after handover is done
+        if (_handoverRequested && Date.now() > (typeof _redirectAt !== 'undefined' ? _redirectAt : Infinity)) {
+            should = false;
+        }
+        if (should && !_chatVisible) {
+            widget.style.display = 'flex';
+            _chatVisible = true;
+            if (!_chatInterval) _chatInterval = setInterval(ncChatPoll, 3000);
+            ncChatPoll();
+        } else if (!should && _chatVisible) {
+            widget.style.display = 'none';
+            _chatVisible = false;
+            if (_chatInterval) { clearInterval(_chatInterval); _chatInterval = null; }
+        }
+    }
+
+    // Check every 30s whether the chat should appear/disappear
+    ncChatCheckVisibility();
+    setInterval(ncChatCheckVisibility, 30000);
 
     tick();
     loadLog();
