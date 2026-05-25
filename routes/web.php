@@ -1116,6 +1116,9 @@ Route::prefix('admin/temporary-guests')->name('admin.temporary-guests.')->middle
 });
 
 // Net Controller Portal
+Route::get('/net-control/accept-handover/{token}', [\App\Http\Controllers\NetControllerPortalController::class, 'acceptHandover'])
+    ->middleware('web')->name('net-control.accept-handover');
+
 Route::get('/net-control/thankyou', function() {
     return view('net-control.thankyou');
 })->middleware('web')->name('net-control.thankyou');
@@ -1125,6 +1128,7 @@ Route::middleware(['web','auth','net.controller'])->prefix('net-control')->name(
     Route::get('/stations',     [\App\Http\Controllers\NetControllerPortalController::class, 'stationLog'])  ->name('stations');
     Route::post('/log',         [\App\Http\Controllers\NetControllerPortalController::class, 'logStation'])  ->name('log');
     Route::get('/status',       [\App\Http\Controllers\NetControllerPortalController::class, 'netStatus'])   ->name('status');
+    Route::post('/early-handover', [\App\Http\Controllers\NetControllerPortalController::class, 'earlyHandover'])->name('early-handover');
 });
 
 // Offline token issuance — requires active admin session

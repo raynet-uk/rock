@@ -97,12 +97,109 @@ class NetControllerPortalController extends Controller
         return response()->json(['success' => true, 'entry' => $entry]);
     }
 
+    public function earlyHandover(Request $request)
+    {
+        $user = $request->user();
+        $slot = $request->get('_controller_slot');
+
+        // Find next controller slot
+        $allSlots = json_decode(\App\Models\Setting::get('net_controller_slots', '[]'), true) ?? [];
+        usort($allSlots, fn($a, $b) => strcmp($a['from'] ?? '', $b['from'] ?? ''));
+
+        $myFrom = $slot['from'] ?? '';
+        $nextSlot = null;
+        $foundMine = false;
+        foreach ($allSlots as $s) {
+            if ($foundMine && !empty($s['callsign'])) { $nextSlot = $s; break; }
+            if (($s['from'] ?? '') === $myFrom) $foundMine = true;
+        }
+
+        // Determine recipient
+        $isFallback = false;
+        $recipientEmail = null;
+        if ($nextSlot) {
+            $nextUser = \App\Models\User::whereRaw('UPPER(callsign) = ?', [strtoupper($nextSlot['callsign'])])->first();
+            if ($nextUser && $nextUser->email) {
+                $recipientEmail = $nextUser->email;
+            }
+        }
+        if (!$recipientEmail) {
+            $recipientEmail = 'nathandillon1@me.com';
+            $isFallback = true;
+        }
+
+        // Generate a token stored in cache for 2 hours
+        $token = \Illuminate\Support\Str::random(48);
+        $payload = [
+            'requester_id' => $user->id,
+            'requester_cs' => strtoupper($user->callsign ?? ''),
+            'slot_from'    => $myFrom,
+            'slot_to'      => $slot['to'] ?? '',
+        ];
+        \Illuminate\Support\Facades\Cache::put('handover_token_' . $token, $payload, now()->addHours(2));
+
+        $acceptUrl = route('net-control.accept-handover', ['token' => $token]);
+        $groupName = \App\Helpers\RaynetSetting::groupName();
+        $net = $slot['_net'] ?? [];
+
+        \Illuminate\Support\Facades\Mail::to($recipientEmail)->send(
+            new \App\Mail\EarlyHandoverRequest(
+                requesterName:     $user->name ?? $user->callsign,
+                requesterCallsign: strtoupper($user->callsign ?? ''),
+                requesterSlotFrom: $myFrom,
+                requesterSlotTo:   $slot['to'] ?? '',
+                netCallsign:       $net['callsign'] ?? \App\Models\Setting::get('net_callsign',''),
+                frequency:         $net['frequency'] ?? \App\Models\Setting::get('net_frequency',''),
+                groupName:         $groupName,
+                acceptUrl:         $acceptUrl,
+                isFallback:        $isFallback,
+            )
+        );
+
+        return response()->json(['success' => true, 'fallback' => $isFallback]);
+    }
+
+    public function acceptHandover(Request $request, string $token)
+    {
+        $payload = \Illuminate\Support\Facades\Cache::pull('handover_token_' . $token);
+        if (!$payload) {
+            return response('This handover link has already been used or has expired.', 410)
+                ->header('Content-Type', 'text/plain');
+        }
+
+        $nowTime = now('Europe/London')->format('H:i');
+
+        // Update the slot end time to now
+        $slots = json_decode(\App\Models\Setting::get('net_controller_slots', '[]'), true) ?? [];
+        foreach ($slots as &$s) {
+            if (($s['from'] ?? '') === $payload['slot_from']) {
+                $s['to'] = $nowTime;
+                break;
+            }
+        }
+        unset($s);
+        \App\Models\Setting::set('net_controller_slots', json_encode(array_values($slots)));
+        \App\Models\Setting::set('net_end_time', $nowTime);
+
+        // Signal requester's page to redirect
+        \Illuminate\Support\Facades\Cache::put('handover_accepted_' . $payload['requester_id'], true, now()->addMinutes(10));
+
+        return view('net-control.handover-accepted', [
+            'requesterCallsign' => $payload['requester_cs'],
+            'nowTime'           => $nowTime,
+            'groupName'         => \App\Helpers\RaynetSetting::groupName(),
+        ]);
+    }
+
     public function netStatus(Request $request)
     {
+        $user = $request->user();
+        $accepted = \Illuminate\Support\Facades\Cache::get('handover_accepted_' . $user->id, false);
         return response()->json([
-            'slot'     => $request->get('_controller_slot'),
-            'stations' => NetStationLog::count(),
-            'now'      => now('Europe/London')->toISOString(),
+            'slot'             => $request->get('_controller_slot'),
+            'stations'         => NetStationLog::count(),
+            'now'              => now('Europe/London')->toISOString(),
+            'handover_accepted' => $accepted,
         ]);
     }
 }

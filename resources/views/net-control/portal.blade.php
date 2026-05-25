@@ -19,6 +19,22 @@
 .slot-cs{font-family:monospace;font-weight:900;color:var(--navy);font-size:1rem;min-width:80px;}
 .slot-time{font-family:monospace;font-size:.85rem;color:var(--muted);}
 .slot-you{font-size:.7rem;font-weight:800;padding:.15rem .45rem;border-radius:999px;background:#f0f4ff;color:#4338ca;}
+.nc-toolbar{display:flex;gap:.6rem;flex-wrap:wrap;padding:.6rem 1rem;background:rgba(0,0,0,.18);border-bottom:1px solid rgba(255,255,255,.08);}
+.nc-toolbar-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .9rem;border-radius:999px;font-size:.78rem;font-weight:800;border:none;cursor:pointer;transition:opacity .2s;}
+.nc-toolbar-btn.btn-danger{background:linear-gradient(135deg,#C8102E,#8b0000);color:#fff;}
+.nc-toolbar-btn:hover{opacity:.85;}
+.nc-dialog-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;}
+.nc-dialog-overlay.active{display:flex;}
+.nc-dialog{background:#fff;border-radius:16px;padding:2rem;max-width:420px;width:90%;text-align:center;box-shadow:0 8px 48px rgba(0,0,0,.25);}
+.nc-dialog h2{margin:0 0 .5rem;font-size:1.15rem;color:#7f1d1d;}
+.nc-dialog p{color:#475569;font-size:.88rem;margin:.5rem 0 1.25rem;}
+.nc-dialog-btns{display:flex;gap:.75rem;justify-content:center;}
+.nc-dialog-btns button{padding:.6rem 1.5rem;border-radius:999px;font-weight:800;font-size:.88rem;border:none;cursor:pointer;}
+.nc-dialog-btns .btn-confirm{background:linear-gradient(135deg,#C8102E,#8b0000);color:#fff;}
+.nc-dialog-btns .btn-cancel{background:#f1f5f9;color:#475569;}
+@keyframes nc-handover-pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+.nc-handover-banner{display:none;position:sticky;top:0;left:0;right:0;z-index:1000;background:#d97706;color:#fff;text-align:center;padding:.55rem 1rem;font-weight:900;font-size:.82rem;animation:nc-handover-pulse 1s ease-in-out infinite;align-items:center;justify-content:center;gap:1rem;}
+.nc-handover-banner.active{display:flex;}
 .countdown-box{text-align:center;padding:1.25rem;background:linear-gradient(135deg,#003366,#004080);border-radius:12px;color:#fff;margin-bottom:1.25rem;transition:background .8s ease,box-shadow .3s ease;}
 @keyframes nc-pulse-glow{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.0);}50%{box-shadow:0 0 18px 8px rgba(220,38,38,.55);}}
 .countdown-box.nc-warning{background:linear-gradient(135deg,#92400e,#b45309)!important;}
@@ -148,6 +164,11 @@
           <span style="font-size:.65rem;color:rgba(255,255,255,.4);font-weight:700;text-transform:uppercase;letter-spacing:.08em;">Your slot</span>
           <span id="slotTimeBanner" style="font-family:monospace;font-weight:900;color:#fff;font-size:.88rem;">{{ $slot['from'] }} – {{ $slot['to'] }}</span>
         </div>
+
+      {{-- Toolbar --}}
+      <div style="display:flex;align-items:center;justify-content:flex-end;margin-top:.85rem;padding-top:.75rem;border-top:1px solid rgba(255,255,255,.08);">
+        <button onclick="ncOpenHandoverDialog()" style="display:inline-flex;align-items:center;gap:.4rem;background:rgba(200,16,46,.2);border:1px solid rgba(200,16,46,.4);color:#fca5a5;padding:.35rem .85rem;border-radius:999px;font-size:.75rem;font-weight:800;cursor:pointer;transition:all .2s;" onmouseover="this.style.background='rgba(200,16,46,.35)'" onmouseout="this.style.background='rgba(200,16,46,.2)'">🔄 Request Early Handover</button>
+      </div>
         @if($prevSlot)
         <div style="display:flex;align-items:center;gap:.4rem;font-size:.72rem;color:rgba(255,255,255,.4);">
           <span>← Takeover from</span>
@@ -229,6 +250,25 @@
   </div>
 
   {{-- Desktop two-column grid --}}
+  {{-- Early handover banner --}}
+  <div class="nc-handover-banner" id="ncHandoverBanner">
+    <span>🔄 Early Handover Requested — Waiting for next controller to accept…</span>
+    <button onclick="document.getElementById('ncHandoverBanner').classList.remove('active')" style="background:rgba(0,0,0,.2);border:none;color:#fff;border-radius:999px;padding:.2rem .65rem;font-size:.75rem;font-weight:800;cursor:pointer;margin-left:.5rem;">Dismiss</button>
+  </div>
+
+  {{-- Confirm dialog --}}
+  <div class="nc-dialog-overlay" id="ncHandoverOverlay">
+    <div class="nc-dialog">
+      <h2>🚨 Request Early Handover?</h2>
+      <p>This will email the next scheduled controller asking them to take over. A notification will remain on your screen until they accept.</p>
+      <p style="font-size:.8rem;color:#b91c1c;font-weight:700;">Only use this in an emergency or if you genuinely need to hand over early.</p>
+      <div class="nc-dialog-btns">
+        <button class="btn-cancel" onclick="ncCloseHandoverDialog()">Cancel</button>
+        <button class="btn-confirm" id="ncHandoverConfirmBtn" onclick="ncConfirmHandover()">Yes, Request Handover</button>
+      </div>
+    </div>
+  </div>
+
   <div class="nc-desktop-grid">
   <div class="nc-left">
 
@@ -954,6 +994,55 @@ document.addEventListener('DOMContentLoaded', function(){
     setInterval(loadLog, 3000);
 
     window.addEventListener('offline', function(){ tick(); loadLog(); });
+
+    // ── Early Handover ────────────────────────────────────────────────────────
+    var _handoverRequested = false;
+
+    window.ncOpenHandoverDialog = function() {
+        document.getElementById('ncHandoverOverlay').classList.add('active');
+    };
+    window.ncCloseHandoverDialog = function() {
+        document.getElementById('ncHandoverOverlay').classList.remove('active');
+    };
+    window.ncConfirmHandover = function() {
+        var btn = document.getElementById('ncHandoverConfirmBtn');
+        btn.disabled = true; btn.textContent = 'Sending…';
+        fetch('/net-control/early-handover', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json','X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content},
+            body: JSON.stringify({})
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            if (d.success) {
+                ncCloseHandoverDialog();
+                _handoverRequested = true;
+                document.getElementById('ncHandoverBanner').classList.add('active');
+                pollHandoverAccepted();
+            } else {
+                btn.disabled = false; btn.textContent = 'Yes, Request Handover';
+                alert('Failed to send handover request. Please try again.');
+            }
+        })
+        .catch(function(){
+            btn.disabled = false; btn.textContent = 'Yes, Request Handover';
+            alert('Network error. Please try again.');
+        });
+    };
+
+    function pollHandoverAccepted() {
+        if (!_handoverRequested) return;
+        fetch('/net-control/status', {cache:'no-store'})
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            if (d.handover_accepted) {
+                window.location.href = '/net-control/thankyou?handover=1';
+            } else {
+                setTimeout(pollHandoverAccepted, 5000);
+            }
+        })
+        .catch(function(){ setTimeout(pollHandoverAccepted, 5000); });
+    }
     window.addEventListener('online',  function(){
         tick();
         setTimeout(function(){
