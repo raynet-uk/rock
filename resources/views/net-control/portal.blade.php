@@ -1312,18 +1312,23 @@ document.addEventListener('DOMContentLoaded', function(){
     }
 
     // Hook input event on textarea for typing detection
-    document.addEventListener('DOMContentLoaded', function() {
+    // (DOM already ready — inline script runs after body)
+    (function attachTypingListener() {
         var input = document.getElementById('ncChatInput');
-        if (!input) return;
-        input.addEventListener('input', function() {
-            if (!CHAT_ROOM || CHAT_ROOM === '_') return;
-            ncChatSetTyping(true);
-            clearTimeout(_typingTimer);
-            _typingTimer = setTimeout(function() {
-                ncChatSetTyping(false);
-            }, 4000);
-        });
-    });
+        if (input) {
+            input.addEventListener('input', function() {
+                if (!CHAT_ROOM || CHAT_ROOM === '_') return;
+                ncChatSetTyping(true);
+                clearTimeout(_typingTimer);
+                _typingTimer = setTimeout(function() {
+                    ncChatSetTyping(false);
+                }, 4000);
+            });
+        } else {
+            // Widget not in DOM yet — retry
+            setTimeout(attachTypingListener, 500);
+        }
+    })();
 
     window.ncChatSend = function() {
         var input = document.getElementById('ncChatInput');
