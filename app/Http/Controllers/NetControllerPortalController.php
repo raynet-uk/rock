@@ -194,7 +194,6 @@ class NetControllerPortalController extends Controller
         }
         unset($s);
         \App\Models\Setting::set('net_controller_slots', json_encode(array_values($slots)));
-        \App\Models\Setting::set('net_end_time', $nowTime);
 
         // Block outgoing controller from re-entering the portal (persists 30 min)
         \Illuminate\Support\Facades\Cache::put('handover_done_' . $payload['requester_id'], [
