@@ -327,15 +327,7 @@
       </div>
     </div>
     <div class="nc-chat-body">
-      <div class="nc-chat-toolbar">
-        <span class="nc-chat-toolbar-label">Quick:</span>
-        <button class="nc-chat-quick" onclick="ncChatQuick('👋 Standing by and ready to take over')">👋 Ready</button>
-        <button class="nc-chat-quick" onclick="ncChatQuick('📡 Frequency checks out, signal good')">📡 Signal good</button>
-        <button class="nc-chat-quick" onclick="ncChatQuick('⏳ 5 mins to handover — are you ready?')">⏳ 5 mins</button>
-        <button class="nc-chat-quick" onclick="ncChatQuick('✅ Confirmed, I have control')">✅ Confirmed</button>
-        <button class="nc-chat-quick" onclick="ncChatQuick('🔇 QRM on frequency, stand by')">🔇 QRM</button>
-        <button class="nc-chat-quick" onclick="ncChatQuick('73 — good shift! 📻')">73 👋</button>
-      </div>
+
       <div class="nc-chat-messages" id="ncChatMessages">
         <div class="nc-chat-empty" id="ncChatEmpty">
           <div class="nc-chat-empty-icon">🎙️</div>
@@ -354,17 +346,7 @@
           <button class="nc-chat-send" onclick="ncChatSend()">Send ➤</button>
         </div>
         <div class="nc-chat-footer">
-          <div class="nc-chat-emoji-bar">
-            <span class="nc-chat-emoji" onclick="ncChatEmoji('👋')">👋</span>
-            <span class="nc-chat-emoji" onclick="ncChatEmoji('✅')">✅</span>
-            <span class="nc-chat-emoji" onclick="ncChatEmoji('📡')">📡</span>
-            <span class="nc-chat-emoji" onclick="ncChatEmoji('🔇')">🔇</span>
-            <span class="nc-chat-emoji" onclick="ncChatEmoji('⚠️')">⚠️</span>
-            <span class="nc-chat-emoji" onclick="ncChatEmoji('73')">7️⃣3️⃣</span>
-            <span class="nc-chat-emoji" onclick="ncChatEmoji('🎙️')">🎙️</span>
-            <span class="nc-chat-emoji" onclick="ncChatEmoji('📻')">📻</span>
-          </div>
-          <div style="font-size:.6rem;color:#94a3b8;">RAYNET Secure Chat</div>
+          <div style="font-size:.6rem;color:#94a3b8;">RAYNET · Handover Channel</div>
         </div>
       </div>
     </div>
@@ -1405,33 +1387,91 @@ document.addEventListener('DOMContentLoaded', function(){
         }).catch(function(){});
     }
 
+    // Timed system messages + visibility management
+    var _chatSent15   = false;
+    var _chatSent5    = false;
+    var _chatSentHO   = false;
+    var _chatDisabled = false;
+    var _chatHideAt   = null;
+
+    function ncChatPostSystem(text) {
+        fetch('/net-control/chat/send', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json','X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content},
+            body: JSON.stringify({room: CHAT_ROOM, message: text, type: 'system'})
+        }).catch(function(){});
+        ncChatRender([{cs:'__system__', type:'system', text:text,
+            time: new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}), ts: Date.now()}]);
+    }
+
+    function ncChatDisableInput() {
+        if (_chatDisabled) return;
+        _chatDisabled = true;
+        var input = document.getElementById('ncChatInput');
+        var btn   = document.querySelector('.nc-chat-send');
+        if (input) { input.disabled = true; input.placeholder = 'Handover in progress — chat closed'; }
+        if (btn)   { btn.disabled = true; btn.style.opacity = '.4'; }
+    }
+
     function ncChatCheckVisibility() {
         var widget = document.getElementById('ncChatWidget');
         if (!widget) return;
+        var nowMs  = Date.now();
         var should = ncChatShouldShow();
-        // Hide after handover is done
-        if (_handoverRequested && Date.now() > (typeof _redirectAt !== 'undefined' ? _redirectAt : Infinity)) {
-            should = false;
+
+        // Hide 1 min after handover starts
+        if (_chatHideAt && nowMs >= _chatHideAt) {
+            widget.style.display = 'none';
+            _chatVisible = false;
+            if (_chatInterval) { clearInterval(_chatInterval); _chatInterval = null; }
+            return;
         }
+
         if (should && !_chatVisible) {
             widget.style.display = 'flex';
             widget.classList.remove('nc-chat-animate');
-            void widget.offsetWidth; // force reflow so animation replays
+            void widget.offsetWidth;
             widget.classList.add('nc-chat-animate');
             _chatVisible = true;
             if (!_chatInterval) _chatInterval = setInterval(ncChatPoll, 3000);
             ncChatPoll();
-            // Post a system welcome message locally
-            ncChatRender([{cs:'system',type:'system',text:'🔐 Handover channel open — 15 minutes to go',time:'',ts:Date.now()}]);
-        } else if (!should && _chatVisible) {
+        } else if (!should && _chatVisible && !_chatHideAt) {
             widget.style.display = 'none';
             _chatVisible = false;
             if (_chatInterval) { clearInterval(_chatInterval); _chatInterval = null; }
         }
+
+        if (!CHAT_ROOM || CHAT_ROOM === '_') return;
+
+        // 15 min warning (outgoing controller only)
+        if (!_chatSent15 && SLOT_TO_MS > 0 && !IS_PRE_SLOT) {
+            var minsLeft = (SLOT_TO_MS - nowMs) / 60000;
+            if (minsLeft <= 15 && minsLeft > 0) {
+                _chatSent15 = true;
+                ncChatPostSystem('🎙️ Handover channel open — 15 minutes until slot change. Use this chat to coordinate with the next controller.');
+            }
+        }
+
+        // 5 min warning
+        if (!_chatSent5 && SLOT_TO_MS > 0 && !IS_PRE_SLOT) {
+            var minsLeft5 = (SLOT_TO_MS - nowMs) / 60000;
+            if (minsLeft5 <= 5 && minsLeft5 > 0) {
+                _chatSent5 = true;
+                ncChatPostSystem('⏳ 5 minutes to handover — please confirm the next controller is ready.');
+            }
+        }
+
+        // Handover moment
+        if (!_chatSentHO && SLOT_TO_MS > 0 && !IS_PRE_SLOT && nowMs >= SLOT_TO_MS) {
+            _chatSentHO = true;
+            ncChatPostSystem('🔄 Handover time. This chat will close in 1 minute.');
+            ncChatDisableInput();
+            _chatHideAt = nowMs + 60000;
+        }
     }
 
-    // Check every 30s whether the chat should appear/disappear
     ncChatCheckVisibility();
+    setInterval(ncChatCheckVisibility, 5000);
     setInterval(ncChatCheckVisibility, 5000);
 
     tick();

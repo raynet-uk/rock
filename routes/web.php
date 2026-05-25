@@ -1140,14 +1140,16 @@ Route::post('/net-control/chat/send', function(\Illuminate\Http\Request $request
     if (!$user) return response()->json(['ok' => false]);
     $room = $request->input('room');
     $text = trim($request->input('message', ''));
+    $type = $request->input('type', 'message');
     if (!$room || !$text || strlen($text) > 500) return response()->json(['ok' => false]);
 
     $key  = 'nc_chat_' . preg_replace('/[^A-Z0-9_]/', '', strtoupper($room));
     $msgs = \Illuminate\Support\Facades\Cache::get($key, []);
     $msgs[] = [
-        'cs'   => strtoupper($user->callsign ?? '?'),
+        'cs'   => $type === 'system' ? '__system__' : strtoupper($user->callsign ?? '?'),
         'name' => $user->name ?? $user->callsign,
         'text' => $text,
+        'type' => $type,
         'ts'   => now('Europe/London')->getTimestampMs(),
         'time' => now('Europe/London')->format('H:i:s'),
     ];
