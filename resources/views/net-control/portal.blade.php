@@ -435,7 +435,10 @@ var ncQrzTimer;
 // ── Helpers ───────────────────────────────────────────────────────────────
 function parseTime(t) {
     var d = new Date(); var p = t.split(':');
-    d.setHours(parseInt(p[0]), parseInt(p[1]), 0, 0); return d;
+    d.setHours(parseInt(p[0]), parseInt(p[1]), 0, 0);
+    // If the parsed time is more than 12h in the past, it started yesterday
+    if (d.getTime() < Date.now() - 12*3600*1000) { d.setDate(d.getDate() - 1); }
+    return d;
 }
 function escHtml(s) {
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
