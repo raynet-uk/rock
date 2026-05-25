@@ -426,7 +426,7 @@ var NC_USER_CS     = '{{ addslashes($user->callsign ?? '') }}';
 var NC_USER_NAME   = '{{ addslashes($user->name ?? '') }}';
 var NC_SLOT_FROM   = '{{ addslashes($slot['from'] ?? '') }}';
 var NC_SLOT_TO     = '{{ addslashes($slot['to'] ?? '') }}';
-var CAN_LOG        = false;
+var CAN_LOG        = {{ $slot['can_log'] ? 'true' : 'false' }};
 var NC_QRZ         = {};
 var NC_INVITE_CS   = '';
 var NC_OFFLINE_KEY = 'raynet_nc_offline_log';
@@ -525,7 +525,8 @@ function tick() {
     }
 
     if (now < windowStart) {
-        location.reload(); return;
+        // Outside window entirely — do nothing, pollNetActive handles redirect
+        return;
     } else if (now >= windowStart && now < slotFrom) {
         var diff=Math.floor((slotFrom-now)/1000);
         ctL.textContent='Time until your slot starts'; ctT.textContent=fmt(diff);
