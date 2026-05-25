@@ -301,7 +301,7 @@
   {{-- Early handover banner --}}
   <div class="nc-handover-banner" id="ncHandoverBanner">
     <span id="ncHandoverBannerText">🔄 Early Handover Requested — Waiting for next controller to accept…</span>
-    <button onclick="document.getElementById('ncHandoverBanner').classList.remove('active')" style="background:rgba(0,0,0,.2);border:none;color:#fff;border-radius:999px;padding:.2rem .65rem;font-size:.75rem;font-weight:800;cursor:pointer;margin-left:.5rem;" id="ncHandoverDismiss">Dismiss</button>
+    <button onclick="(function(){document.getElementById('ncHandoverBanner').classList.remove('active');var sb=document.getElementById('ncStickyBanner');if(sb)sb.classList.remove('handover-pushed');localStorage.removeItem('nc_handover_requested_'+NC_USER_CS);})()" style="background:rgba(0,0,0,.2);border:none;color:#fff;border-radius:999px;padding:.2rem .65rem;font-size:.75rem;font-weight:800;cursor:pointer;margin-left:.5rem;" id="ncHandoverDismiss">Dismiss</button>
   </div>
 
   {{-- Handover chat widget --}}
@@ -1601,8 +1601,13 @@ document.addEventListener('DOMContentLoaded', function(){
             entries.forEach(function(e) {
                 if (e.isIntersecting) {
                     banner.classList.remove('visible');
+                    banner.style.display = 'none';
                 } else {
-                    banner.classList.add('visible');
+                    banner.style.display = 'flex';
+                    // Small delay so display:flex registers before transform
+                    requestAnimationFrame(function() {
+                        banner.classList.add('visible');
+                    });
                 }
             });
         }, { threshold: 0, rootMargin: '0px' });
