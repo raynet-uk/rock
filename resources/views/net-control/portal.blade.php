@@ -1284,6 +1284,15 @@ document.addEventListener('DOMContentLoaded', function(){
         if (!text) return;
         input.value = '';
         input.style.height = 'auto';
+
+        // Render immediately — don't wait for poll
+        var now = new Date();
+        var timeStr = now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+        var fakeTs  = now.getTime();
+        ncChatRender([{cs: NC_USER_CS, type: 'message', text: text, time: timeStr, ts: fakeTs}]);
+        // Advance lastTs so poll doesn't re-render this message
+        if (fakeTs > _chatLastTs) _chatLastTs = fakeTs;
+
         fetch('/net-control/chat/send', {
             method: 'POST',
             headers: {'Content-Type':'application/json','X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content},
