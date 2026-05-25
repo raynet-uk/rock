@@ -1291,6 +1291,7 @@ document.addEventListener('DOMContentLoaded', function(){
         var text  = input ? input.value.trim() : '';
         if (!text) return;
         input.value = '';
+        input.style.height = 'auto';
         fetch('/net-control/chat/send', {
             method: 'POST',
             headers: {'Content-Type':'application/json','X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content},
@@ -1298,52 +1299,67 @@ document.addEventListener('DOMContentLoaded', function(){
         }).catch(function(){});
     };
 
+    window.ncChatQuick = function(text) {
+        var input = document.getElementById('ncChatInput');
+        if (input) {
+            input.value = text;
+            window.ncChatSend();
+        }
+    };
+
+    window.ncChatEmoji = function(emoji) {
+        var input = document.getElementById('ncChatInput');
+        if (input) {
+            input.value += emoji;
+            input.focus();
+        }
+    };
+
     // Web Audio beep for incoming messages
-    var _audioCtx = null;
+    window._audioCtx = null;
 
     // Initialise AudioContext on first user gesture so browser allows it
-    function _ncInitAudio() {
-        if (_audioCtx) return;
+    window._ncInitAudio = function() {
+        if (window._audioCtx) return;
         try {
-            _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            // Play a silent buffer to unlock it
-            var buf = _audioCtx.createBuffer(1, 1, 22050);
-            var src = _audioCtx.createBufferSource();
+            window._audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            var buf = window._audioCtx.createBuffer(1, 1, 22050);
+            var src = window._audioCtx.createBufferSource();
             src.buffer = buf;
-            src.connect(_audioCtx.destination);
+            src.connect(window._audioCtx.destination);
             src.start(0);
         } catch(e) {}
-    }
+    };
     ['click','keydown','touchstart'].forEach(function(evt) {
-        document.addEventListener(evt, _ncInitAudio, {once: true, passive: true});
+        document.addEventListener(evt, window._ncInitAudio, {once: true, passive: true});
     });
 
-    function ncChatBeep() {
+    window.ncChatBeep = function() {
         try {
-            if (!_audioCtx) {
-                _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (!window._audioCtx) {
+                window._audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             }
-            // Resume context if suspended (some browsers suspend after inactivity)
             var play = function() {
-                var osc  = _audioCtx.createOscillator();
-                var gain = _audioCtx.createGain();
+                var ctx  = window._audioCtx;
+                var osc  = ctx.createOscillator();
+                var gain = ctx.createGain();
                 osc.connect(gain);
-                gain.connect(_audioCtx.destination);
+                gain.connect(ctx.destination);
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(880, _audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(660, _audioCtx.currentTime + 0.12);
-                gain.gain.setValueAtTime(0.3, _audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, _audioCtx.currentTime + 0.3);
-                osc.start(_audioCtx.currentTime);
-                osc.stop(_audioCtx.currentTime + 0.3);
+                osc.frequency.setValueAtTime(880, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.12);
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.3);
             };
-            if (_audioCtx.state === 'suspended') {
-                _audioCtx.resume().then(play);
+            if (window._audioCtx.state === 'suspended') {
+                window._audioCtx.resume().then(play);
             } else {
                 play();
             }
-        } catch(e) { console.warn('ncChatBeep error:', e); }
-    }
+        } catch(e) { console.warn('ncChatBeep:', e); }
+    };
 
     function ncChatRender(msgs) {
         var container = document.getElementById('ncChatMessages');
@@ -1368,7 +1384,7 @@ document.addEventListener('DOMContentLoaded', function(){
         // Count only messages from the other controller
         var incoming = msgs.filter(function(m){ return m.cs !== NC_USER_CS; });
         if (incoming.length) {
-            ncChatBeep();
+            window.ncChatBeep();
             if (!_chatOpen) {
                 _chatUnread += incoming.length;
                 var badge = document.getElementById('ncChatBadge');
