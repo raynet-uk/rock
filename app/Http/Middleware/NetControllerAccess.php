@@ -200,11 +200,7 @@ class NetControllerAccess
             }
         }
 
-        // No window match — return the straightforward today pair as fallback
-        $fromDt = self::parseSlotTime($from, $ref);
-        $toDt   = self::parseSlotTime($to,   $ref);
-        if (!$fromDt || !$toDt) return null;
-        if ($toDt->lte($fromDt)) $toDt->addDay();
-        return [$fromDt, $toDt];
+        // No window match
+        return null;
     }
 }
