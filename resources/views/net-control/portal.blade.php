@@ -157,7 +157,7 @@
 .nc-sticky-banner{
   display:flex;
   position:fixed;
-  top:0;
+  top:52px;
   left:0;right:0;
   z-index:990;
   background:linear-gradient(135deg,#001a33,#003366);
