@@ -44,7 +44,7 @@ class InstallController extends Controller
         $licenceValid = false;
 
         try {
-            $response = Http::timeout(10)->post('https://raynet-liverpool.net/api/cms/validate-licence', [
+            $response = Http::timeout(10)->post('https://command.nathandillon.co.uk/api/cms/validate-licence', [
                 'key'      => $licenceKey,
                 'site_url' => $request->input('site_url'),
             ]);
