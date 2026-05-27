@@ -77,7 +77,7 @@ class InstallController extends Controller
         Setting::set('cms_licence_key', $licenceKey);
 
         // Insert into CmsLicence table so Command Centre API auth works
-        App\Models\CmsLicence::firstOrCreate(
+        \App\Models\CmsLicence::firstOrCreate(
             ['key' => $licenceKey],
             [
                 'group_name'   => $request->input('group_name'),
