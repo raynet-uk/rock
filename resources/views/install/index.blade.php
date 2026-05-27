@@ -415,7 +415,7 @@ async function validateLicence() {
     status.innerHTML = '<span style="color:#6b7f96">Validating...</span>';
 
     try {
-        const resp = await fetch('https://raynet-liverpool.net/api/cms/validate-key', {
+        const resp = await fetch('https://command.nathandillon.co.uk/api/cms/validate-key', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             body: JSON.stringify({ key: key })
