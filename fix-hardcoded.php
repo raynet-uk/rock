@@ -1,6 +1,6 @@
 <?php
 /**
- * RAYNET CMS — Replace hardcoded Liverpool strings with dynamic settings
+ * RAYNET-OS — Replace hardcoded Liverpool strings with dynamic settings
  * Run from public_html: php fix-hardcoded.php
  */
 

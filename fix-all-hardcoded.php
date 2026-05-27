@@ -1,6 +1,6 @@
 <?php
 /**
- * RAYNET CMS — Nuclear hardcoded string replacement
+ * RAYNET-OS — Nuclear hardcoded string replacement
  * Fixes ALL remaining Liverpool/Merseyside/Zone 10/Group 179 references
  * Run from public_html: php fix-all-hardcoded.php
  */

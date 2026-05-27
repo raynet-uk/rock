@@ -4,7 +4,7 @@
 
 <br>
 
-# RAYNET CMS
+# RAYNET-OS
 
 ### The complete web platform for RAYNET UK groups
 
@@ -179,7 +179,7 @@ Visit your domain in a browser. You'll be automatically redirected to `/install`
 | **Admin Account** | Creates your first administrator account |
 | **Complete** | Finalises the installation and launches your site |
 
-**That's it. Your RAYNET CMS site is live. 📻**
+**That's it. Your RAYNET-OS site is live. 📻**
 
 ---
 
@@ -210,13 +210,13 @@ php composer.phar install --no-dev
 
 ## 🔌 Module System
 
-RAYNET CMS has a built-in module system — extend your site's functionality with one click.
+RAYNET-OS has a built-in module system — extend your site's functionality with one click.
 
 ```
 Admin Panel → Module Manager → Upload Module or Check for Updates
 ```
 
-Official modules are published to the **[RAYNET CMS Module Repository](https://github.com/raynet-uk/raynet-cms-modules)**.
+Official modules are published to the **[RAYNET-OS Module Repository](https://github.com/raynet-uk/raynet-cms-modules)**.
 
 Modules are versioned ZIP files with automatic update notifications — your site checks GitHub for new versions and lets you update with a single button click.
 
@@ -248,7 +248,7 @@ All group-specific settings live in **Admin → Settings** — no code editing r
 
 ## 📄 Default Pages
 
-RAYNET CMS ships with these pages ready for you to customise:
+RAYNET-OS ships with these pages ready for you to customise:
 
 | Page | Description |
 |------|-------------|
@@ -266,7 +266,7 @@ All pages are fully editable via the visual builder or source editor.
 
 ## 👨‍💻 Developers
 
-RAYNET CMS is developed and maintained by **RAYNET Liverpool** (Group 10/ME/179).
+RAYNET-OS is developed and maintained by **RAYNET Liverpool** (Group 10/ME/179).
 
 <table>
 <tr>
@@ -302,7 +302,7 @@ RAYNET CMS is developed and maintained by **RAYNET Liverpool** (Group 10/ME/179)
 
 ## 📜 Licence
 
-RAYNET CMS is open source software released under the **[GNU General Public Licence v2.0](https://www.gnu.org/licenses/gpl-2.0.html)**.
+RAYNET-OS is open source software released under the **[GNU General Public Licence v2.0](https://www.gnu.org/licenses/gpl-2.0.html)**.
 
 You are free to use, modify and distribute this software for any RAYNET UK group. We ask that improvements are contributed back to the project where possible.
 
@@ -312,7 +312,7 @@ You are free to use, modify and distribute this software for any RAYNET UK group
 
 <br>
 
-**RAYNET CMS** · Developed by RAYNET Liverpool · For every RAYNET UK group
+**RAYNET-OS** · Developed by RAYNET Liverpool · For every RAYNET UK group
 
 *RAYNET — the Radio Amateurs' Emergency Network · Affiliated with the RSGB*
 

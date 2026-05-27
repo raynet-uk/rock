@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RAYNET CMS — Installation</title>
+<title>RAYNET-OS — Installation</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-font-smoothing:antialiased}
@@ -106,7 +106,7 @@ body{font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;background:#0a0f1a;
     <div class="iz-brand">
         <div class="iz-logo"><span>RAY<br>NET</span></div>
         <div>
-            <div class="iz-brand-name">RAYNET CMS</div>
+            <div class="iz-brand-name">RAYNET-OS</div>
             <div class="iz-brand-sub">Installation Wizard</div>
             <div class="iz-brand-badge">Setup mode active</div>
         </div>
@@ -144,7 +144,7 @@ body{font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;background:#0a0f1a;
         <div class="iz-card-body">
             <div style="text-align:center;padding:.5rem 0 1.25rem">
                 <div class="iz-welcome-icon">📻</div>
-                <h1 style="font-size:1.5rem;font-weight:bold;color:#003366;margin-bottom:.5rem">Welcome to RAYNET CMS</h1>
+                <h1 style="font-size:1.5rem;font-weight:bold;color:#003366;margin-bottom:.5rem">Welcome to RAYNET-OS</h1>
                 <p style="font-size:.88rem;color:#6b7f96;max-width:380px;margin:0 auto 1.5rem;line-height:1.65">The complete web platform for RAYNET UK groups. Takes about 2 minutes to set up.</p>
             </div>
             <div class="iz-features">
@@ -161,7 +161,7 @@ body{font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;background:#0a0f1a;
             </div>
         </div>
         <div class="iz-card-foot">
-            <span style="font-size:.72rem;color:#9ca3af">RAYNET CMS · Built for RAYNET UK</span>
+            <span style="font-size:.72rem;color:#9ca3af">RAYNET-OS · Built for RAYNET UK</span>
             @if($isPreview)
                 <a href="{{ route('install.preview.step1') }}" class="iz-btn iz-btn-primary">Get Started →</a>
             @else
@@ -191,7 +191,7 @@ body{font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;background:#0a0f1a;
 
                 {{-- Licence key --}}
                 <div class="iz-field" id="licence-field">
-                    <label class="iz-label" for="licence_key">RAYNET CMS Licence Key <span class="iz-label-opt">(required)</span></label>
+                    <label class="iz-label" for="licence_key">RAYNET-OS Licence Key <span class="iz-label-opt">(required)</span></label>
                     <div style="display:flex;gap:.5rem">
                         <input type="text" id="licence_key" name="licence_key" class="iz-input iz-input-mono"
                                value="{{ old('licence_key') }}"
@@ -364,7 +364,7 @@ body{font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;background:#0a0f1a;
             <div class="iz-complete">
                 <div class="iz-complete-icon">🎉</div>
                 <h2 class="iz-complete-title">{{ $groupName ?? 'Your Group' }} is ready!</h2>
-                <p class="iz-complete-sub">Your RAYNET CMS site has been configured successfully.</p>
+                <p class="iz-complete-sub">Your RAYNET-OS site has been configured successfully.</p>
             </div>
             <div class="iz-checklist">
                 <div class="iz-check-item">Group details saved</div>
@@ -380,7 +380,7 @@ body{font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;background:#0a0f1a;
             </div>
         </div>
         <div class="iz-card-foot">
-            <span style="font-size:.72rem;color:#9ca3af">RAYNET CMS · Powered by RAYNET Liverpool</span>
+            <span style="font-size:.72rem;color:#9ca3af">RAYNET-OS · Powered by RAYNET Liverpool</span>
             @if($isPreview)
             <form method="POST" action="{{ route('install.preview.complete') }}">
             @else
@@ -394,7 +394,7 @@ body{font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;background:#0a0f1a;
     @endif
 
     <div class="iz-footer">
-        RAYNET CMS &middot; Built for <a href="https://www.raynet-uk.net" target="_blank">RAYNET UK</a> groups &middot;
+        RAYNET-OS &middot; Built for <a href="https://www.raynet-uk.net" target="_blank">RAYNET UK</a> groups &middot;
         <a href="https://github.com/raynet-uk/raynet-cms-modules" target="_blank">GitHub</a>
     </div>
 

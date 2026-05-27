@@ -1,6 +1,6 @@
 <?php
 /**
- * RAYNET CMS — Fix remaining hardcoded Liverpool strings
+ * RAYNET-OS — Fix remaining hardcoded Liverpool strings
  * Run from public_html: php fix-hardcoded-2.php
  */
 

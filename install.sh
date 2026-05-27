@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-#  RAYNET CMS — Interactive Install Script
+#  RAYNET-OS — Interactive Install Script
 #  Usage: git clone https://github.com/raynet-uk/raynet-cms.git . && bash install.sh
 #  Developed by RAYNET Liverpool (G4BDS & M7NDN)
 # ============================================================
@@ -64,7 +64,7 @@ header() {
     echo "  ██║  ██║██║  ██║   ██║   ██║ ╚████║███████╗   ██║   "
     echo "  ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═══╝╚══════╝   ╚═╝   "
     echo -e "${NC}"
-    echo -e "  ${WHITE}${BOLD}RAYNET CMS${NC} ${DIM}— Installation Wizard${NC}"
+    echo -e "  ${WHITE}${BOLD}RAYNET-OS${NC} ${DIM}— Installation Wizard${NC}"
     echo -e "  ${DIM}Developed by RAYNET Liverpool · G4BDS & M7NDN${NC}"
     echo -e "  ${DIM}For RAYNET UK affiliated groups · raynet-uk.net${NC}"
     divider
@@ -152,7 +152,7 @@ preflight() {
     done
 
     if [ ! -f ".env.example" ] && [ ! -f ".env" ]; then
-        fail "No .env.example found. Run this from the RAYNET CMS root directory."
+        fail "No .env.example found. Run this from the RAYNET-OS root directory."
     fi
     ok "Directory structure valid"
     progress_bar 2
@@ -334,7 +334,7 @@ HTEOF
 # ── Summary ───────────────────────────────────────────────────
 summary() {
     divider
-    echo -e "  ${GREEN}${BOLD}✓ RAYNET CMS installed successfully!${NC}"
+    echo -e "  ${GREEN}${BOLD}✓ RAYNET-OS installed successfully!${NC}"
     divider
 
     echo -e "  ${WHITE}${BOLD}What happens next:${NC}"
@@ -350,7 +350,7 @@ summary() {
     echo ""
 
     divider
-    echo -e "  ${DIM}RAYNET CMS · Built by RAYNET Liverpool · G4BDS & M7NDN${NC}"
+    echo -e "  ${DIM}RAYNET-OS · Built by RAYNET Liverpool · G4BDS & M7NDN${NC}"
     echo -e "  ${DIM}github.com/raynet-uk/raynet-cms · 73 de RAYNET Liverpool 📻${NC}"
     echo ""
 }
@@ -359,7 +359,7 @@ summary() {
 main() {
     header
 
-    echo -e "  ${WHITE}This script will install RAYNET CMS with no manual steps needed.${NC}"
+    echo -e "  ${WHITE}This script will install RAYNET-OS with no manual steps needed.${NC}"
     echo -e "  ${DIM}It handles ownership, dependencies, database, permissions and more.${NC}"
     echo ""
     echo -e "  ${DIM}Running from: ${CYAN}$INSTALL_DIR${NC}"
