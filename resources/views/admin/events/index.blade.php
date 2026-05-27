@@ -698,6 +698,13 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
                               placeholder="Brief description shown on the calendar and members' hub…">{{ old('description', $editingEvent->description ?? '') }}</textarea>
                 </div>
 
+
+                <div class="form-field full">
+                    <label>Supporting Another Group <small style="text-transform:none;letter-spacing:0;font-weight:normal;">(optional — shown as a badge on the homepage &amp; calendar)</small></label>
+                    <input name="supporting_group" type="text"
+                           value="{{ old('supporting_group', $editingEvent->supporting_group ?? '') }}"
+                           placeholder="e.g. 10/NW/101 Cheshire RAYNET">
+                </div>
               {{-- ─── PRIVATE EVENT TOGGLE ─── --}}
                 <div class="form-privacy-row">
                     <input type="hidden" name="is_private" value="0">
@@ -777,6 +784,20 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
                                     style="color:#2e7d32;border-color:rgba(46,125,50,.3);"
                                     onclick="fetchEventWeather()">🌬 Forecast</button>
                         </div>
+                    </div>
+                    <div style="display:flex;gap:.5rem;padding:.5rem .6rem;background:var(--grey);border-top:1px solid var(--grey-mid);border-bottom:1px solid var(--grey-mid);">
+                        <div style="position:relative;flex:1;">
+                            <span style="position:absolute;left:.65rem;top:50%;transform:translateY(-50%);font-size:13px;color:var(--grey-dark);pointer-events:none;">🔍</span>
+                            <input type="text" id="map-location-search"
+                                   placeholder="Search for a location to centre the map…"
+                                   style="width:100%;padding:.45rem .75rem .45rem 2rem;border:1px solid var(--border);border-radius:4px;font-size:13px;font-family:var(--font);background:white;"
+                                   onkeydown="if(event.key==='Enter'){event.preventDefault();mapLocationSearch();}">
+                            <div id="map-search-results" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border:1px solid var(--border);border-top:none;z-index:9999;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.12);"></div>
+                        </div>
+                        <button type="button" onclick="mapLocationSearch()"
+                                style="padding:.45rem .9rem;background:var(--navy);color:white;border:none;border-radius:4px;font-size:12px;font-weight:bold;font-family:var(--font);cursor:pointer;white-space:nowrap;">
+                            Go
+                        </button>
                     </div>
                     <div id="event-map-picker"></div>
                     <div class="map-coord-row">
@@ -1850,6 +1871,64 @@ function toggleEventSat() {
     document.getElementById('evt-sat-btn').textContent = evtSatOn ? '🗺 Street' : '🛰 Satellite';
 }
 
+async function mapLocationSearch() {
+    const input = document.getElementById('map-location-search');
+    const results = document.getElementById('map-search-results');
+    const q = (input ? input.value : '').trim();
+    if (!q || !evtMap) return;
+
+    input.disabled = true;
+    results.style.display = 'none';
+    results.innerHTML = '';
+
+    try {
+        const url = 'https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q) +
+                    '&format=json&limit=5&countrycodes=gb&addressdetails=1';
+        const resp = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+        const data = await resp.json();
+
+        if (!data.length) {
+            results.innerHTML = '<div style="padding:.6rem 1rem;font-size:12px;color:#888;">No results found.</div>';
+            results.style.display = 'block';
+            return;
+        }
+
+        data.forEach(function(place) {
+            const div = document.createElement('div');
+            div.style.cssText = 'padding:.55rem 1rem;font-size:12px;cursor:pointer;border-bottom:1px solid #f0f0f0;';
+            div.textContent = place.display_name;
+            div.onmouseover = function(){ this.style.background = '#f0f4ff'; };
+            div.onmouseout  = function(){ this.style.background = ''; };
+            div.onclick = function() {
+                const lat = parseFloat(place.lat);
+                const lng = parseFloat(place.lon);
+                evtMap.setView([lat, lng], 15);
+                results.style.display = 'none';
+                input.value = place.display_name.split(',')[0];
+            };
+            results.appendChild(div);
+        });
+
+        results.style.display = 'block';
+    } catch(e) {
+        results.innerHTML = '<div style="padding:.6rem 1rem;font-size:12px;color:#c00;">Search failed.</div>';
+        results.style.display = 'block';
+    } finally {
+        input.disabled = false;
+        input.focus();
+    }
+}
+
+// Close search results when clicking outside
+document.addEventListener('click', function(e) {
+    const results = document.getElementById('map-search-results');
+    const input   = document.getElementById('map-location-search');
+    if (results && input && !results.contains(e.target) && e.target !== input) {
+        results.style.display = 'none';
+    }
+});
+
+
 var osGridLayer = null, osGridOn = false;
 
 function toggleOsGrid() {
@@ -2318,8 +2397,10 @@ const POI_TYPES = {
     exit:     { label: 'Exit',       emoji: '🚪', colour: '#C8102E' },
     car_park: { label: 'Car Park',   emoji: '🅿',  colour: '#003366' },
     medical:  { label: 'Medical',    emoji: '🩺',  colour: '#dc2626' },
-    control:  { label: 'Control',    emoji: '📡',  colour: '#7c3aed' },
-    hazard:   { label: 'Hazard',     emoji: '⚠',  colour: '#d97706' },
+    control:    { label: 'Control',    emoji: '📡',  colour: '#7c3aed' },
+    checkpoint: { label: 'Checkpoint',  emoji: '🏁',  colour: '#0369a1' },
+    repeater:   { label: 'Repeater',    emoji: '📶',  colour: '#059669' },
+    hazard:     { label: 'Hazard',      emoji: '⚠',  colour: '#d97706' },
     info:     { label: 'Info Point', emoji: 'ℹ',  colour: '#0284c7' },
     custom:   { label: 'Custom',     emoji: '🚩',  colour: '#C8102E' },
 };

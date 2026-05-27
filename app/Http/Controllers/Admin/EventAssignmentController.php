@@ -491,4 +491,277 @@ class EventAssignmentController extends Controller
             return null;
         }
     }
+
+    public function resetBriefing($assignment): \Illuminate\Http\RedirectResponse
+    {
+        $a = \App\Models\EventAssignment::findOrFail($assignment);
+        $a->update([
+            'briefing_sent'    => false,
+            'briefing_sent_at' => null,
+        ]);
+        return back()->with('status', 'Briefing flag cleared for ' . ($a->user->name ?? 'operator') . '.');
+    }
+
+
+    public function bulkFill(Request $request, Event $event): \Illuminate\Http\JsonResponse
+    {
+        $ids    = $request->input('assignment_ids', []);
+        $fields = $request->input('fields', []);
+        $notesReplace = (bool)($fields['notes_replace'] ?? false);
+        unset($fields['notes_replace']);
+
+        $allowed = [
+            'frequency', 'mode', 'ctcss_tone', 'channel_label',
+            'fallback_frequency', 'fallback_mode',
+            'report_time', 'depart_time', 'briefing_notes',
+        ];
+
+        $toApply = array_filter($fields, fn($v) => $v !== null && $v !== '', ARRAY_FILTER_USE_BOTH);
+        $toApply = array_intersect_key($toApply, array_flip($allowed));
+
+        if (empty($ids) || empty($toApply)) {
+            return response()->json(['success' => false, 'message' => 'Nothing to update.']);
+        }
+
+        $assignments = \App\Models\EventAssignment::where('event_id', $event->id)
+            ->whereIn('id', $ids)->get();
+
+        $updated = [];
+        foreach ($assignments as $a) {
+            $data = $toApply;
+            // Handle briefing notes append vs replace
+            if (isset($data['briefing_notes']) && !$notesReplace && $a->briefing_notes) {
+                $data['briefing_notes'] = $a->briefing_notes . "\n" . $data['briefing_notes'];
+            }
+            $a->update($data);
+            $updated[] = [
+                'id'              => $a->id,
+                'frequency'       => $a->frequency,
+                'mode'            => $a->mode,
+                'ctcss_tone'      => $a->ctcss_tone,
+                'channel_label'   => $a->channel_label,
+                'fallback_frequency' => $a->fallback_frequency,
+                'fallback_mode'   => $a->fallback_mode,
+                'report_time'     => $a->report_time ? substr($a->report_time, 0, 5) : null,
+                'depart_time'     => $a->depart_time ? substr($a->depart_time, 0, 5) : null,
+                'briefing_notes'  => $a->briefing_notes,
+            ];
+        }
+
+        return response()->json(['success' => true, 'updated' => count($updated), 'assignments' => $updated]);
+    }
+
+
+    public function downloadOpsPack(\App\Models\Event $event): mixed
+    {
+        $assignments = \App\Models\EventAssignment::with('user')
+            ->where('event_id', $event->id)
+            ->whereIn('status', ['confirmed', 'standby', 'pending'])
+            ->orderBy('created_at')
+            ->get();
+
+        $pois = [];
+        if ($event->event_pois) {
+            $pois = is_array($event->event_pois) ? $event->event_pois : json_decode($event->event_pois, true) ?? [];
+        }
+
+        $event->load('type');
+
+        $eventData = [
+            'title'        => $event->title,
+            'date'         => $event->starts_at?->format('l j F Y') ?? '',
+            'time'         => ($event->starts_at?->format('H:i') ?? '') . ($event->ends_at ? ' - '.$event->ends_at->format('H:i') : ''),
+            'location'     => $event->location ?? '',
+            'type'         => $event->type?->name ?? '',
+            'supporting'   => $event->supporting_group ?? '',
+            'description'  => $event->description ?? '',
+            'group_name'   => \App\Helpers\RaynetSetting::groupName(),
+            'group_number' => \App\Helpers\RaynetSetting::groupNumber(),
+            'group_region' => \App\Helpers\RaynetSetting::groupRegion(),
+            'issued_by'    => auth()->user()->name . ' (' . (auth()->user()->callsign ?? 'no callsign') . ')',
+            'issued_at'    => now()->format('j M Y H:i'),
+        ];
+
+        $assignmentsData = $assignments->map(fn($a) => [
+            'name'                    => $a->user->name,
+            'callsign'                => $a->callsign ?? '',
+            'role'                    => $a->role ?? '',
+            'status'                  => $a->status ?? '',
+            'location_name'           => $a->location_name ?? '',
+            'grid_ref'                => $a->grid_ref ?? '',
+            'what3words'              => $a->what3words ?? '',
+            'lat'                     => $a->lat ? number_format((float)$a->lat, 5) : '',
+            'lng'                     => $a->lng ? number_format((float)$a->lng, 5) : '',
+            'frequency'               => $a->frequency ?? '',
+            'mode'                    => $a->mode ?? '',
+            'ctcss_tone'              => $a->ctcss_tone ?? '',
+            'channel_label'           => $a->channel_label ?? '',
+            'secondary_frequency'     => $a->secondary_frequency ?? '',
+            'secondary_mode'          => $a->secondary_mode ?? '',
+            'fallback_frequency'      => $a->fallback_frequency ?? '',
+            'fallback_mode'           => $a->fallback_mode ?? '',
+            'report_time'             => $a->report_time ? substr($a->report_time, 0, 5) : '',
+            'depart_time'             => $a->depart_time ? substr($a->depart_time, 0, 5) : '',
+            'has_vehicle'             => (bool)$a->has_vehicle,
+            'vehicle_reg'             => $a->vehicle_reg ?? '',
+            'first_aid_trained'       => (bool)$a->first_aid_trained,
+            'equipment_items'         => $a->equipment_items ?? [],
+            'shifts'                  => $a->shifts ?? [],
+            'briefing_notes'          => $a->briefing_notes ?? '',
+            'medical_notes'           => $a->medical_notes ?? '',
+            'emergency_contact_name'  => $a->emergency_contact_name ?? '',
+            'emergency_contact_phone' => $a->emergency_contact_phone ?? '',
+        ])->values()->all();
+
+        return view('admin.events.ops-pack-pdf', [
+            'event'           => $event,
+            'eventData'       => $eventData,
+            'assignmentsData' => $assignmentsData,
+            'pois'            => $pois,
+        ]);
+    }
+
+
+    public function mapThumbnail(\Illuminate\Http\Request $request): mixed
+    {
+        $lat  = (float) $request->query('lat', 53.4);
+        $lng  = (float) $request->query('lng', -2.99);
+        $zoom = (int)   $request->query('zoom', 15);
+        $size = (int)   $request->query('size', 400);
+        $size = min($size, 600);
+
+        // Convert lat/lng to tile x/y + exact sub-tile pixel offset
+        $n      = pow(2, $zoom);
+        $tileX  = (int) floor(($lng + 180) / 360 * $n);
+        $latRad = deg2rad($lat);
+        $tileY  = (int) floor((1 - log(tan($latRad) + 1 / cos($latRad)) / M_PI) / 2 * $n);
+        $exactX = (($lng + 180) / 360 * $n - $tileX) * 256;
+        $exactY = ((1 - log(tan($latRad) + 1 / cos($latRad)) / M_PI) / 2 * $n - $tileY) * 256;
+
+        // Fetch 3x3 grid of tiles and composite
+        $tileSize = 256;
+        $canvas   = imagecreatetruecolor($tileSize * 3, $tileSize * 3);
+
+        for ($dx = -1; $dx <= 1; $dx++) {
+            for ($dy = -1; $dy <= 1; $dy++) {
+                $tx  = $tileX + $dx;
+                $ty  = $tileY + $dy;
+                $url = "https://tile.openstreetmap.org/{$zoom}/{$tx}/{$ty}.png";
+
+                try {
+                    $ctx  = stream_context_create(['http' => ['timeout' => 5, 'header' => "User-Agent: RAYNET-Liverpool-Site/1.0
+"]]);
+                    $data = @file_get_contents($url, false, $ctx);
+                    if ($data) {
+                        $tile = @imagecreatefromstring($data);
+                        if ($tile) {
+                            imagecopy($canvas, $tile, ($dx+1)*$tileSize, ($dy+1)*$tileSize, 0, 0, $tileSize, $tileSize);
+                            imagedestroy($tile);
+                        }
+                    }
+                } catch (\Throwable $e) {}
+            }
+        }
+
+        // Pin at exact sub-tile pixel position
+        $cx = (int) round($tileSize + $exactX);
+        $cy = (int) round($tileSize + $exactY);
+        $red = imagecolorallocate($canvas, 200, 16, 46);
+        $white = imagecolorallocate($canvas, 255, 255, 255);
+
+        // Pin circle
+        imagefilledellipse($canvas, (int)$cx, (int)$cy - 18, 20, 20, $red);
+        imageellipse($canvas, (int)$cx, (int)$cy - 18, 22, 22, $white);
+
+        // Pin tail
+        imageline($canvas, (int)$cx, (int)$cy - 8, (int)$cx, (int)$cy, $red);
+        imageline($canvas, (int)$cx-1, (int)$cy - 8, (int)$cx-1, (int)$cy, $red);
+
+        // Crop to size centred on pin
+        $half   = (int)($size / 2);
+        $cropped = imagecreatetruecolor($size, $size);
+        imagecopy($cropped, $canvas, 0, 0, (int)$cx - $half, (int)$cy - $half, $size, $size);
+        imagedestroy($canvas);
+
+        ob_start();
+        imagepng($cropped);
+        $imageData = ob_get_clean();
+        imagedestroy($cropped);
+
+        return response($imageData, 200)
+            ->header('Content-Type', 'image/png')
+            ->header('Cache-Control', 'public, max-age=3600');
+    }
+
+    public function streetViewThumbnail(\Illuminate\Http\Request $request): mixed
+    {
+        // Use a very close zoom OSM map (zoom 18) as a free street-level context image
+        $lat  = (float) $request->query('lat', 53.4);
+        $lng  = (float) $request->query('lng', -2.99);
+        $zoom = 18;
+
+        $n      = pow(2, $zoom);
+        $tileX  = (int) floor(($lng + 180) / 360 * $n);
+        $latRad = deg2rad($lat);
+        $tileY  = (int) floor((1 - log(tan($latRad) + 1 / cos($latRad)) / M_PI) / 2 * $n);
+        $exactX = (($lng + 180) / 360 * $n - $tileX) * 256;
+        $exactY = ((1 - log(tan($latRad) + 1 / cos($latRad)) / M_PI) / 2 * $n - $tileY) * 256;
+
+        $tileSize = 256;
+        $canvas   = imagecreatetruecolor($tileSize * 3, $tileSize * 3);
+        $bg       = imagecolorallocate($canvas, 220, 226, 232);
+        imagefill($canvas, 0, 0, $bg);
+
+        for ($dx = -1; $dx <= 1; $dx++) {
+            for ($dy = -1; $dy <= 1; $dy++) {
+                $tx  = $tileX + $dx;
+                $ty  = $tileY + $dy;
+                $url = "https://tile.openstreetmap.org/{$zoom}/{$tx}/{$ty}.png";
+                try {
+                    $ctx  = stream_context_create(['http' => ['timeout' => 5, 'header' => "User-Agent: RAYNET-Liverpool-Site/1.0
+"]]);
+                    $data = @file_get_contents($url, false, $ctx);
+                    if ($data) {
+                        $tile = @imagecreatefromstring($data);
+                        if ($tile) {
+                            imagecopy($canvas, $tile, ($dx+1)*$tileSize, ($dy+1)*$tileSize, 0, 0, $tileSize, $tileSize);
+                            imagedestroy($tile);
+                        }
+                    }
+                } catch (\Throwable $e) {}
+            }
+        }
+
+        // Draw pin
+        $cx    = (int) round($tileSize + $exactX);
+        $cy    = (int) round($tileSize + $exactY);
+        $red   = imagecolorallocate($canvas, 200, 16, 46);
+        $white = imagecolorallocate($canvas, 255, 255, 255);
+        imagefilledellipse($canvas, $cx, $cy - 18, 20, 20, $red);
+        imageellipse($canvas, $cx, $cy - 18, 22, 22, $white);
+        imageline($canvas, $cx, $cy - 8, $cx, $cy, $red);
+        imageline($canvas, $cx-1, $cy - 8, $cx-1, $cy, $red);
+
+        // Crop landscape 400x220 centred on pin
+        $outW = 800; $outH = 440;
+        $cropped = imagecreatetruecolor($outW, $outH);
+        imagecopy($cropped, $canvas, 0, 0, $cx - (int)($outW/2), $cy - (int)($outH/2), $outW, $outH);
+        imagedestroy($canvas);
+
+        // Add "Close-up View" label
+        $navy = imagecolorallocate($cropped, 0, 51, 102);
+        $lbl  = imagecolorallocate($cropped, 255, 255, 255);
+        imagefilledrectangle($cropped, 0, 0, 100, 14, $navy);
+        imagestring($cropped, 2, 4, 2, 'Close-up View (z18)', $lbl);
+
+        ob_start();
+        imagepng($cropped);
+        $imageData = ob_get_clean();
+        imagedestroy($cropped);
+
+        return response($imageData, 200)
+            ->header('Content-Type', 'image/png')
+            ->header('Cache-Control', 'public, max-age=3600');
+    }
+
 }

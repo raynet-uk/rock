@@ -250,6 +250,11 @@ a:hover { text-decoration: underline; }
             {{ $event->title }}
             @if($event->is_private)<span class="rn-private-badge">🔒 Members Only</span>@endif
         </h1>
+        @if($event->supporting_group)
+            <div style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:4px 12px;background:rgba(200,16,46,.12);border:1px solid rgba(200,16,46,.4);border-radius:999px;font-size:12px;font-weight:700;color:#fff;">
+                🤝 Supporting: {{ $event->supporting_group }}
+            </div>
+        @endif
     </div>
 </div>
 
@@ -464,7 +469,14 @@ a:hover { text-decoration: underline; }
             @if($event->location)
             <div class="rn-meta-row">
                 <div class="rn-meta-lbl">Location</div>
-                <div class="rn-meta-val">{{ $event->location }}</div>
+                <div class="rn-meta-val">
+                    @if($event->is_private && !auth()->check())
+                        <span style="filter:blur(4px);user-select:none;pointer-events:none;">{{ $event->location }}</span>
+                        <span style="font-size:11px;color:var(--red);margin-left:6px;">🔒 <a href="{{ route('login') }}" style="color:var(--red);font-weight:bold;">Sign in</a> to view</span>
+                    @else
+                        {{ $event->location }}
+                    @endif
+                </div>
             </div>
             @endif
             @if($event->type)
@@ -482,7 +494,9 @@ a:hover { text-decoration: underline; }
         <div class="rn-card-head"><div class="rn-card-head-dot"></div>Actions</div>
         <div class="rn-card-body" style="padding:10px;">
             <a href="{{ route('request-support') }}" class="rn-btn rn-btn-primary">Request RAYNET Support</a>
+            @if(!$event->is_private || auth()->check())
             <button type="button" class="rn-btn rn-btn-ghost" onclick="toggleShare()" id="rn-share-toggle">Share / Add to Calendar</button>
+            @endif
         </div>
         <div class="rn-share-panel" id="rn-share-panel">
             @php

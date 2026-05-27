@@ -89,7 +89,7 @@ Route::get('/install/welcome', function () {
 */
 Route::get('/', function () {
     $today    = Carbon::today();
-    $upcoming = Event::where('starts_at', '>=', $today)->orderBy('starts_at')->get();
+    $upcoming = Event::where('starts_at', '>=', $today)->orderBy('starts_at')->when(!auth()->check(), fn($q) => $q->where('is_private', false))->get();
     $alertStatus = AlertStatus::query()->first();
     $featuredPhotos = \App\Models\Photo::where('status','approved')->where('featured',true)->orderByDesc('created_at')->take(6)->get();
     $netActive = \App\Models\Setting::get('net_active','0') === '1';
@@ -371,6 +371,23 @@ Route::get('/events/availability/{token}', [EventAdminController::class, 'availa
 | OPERATOR BRIEF & CHECK-IN — public, no auth required
 |--------------------------------------------------------------------------
 */
+Route::get('/operator-brief-test/{token}', function(string $token) {
+    $assignment = App\Models\EventAssignment::with(['user','event','event.type'])
+        ->where('briefing_token', $token)->firstOrFail();
+    // Temporarily override attendance status to allow check-in UI to show
+    $assignment->attendance_status = 'not_arrived';
+    // Override event date to today so canCheckIn() passes
+    if ($assignment->event) {
+        $assignment->event->starts_at = now()->timezone('Europe/London');
+    }
+    $event = $assignment->event;
+    $eventPolygon = null;
+    $eventPin = null;
+    $eventPois = $event->event_pois ? (is_array($event->event_pois) ? $event->event_pois : json_decode($event->event_pois, true)) : null;
+    $eventRoute = null;
+    return view('operator.brief', compact('assignment','eventPolygon','eventPin','eventPois','eventRoute'));
+})->name('operator.brief.test');
+
 Route::prefix('operator-brief')->group(function () {
     Route::get('/{token}',           [OperatorBriefController::class, 'show'])      ->name('operator.brief');
     Route::post('/{token}/check-in', [OperatorBriefController::class, 'checkIn'])   ->name('operator.brief.check-in');
@@ -964,11 +981,15 @@ Route::middleware('admin')->group(function () {
     Route::post('/admin/events/{event}/briefings/bulk',          [EventAssignmentController::class, 'sendBulkBriefings'])   ->name('admin.events.assignments.briefings-bulk');
     Route::post('/admin/assignments/{assignment}/briefing',      [EventAssignmentController::class, 'sendSingleBriefing'])  ->name('admin.events.assignments.briefing-send');
     Route::get('/admin/assignments/{assignment}/briefing-pdf',   [EventAssignmentController::class, 'downloadBriefingPdf']) ->name('admin.events.assignments.briefing-pdf');
+    Route::get('/admin/events/{event}/ops-pack-pdf',             [EventAssignmentController::class, 'downloadOpsPack'])    ->name('admin.events.assignments.ops-pack');
+    Route::get('/admin/map-thumbnail',    [EventAssignmentController::class, 'mapThumbnail'])   ->name('admin.map-thumbnail');
+    Route::get('/admin/streetview-thumbnail', [EventAssignmentController::class, 'streetViewThumbnail'])->name('admin.streetview-thumbnail');
     Route::post('/admin/events/{event}/assignments/notify',           [EventAssignmentController::class, 'notifyCrew'])          ->name('admin.events.assignments.notify');
     Route::put('/admin/assignments/{assignment}',                    [EventAssignmentController::class, 'update'])          ->name('admin.events.assignments.update');
     Route::patch('/admin/assignments/{assignment}/position',         [EventAssignmentController::class, 'updatePosition'])  ->name('admin.events.assignments.position');
     Route::delete('/admin/assignments/{assignment}',                 [EventAssignmentController::class, 'destroy'])         ->name('admin.events.assignments.destroy');
     Route::post('/admin/events/{event}/assignments/bulk-status',     [EventAssignmentController::class, 'bulkStatus'])      ->name('admin.events.assignments.bulk-status');
+    Route::post('/admin/events/{event}/assignments/bulk-fill',      [EventAssignmentController::class, 'bulkFill'])       ->name('admin.events.assignments.bulk-fill');
     Route::get('/admin/events/{event}/assignments/attendance-status',[EventAssignmentController::class, 'attendanceStatus'])->name('admin.events.assignments.attendance-status');
     Route::post('/admin/assignments/{assignment}/reset-attendance',  [EventAssignmentController::class, 'resetAttendance']) ->name('admin.events.assignments.reset-attendance');
     Route::post('/admin/events/{event}/duplicate-crew',              [EventAssignmentController::class, 'duplicateTeam'])   ->name('admin.events.duplicate-team');

@@ -416,6 +416,12 @@
         @if ($assignment->event->location)
             <span class="hero-chip">📍 {{ $assignment->event->location }}</span>
         @endif
+        @if ($assignment->event->is_private)
+            <span class="hero-chip" style="background:rgba(200,16,46,.2);border-color:rgba(200,16,46,.5);font-weight:700;">🔒 Members Only</span>
+        @endif
+        @if ($assignment->event->supporting_group)
+            <span class="hero-chip" style="background:rgba(200,16,46,.12);border-color:rgba(200,16,46,.35);font-weight:700;">🤝 Supporting: {{ $assignment->event->supporting_group }}</span>
+        @endif
         <span class="hero-chip" style="background:{{ match($assignment->status) {
             'confirmed' => 'rgba(26,107,60,.35)',
             'standby'   => 'rgba(138,92,0,.35)',
@@ -1147,6 +1153,7 @@ document.addEventListener('DOMContentLoaded', function () {
 @if ($assignment->canCheckIn())
 <script>
 // ── Event geo data from server ─────────────────────────────────────────────
+const TEST_MODE    = {{ request()->routeIs('operator.brief.test') ? 'true' : 'false' }};
 const GEO_POLYGON  = {!! isset($eventPolygon) && $eventPolygon ? json_encode($eventPolygon) : 'null' !!};
 const GEO_PIN      = {!! isset($eventPin)     && $eventPin     ? json_encode($eventPin)     : 'null' !!};
 const MAX_MILES    = 1;          // allowed radius if no polygon set
@@ -1202,6 +1209,7 @@ function distToPolygonCentroid(lat, lng, geo) {
 
 // ── Main gate logic ─────────────────────────────────────────────────────────
 function requestGeoCheckIn() {
+    if (TEST_MODE) { submitCheckIn('Test mode — geo bypassed'); return; }
     const wrap = document.getElementById('geo-checkin-wrap');
 
     // No geo data at all — allow straight through

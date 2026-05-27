@@ -38,6 +38,7 @@ class CalendarController extends Controller
                          ->where('ends_at', '>=', $monthStart);
                   });
             })
+            ->when(!auth()->check(), fn($q) => $q->where('is_private', false))
             ->orderBy('starts_at')
             ->get();
 
@@ -111,6 +112,7 @@ class CalendarController extends Controller
                          ->where('ends_at', '>=', $monthStart);
                   });
             })
+            ->when(!auth()->check(), fn($q) => $q->where('is_private', false))
             ->orderBy('starts_at')
             ->get();
 

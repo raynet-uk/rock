@@ -37,45 +37,8 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: var(--bg); font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; color: var(--text); font-size: 14px; -webkit-font-smoothing: antialiased; }
 
-/* ─── TOPBAR ─────────────────────────────────────────────────── */
-.topbar {
-    background: var(--navy-d);
-    border-bottom: 3px solid var(--red);
-    padding: 0 clamp(16px, 4vw, 40px);
-    height: 56px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: 0 2px 14px rgba(0,0,0,.35);
-}
-
-.brand { display: flex; align-items: center; gap: 12px; }
-.brand-logo {
-    width: 34px; height: 34px;
-    background: var(--red); border-radius: 4px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 9px; font-weight: bold; color: var(--white);
-    letter-spacing: .04em; text-transform: uppercase; line-height: 1.2; text-align: center;
-}
-.brand-name { font-size: 14px; font-weight: bold; color: var(--white); letter-spacing: .03em; }
-.brand-sub  { font-size: 10px; color: rgba(255,255,255,.45); letter-spacing: .05em; text-transform: uppercase; margin-top: 1px; }
-
-.live-chip {
-    display: flex; align-items: center; gap: 7px;
-    font-size: 11px; font-weight: 600; color: rgba(255,255,255,.6);
-    letter-spacing: .05em; text-transform: uppercase;
-}
-.live-dot {
-    width: 8px; height: 8px; border-radius: 50%; background: #22c55e;
-    animation: blink 1.6s ease infinite;
-}
-@keyframes blink { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.5; transform:scale(1.3); } }
-
 /* ─── WRAP ───────────────────────────────────────────────────── */
-.wrap { max-width: 1340px; margin: 0 auto; padding: 28px clamp(16px, 4vw, 40px) 60px; }
+.wrap { max-width: 1340px; margin: 0 auto; padding: 0 0 60px; }
 
 /* ─── PAGE HEADER ────────────────────────────────────────────── */
 .page-header { margin-bottom: 28px; }
@@ -285,14 +248,14 @@ body { background: var(--bg); font-family: Arial, 'Helvetica Neue', Helvetica, s
 .prop-section-body strong { color: var(--navy); }
 
 /* ─── SIDE CARDS ─────────────────────────────────────────────── */
-.alert-banner { height: 5px; }
-.alert-body { padding: 14px 16px; }
-.alert-label { font-size: 9px; font-weight: bold; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
-.alert-level-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-.alert-level-num { font-size: 28px; font-weight: bold; line-height: 1; }
-.alert-level-title { font-size: 14px; font-weight: bold; }
-.alert-level-desc  { font-size: 11px; color: var(--muted); margin-top: 2px; }
-.alert-msg { font-size: 12px; color: var(--text); margin-top: 8px; line-height: 1.5; }
+.dash-alert-banner { height: 5px; }
+.dash-alert-body { padding: 14px 16px; }
+.dash-alert-label { font-size: 9px; font-weight: bold; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.dash-alert-level-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.dash-alert-level-num { font-size: 28px; font-weight: bold; line-height: 1; }
+.dash-alert-level-title { font-size: 14px; font-weight: bold; }
+.dash-alert-level-desc  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.dash-alert-msg { font-size: 12px; color: var(--text); margin-top: 8px; line-height: 1.5; }
 
 .link-list { display: flex; flex-direction: column; gap: 6px; }
 .link-item {
@@ -412,19 +375,6 @@ body { background: var(--bg); font-family: Arial, 'Helvetica Neue', Helvetica, s
 }
 </style>
 
-<nav class="topbar">
-    <div class="brand">
-        <div class="brand-logo">RAY<br>NET</div>
-        <div>
-            <div class="brand-name">{{ \App\Helpers\RaynetSetting::groupName() }}</div>
-            <div class="brand-sub">{{ \App\Helpers\RaynetSetting::groupNumber() }}</div>
-        </div>
-    </div>
-    <div class="live-chip">
-        <div class="live-dot"></div>
-        Live Propagation Dashboard
-    </div>
-</nav>
 
 <div class="wrap">
 
@@ -621,27 +571,6 @@ body { background: var(--bg); font-family: Arial, 'Helvetica Neue', Helvetica, s
 
         {{-- RIGHT COLUMN --}}
         <div>
-
-            {{-- RAYNET ALERT --}}
-            <div class="card" style="overflow:visible;">
-                <div class="alert-banner" style="background:{{ $currentColour }};"></div>
-                <div class="alert-body">
-                    <div class="alert-label">RAYNET Alert Status — Liverpool</div>
-                    <div class="alert-level-row">
-                        <div class="alert-level-num" style="color:{{ $currentColour }};">{{ $currentLevel }}</div>
-                        <div>
-                            <div class="alert-level-title">{{ $alertMeta['title'] ?? 'Level ' . $currentLevel }}</div>
-                            <div class="alert-level-desc">{{ $alertMeta['description'] ?? 'No active incidents' }}</div>
-                        </div>
-                    </div>
-                    @if (!empty($alertStatus?->headline))
-                        <div class="alert-msg" style="font-weight:600;">{{ $alertStatus->headline }}</div>
-                    @endif
-                    @if (!empty($alertStatus?->message))
-                        <div class="alert-msg">{{ $alertStatus->message }}</div>
-                    @endif
-                </div>
-            </div>
 
             {{-- GEOMAGNETIC DETAIL --}}
             <div class="card">

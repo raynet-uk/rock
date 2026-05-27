@@ -55,7 +55,7 @@
                 <div style="font-size: 1rem; font-weight: 700; color: {{ $textColour }}; line-height: 1.2; margin-bottom: 3px;">
                     {{ $meta['title'] ?? 'Level '.$level }}
                 </div>
-                <div style="font-size: 0.8rem; color: {{ $subtleText }}; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                <div style="font-size: 0.8rem; color: {{ $subtleText }}; line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; ">
                     {{ $meta['description'] ?? '' }}
                 </div>
             </div>

@@ -35,6 +35,7 @@ class Event extends Model
         // Points of interest — 2026_add_event_pois_to_events_table
         'event_pois',
         'is_private',
+        'supporting_group',
     ];
 
     protected $casts = [

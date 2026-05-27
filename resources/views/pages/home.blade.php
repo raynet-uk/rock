@@ -144,7 +144,7 @@ body {
 .event-desc { font-size: 0.95rem; color: var(--text-light); line-height: 1.5; }
 .event-list-item { display: flex; gap: 1rem; padding: 1rem 1.2rem; border-radius: 8px; transition: var(--transition); }
 .event-list-item:hover { background: var(--light); }
-.event-date { min-width: 50px; text-align: center; padding: 0.5rem 0.4rem; background: var(--navy); color: white; border-radius: 6px; }
+.event-date { min-width: 50px; text-align: center; padding: 0.5rem 0.4rem; background: var(--navy); color: white; border-radius: 6px; align-self: flex-start; flex-shrink: 0; }
 .event-date-day { font-size: 1.3rem; font-weight: bold; line-height: 1; }
 .event-date-month { font-size: 0.75rem; text-transform: uppercase; }
 .event-list-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 0.3rem; }
@@ -190,6 +190,31 @@ body {
 .rsgb-news-card a:hover { text-decoration: underline; }
 .rsgb-news-card li::after { content: "→"; position: absolute; right: 16px; top: 50%; transform: translateY(-50%); opacity: .35; }
 .rsgb-news-card li:last-child { margin-bottom: 0; }
+
+/* ── MOBILE FIXES ── */
+@media (max-width: 600px) {
+    .wrap { padding: 0 .75rem 2rem; }
+    .topbar { padding: .75rem 0; margin-bottom: 1rem; }
+    .status-chip span { display: none; }
+    .status-chip::after { content: 'Ready to Support'; font-size: .8rem; }
+    .hero-title { font-size: 1.5rem; }
+    .hero-desc { font-size: .95rem; }
+    .hero-body { padding: 1rem; gap: 1rem; }
+    .hero-actions { flex-direction: column; }
+    .hero-actions .btn { justify-content: center; }
+    .section-head { margin: 1.5rem 0 1rem; }
+    .section-head h2 { font-size: 1.3rem; }
+    .cta-strip { padding: 1.4rem 1.2rem; }
+    .cta-strip-title { font-size: 1.2rem; }
+    .cta-strip .btn-primary, .cta-strip .btn-outline { justify-content: center; width: 100%; }
+    .what-grid { grid-template-columns: 1fr; }
+    .event-meta { flex-direction: column; gap: .4rem; }
+}
+@media (max-width: 400px) {
+    .hero-title { font-size: 1.3rem; }
+    .brand-name { font-size: 1.05rem; }
+}
+
 </style>
 
 <div class="wrap">
@@ -249,22 +274,38 @@ body {
                 </span>
             </div>
             @if ($nextEvent)
-                <div class="event-body">
-                    @if ($nextEvent->eventType)
-                        <div class="event-type" style="background:{{ $nextEvent->eventType->colour }}20; color:{{ $nextEvent->eventType->colour }}; border:1px solid {{ $nextEvent->eventType->colour }}60;">
-                            {{ $nextEvent->eventType->name }}
-                        </div>
-                    @endif
-                    <h3 class="event-title">{{ $nextEvent->title }}</h3>
-                    <div class="event-meta">
-                        <span>📅 {{ \Carbon\Carbon::parse($nextEvent->starts_at)->format('l j M Y') }}</span>
-                        @if ($nextEvent->location)<span>📍 {{ $nextEvent->location }}</span>@endif
-                        @if ($nextEvent->starts_at)<span>🕐 {{ \Carbon\Carbon::parse($nextEvent->starts_at)->format('H:i') }}</span>@endif
+                <a href="{{ $nextEvent->url() }}" class="event-list-item" style="text-decoration:none;color:inherit;display:flex;padding:1.2rem;align-items:flex-start;">
+                    <div class="event-date" style="flex-shrink:0;align-self:flex-start;">
+                        <div class="event-date-day">{{ \Carbon\Carbon::parse($nextEvent->starts_at)->format('d') }}</div>
+                        <div class="event-date-month">{{ \Carbon\Carbon::parse($nextEvent->starts_at)->format('M') }}</div>
                     </div>
-                    @if ($nextEvent->description)
-                        <p class="event-desc">{{ Str::limit($nextEvent->description, 160) }}</p>
-                    @endif
-                </div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-bottom:.3rem;">
+                            <div class="event-list-title" style="margin-bottom:0;">{{ $nextEvent->title }}</div>
+                            @auth
+                                @if($nextEvent->is_private)
+                                    <div style="display:inline-flex;align-items:center;gap:.3rem;padding:.1rem .5rem;background:rgba(200,16,46,.15);border:1px solid rgba(200,16,46,.6);border-radius:999px;font-size:.68rem;font-weight:700;color:#a00d25;white-space:nowrap;">🔒 Private</div>
+                                @endif
+                            @endauth
+                            @if($nextEvent->supporting_group)
+                                <div style="display:inline-flex;align-items:center;gap:.3rem;padding:.1rem .5rem;background:rgba(200,16,46,.08);border:1px solid rgba(200,16,46,.25);border-radius:999px;font-size:.68rem;font-weight:700;color:var(--red);white-space:nowrap;">🤝 {{ $nextEvent->supporting_group }}</div>
+                            @endif
+                        </div>
+                        @if($nextEvent->eventType)
+                            <div class="event-list-sub" style="margin-bottom:.3rem;">
+                                <span style="display:inline-block;padding:1px 7px;font-size:.75rem;font-weight:700;background:{{ $nextEvent->eventType->colour }}20;border:1px solid {{ $nextEvent->eventType->colour }}60;color:{{ $nextEvent->eventType->colour }};">{{ $nextEvent->eventType->name }}</span>
+                            </div>
+                        @endif
+                        <div class="event-list-sub">
+                            📅 {{ \Carbon\Carbon::parse($nextEvent->starts_at)->format('l j M Y') }}
+                            @if($nextEvent->starts_at) · 🕐 {{ \Carbon\Carbon::parse($nextEvent->starts_at)->format('H:i') }}@endif
+                            @if($nextEvent->location) · 📍 {{ $nextEvent->location }}@endif
+                        </div>
+                        @if($nextEvent->description)
+                            <p class="event-desc" style="margin-top:.5rem;">{{ Str::limit($nextEvent->description, 160) }}</p>
+                        @endif
+                    </div>
+                </a>
             @else
                 <div class="event-body" style="padding:2rem; text-align:center; color:var(--muted);">
                     No upcoming events.<br>Check back soon.
@@ -277,19 +318,29 @@ body {
             <div style="padding:0.5rem;">
                 @if (!empty($upcomingEvents) && $upcomingEvents->count() > 0)
                     @foreach ($upcomingEvents->take(5) as $event)
-                        <div class="event-list-item">
+                        <a href="{{ $event->url() }}" class="event-list-item" style="text-decoration:none;color:inherit;">
                             <div class="event-date">
                                 <div class="event-date-day">{{ \Carbon\Carbon::parse($event->starts_at)->format('d') }}</div>
                                 <div class="event-date-month">{{ \Carbon\Carbon::parse($event->starts_at)->format('M') }}</div>
                             </div>
                             <div>
-                                <div class="event-list-title">{{ $event->title }}</div>
+                                <div style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;">
+                                    <div class="event-list-title" style="margin-bottom:0;">{{ $event->title }}</div>
+                                    @auth
+                                        @if($event->is_private)
+                                            <div style="display:inline-flex;align-items:center;gap:.3rem;padding:.1rem .5rem;background:rgba(200,16,46,.15);border:1px solid rgba(200,16,46,.6);border-radius:999px;font-size:.68rem;font-weight:700;color:#a00d25;white-space:nowrap;">🔒 Private</div>
+                                        @endif
+                                    @endauth
+                                    @if($event->supporting_group)
+                                        <div style="display:inline-flex;align-items:center;gap:.3rem;padding:.1rem .5rem;background:rgba(200,16,46,.08);border:1px solid rgba(200,16,46,.25);border-radius:999px;font-size:.68rem;font-weight:700;color:var(--red);white-space:nowrap;">🤝 {{ $event->supporting_group }}</div>
+                                    @endif
+                                </div>
                                 <div class="event-list-sub">
                                     @if ($event->location) 📍 {{ $event->location }} @endif
                                     @if ($event->eventType) · {{ $event->eventType->name }} @endif
                                 </div>
                             </div>
-                        </div>
+                        </a>
                     @endforeach
                 @else
                     <div style="padding:2rem; text-align:center; color:var(--muted);">

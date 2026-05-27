@@ -300,6 +300,34 @@ body {
     color: var(--red);
     font-weight: bold;
 }
+
+/* LINK CARD HEADER (was missing entirely) */
+.card-head {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 1rem 1.2rem;
+    background: var(--light);
+    border-bottom: 1px solid var(--border);
+}
+.card-head-icon { font-size: 1.4rem; line-height: 1; flex-shrink: 0; }
+.card-head-title { font-size: 1.05rem; font-weight: bold; color: var(--navy); }
+
+/* MOBILE FIXES */
+@media (max-width: 600px) {
+    .wrap { padding: 0 .75rem 2rem; }
+    .topbar { padding: .75rem 0; margin-bottom: 1rem; }
+    .status-chip span { font-size: .78rem; }
+    .page-header h1 { font-size: 1.5rem; }
+    .page-header { margin-bottom: 1.2rem; }
+    .btn-submit { width: 100%; text-align: center; justify-content: center; align-self: stretch; }
+    .form-footer { gap: .75rem; }
+    .link-item { padding: .85rem .9rem; gap: .6rem; }
+    .link-item-icon { font-size: 1.3rem; }
+    .info-row { gap: .6rem; }
+    .info-row-icon { font-size: 1.3rem; }
+}
+
 </style>
 
 <div class="wrap">

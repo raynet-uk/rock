@@ -51,6 +51,7 @@ class EventAdminController extends Controller
             'event_type_id'      => ['required', 'exists:event_types,id'],
             'description'        => ['nullable', 'string'],
             'is_private'         => ['nullable', 'boolean'],          // ← ADDED
+            'supporting_group'   => ['nullable', 'string', 'max:120'],
             'event_lat'          => ['nullable', 'numeric', 'between:-90,90'],
             'event_lng'          => ['nullable', 'numeric', 'between:-180,180'],
             'event_polygon'      => ['nullable', 'string'],
@@ -74,6 +75,7 @@ class EventAdminController extends Controller
         $event->description        = $data['description'] ?? null;
         $event->is_public          = true;
         $event->is_private         = $request->boolean('is_private');  // ← ADDED
+        $event->supporting_group   = $request->filled('supporting_group') ? trim($request->input('supporting_group')) : null;
         $event->event_lat          = isset($data['event_lat']) && $data['event_lat'] !== '' ? (float) $data['event_lat'] : null;
         $event->event_lng          = isset($data['event_lng']) && $data['event_lng'] !== '' ? (float) $data['event_lng'] : null;
         $event->event_polygon      = $this->parsePolygon($request->input('event_polygon'));
@@ -102,6 +104,7 @@ class EventAdminController extends Controller
             'event_type_id'      => ['required', 'exists:event_types,id'],
             'description'        => ['nullable', 'string'],
             'is_private'         => ['nullable', 'boolean'],          // ← ADDED
+            'supporting_group'   => ['nullable', 'string', 'max:120'],
             'event_lat'          => ['nullable', 'numeric', 'between:-90,90'],
             'event_lng'          => ['nullable', 'numeric', 'between:-180,180'],
             'event_polygon'      => ['nullable', 'string'],
@@ -123,6 +126,7 @@ class EventAdminController extends Controller
         $event->event_type_id      = $data['event_type_id'];
         $event->description        = $data['description'] ?? null;
         $event->is_private         = $request->boolean('is_private');  // ← ADDED
+        $event->supporting_group   = $request->filled('supporting_group') ? trim($request->input('supporting_group')) : null;
         $event->event_lat          = isset($data['event_lat']) && $data['event_lat'] !== '' ? (float) $data['event_lat'] : null;
         $event->event_lng          = isset($data['event_lng']) && $data['event_lng'] !== '' ? (float) $data['event_lng'] : null;
         $event->event_polygon      = $this->parsePolygon($request->input('event_polygon'));
@@ -517,7 +521,7 @@ class EventAdminController extends Controller
 
         if (! is_array($decoded)) return null;
 
-        $allowedTypes = ['entrance', 'exit', 'car_park', 'medical', 'control', 'hazard', 'info', 'custom'];
+        $allowedTypes = ['entrance', 'exit', 'car_park', 'medical', 'control', 'checkpoint', 'repeater', 'hazard', 'info', 'custom'];
 
         $clean = [];
         foreach ($decoded as $poi) {

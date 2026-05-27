@@ -201,8 +201,8 @@
 
         /* ── RESPONSIVE ── */
         @media (max-width: 920px) { .nav-main { display: none; } }
-        @media (max-width: 768px) { .header-controls { display: none; } .hamburger { display: flex; } }
-        @media (min-width: 769px) { .mobile-menu { display: none !important; } }
+        @media (max-width: 920px) { .header-controls { display: none; } .hamburger { display: flex; } }
+        @media (min-width: 921px) { .mobile-menu { display: none !important; } }
         @media (max-width: 480px) {
             .nav-container { padding: 0 1rem; }
             .brand-logo { height: 32px; }
@@ -463,7 +463,6 @@
                 <a href="{{ route('about') }}"           class="{{ request()->routeIs('about')           ? 'active' : '' }}"><span class="mobile-menu-icon">ℹ️</span> About</a>
                 <a href="{{ route('event-support') }}"   class="{{ request()->routeIs('event-support')   ? 'active' : '' }}"><span class="mobile-menu-icon">📡</span> Event Support</a>
                 <a href="{{ route('request-support') }}" class="{{ request()->routeIs('request-support') ? 'active' : '' }}"><span class="mobile-menu-icon">🆘</span> Request Support</a>
-                <a href="{{ route('data-dashboard') }}"  class="{{ request()->routeIs('data-dashboard')  ? 'active' : '' }}"><span class="mobile-menu-icon">📊</span> Data Dashboard</a>
                 <a href="{{ route('training') }}"        class="{{ request()->routeIs('training')        ? 'active' : '' }}"><span class="mobile-menu-icon">🎓</span> Training</a>
                 <a href="{{ route('gallery') }}" class="{{ request()->routeIs('gallery') ? 'active' : '' }}"><span class="mobile-menu-icon">📸</span> Gallery</a>
                 <a href="{{ route('resources.index') }}"  class="{{ request()->routeIs('resources*')       ? 'active' : '' }}"><span class="mobile-menu-icon">&#128193;</span> Drive</a>

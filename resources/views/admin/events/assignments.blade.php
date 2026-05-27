@@ -591,6 +591,7 @@ body{background:var(--grey);color:var(--text);font-family:var(--font);font-size:
         <button class="tab-btn"        onclick="switchTab('briefing')" id="tabbtn-briefing"><span class="tab-icon">📋</span> Briefing</button>
         <button class="tab-btn"        onclick="switchTab('attendance')" id="tabbtn-attendance"><span class="tab-icon">✅</span> Attendance</button>
         <button class="tab-btn" onclick="switchTab('availability')" id="tabbtn-availability"><span class="tab-icon">📣</span> Availability</button>
+        <button class="tab-btn" onclick="switchTab('bulkfill')" id="tabbtn-bulkfill"><span class="tab-icon">⚡</span> Bulk Fill</button>
     </div>
 </div>
 
@@ -610,6 +611,7 @@ body{background:var(--grey);color:var(--text);font-family:var(--font);font-size:
             <button class="btn btn-primary" onclick="openAddModal()">+ Assign Member</button>
 
             <button class="btn btn-primary" onclick="document.getElementById('briefingModal').classList.add('open');">✉ Send Briefings</button>
+            <a href="{{ route('admin.events.assignments.ops-pack', $event->id) }}" class="btn btn-ghost" target="_blank" style="color:#1a6b3c;border-color:rgba(26,107,60,.4);">⬇ Download Ops Pack PDF</a>
 
             {{-- Duplicate team from past event --}}
             @if (isset($pastEvents) && $pastEvents->isNotEmpty())
@@ -1683,6 +1685,23 @@ body{background:var(--grey);color:var(--text);font-family:var(--font);font-size:
                 </div>
 
                 <div class="section-divider">Position</div>
+                @if(!empty($event->event_pois))
+                <div class="frow" style="margin-bottom:.6rem;">
+                    <div class="ff" style="flex:2;">
+                        <label>📍 Link to Event POI Checkpoint</label>
+                        <select id="modal-poi-link" onchange="applyPoiLink(this.value)"
+                                style="width:100%;padding:.45rem .7rem;border:1px solid var(--grey-mid);border-radius:4px;font-size:13px;font-family:var(--font);background:white;color:var(--text);">
+                            <option value="">— Select a checkpoint to auto-fill location —</option>
+                            @foreach($event->event_pois as $poi)
+                                <option value="{{ json_encode(['name'=>$poi['name'],'lat'=>$poi['lat'],'lng'=>$poi['lng'],'grid_ref'=>$poi['grid_ref']??'','w3w'=>$poi['w3w']??'']) }}">
+                                    {{ $poi['name'] ?? 'Unnamed POI' }}
+                                    @if(!empty($poi['grid_ref'])) — {{ $poi['grid_ref'] }}@endif
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                @endif
                 <div class="frow">
                     <div class="ff"><label>Location Name</label><input type="text" name="location_name" id="modal-locname" placeholder="Checkpoint Alpha"></div>
                     <div class="ff"><label>OS Grid Reference</label><input type="text" name="grid_ref" id="modal-grid" placeholder="SJ394905"></div>
@@ -1735,6 +1754,7 @@ body{background:var(--grey);color:var(--text);font-family:var(--font);font-size:
                             <button type="button" class="preset-chip" onclick="applyPreset('afternoon')">Afternoon</button>
                             <button type="button" class="preset-chip" onclick="applyPreset('fullday')">Full Day</button>
                             <button type="button" class="preset-chip" onclick="applyPreset('split')">Split Shift</button>
+                            <button type="button" class="preset-chip" onclick="fillShiftFromReportDepart()" style="color:#0369a1;border-color:rgba(3,105,161,.3);background:rgba(3,105,161,.06);">⏱ Report→Depart</button>
                             <button type="button" class="preset-chip" onclick="clearShifts()" style="color:var(--red);border-color:rgba(200,16,46,.3);">Clear</button>
                         </div>
                     </div>
@@ -1884,6 +1904,7 @@ const ROUTES = {
     update:     "{{ url('admin/assignments') }}/",
     position:   "{{ url('admin/assignments') }}/",
     bulkStatus: "{{ url('admin/events/'.$event->id.'/assignments/bulk-status') }}",
+    bulkFill:   "{{ url('admin/events/'.$event->id.'/assignments/bulk-fill') }}",
 };
 const CSRF   = "{{ csrf_token() }}";
 const EVENT_ID = {{ $event->id }};
@@ -2905,6 +2926,8 @@ function openAddModal() {
     shiftData = [];
     renderShiftRows();
     document.getElementById('assignModal').classList.add('open');
+    const poiDrop = document.getElementById('modal-poi-link');
+    if (poiDrop) poiDrop.value = '';
     // Destroy old picker so it reinitialises fresh at the default centre
     if (pickerMap) { pickerMap.remove(); pickerMap = null; pickerMarker = null; }
     setTimeout(initPickerMap, 120);
@@ -2947,6 +2970,36 @@ function openEditModal(id) {
     // Reinitialise picker map with the operator's existing coords
     if (pickerMap) { pickerMap.remove(); pickerMap = null; pickerMarker = null; }
     setTimeout(initPickerMap, 120);
+}
+
+function applyPoiLink(val) {
+    if (!val) return;
+    try {
+        const poi = JSON.parse(val);
+        const set = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; };
+        set('modal-locname', poi.name);
+        set('modal-grid',    poi.grid_ref);
+        set('modal-w3w',     poi.w3w);
+        if (poi.lat && poi.lng) {
+            set('modal-lat', poi.lat);
+            set('modal-lng', poi.lng);
+            syncPickerFromFields();
+        }
+        // Reset the dropdown so it shows placeholder again
+        document.getElementById('modal-poi-link').value = '';
+    } catch(e) {}
+}
+
+
+function fillShiftFromReportDepart() {
+    const report = document.getElementById('modal-report')?.value;
+    const depart = document.getElementById('modal-depart')?.value;
+    if (!report || !depart) {
+        alert('Please fill in both Report Time and Depart Time first.');
+        return;
+    }
+    shiftData = [{ type: 'shift', start: report, end: depart, label: '' }];
+    renderShiftRows();
 }
 
 function clearModalFields() {
@@ -3120,6 +3173,105 @@ function updateBriefingMemberCount() {
     if (el) el.textContent = n + " selected";
 }
 </script>
+    {{-- ══════════════════════════════ TAB: BULK FILL ══════════════════════════════ --}}
+    <div id="tab-bulkfill" class="tab-pane fade-in">
+        <div class="action-bar">
+            <span style="font-size:12px;color:var(--text-muted);font-weight:bold;">Fill common briefing fields across multiple members at once.</span>
+        </div>
+        <div class="panel" style="padding:1.5rem;">
+
+            {{-- Member selector --}}
+            <div class="section-divider">Select Members to Update</div>
+            <div style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap;">
+                <button type="button" class="btn btn-ghost" onclick="bulkSelectAll()">☑ Select All</button>
+                <button type="button" class="btn btn-ghost" onclick="bulkSelectNone()">☐ Deselect All</button>
+            </div>
+            <div id="bulk-member-list" style="display:flex;flex-direction:column;gap:.35rem;margin-bottom:1.25rem;max-height:280px;overflow-y:auto;border:1px solid var(--grey-mid);border-radius:4px;padding:.5rem;">
+                @foreach($assignments as $asgn)
+                <label style="display:flex;align-items:center;gap:.65rem;padding:.45rem .6rem;border-radius:4px;cursor:pointer;transition:background .1s;" onmouseover="this.style.background='var(--navy-faint)'" onmouseout="this.style.background=''">
+                    <input type="checkbox" class="bulk-member-cb" value="{{ $asgn->id }}" checked
+                           style="width:16px;height:16px;accent-color:var(--navy);flex-shrink:0;cursor:pointer;">
+                    <div>
+                        <div style="font-size:13px;font-weight:bold;color:var(--navy);">{{ $asgn->user->name }}</div>
+                        <div style="font-size:11px;color:var(--text-muted);">{{ $asgn->callsign ?: '—' }} · {{ $asgn->role ?: 'No role' }} · {{ $asgn->location_name ?: 'No location' }}</div>
+                    </div>
+                </label>
+                @endforeach
+            </div>
+
+            {{-- Fields to fill --}}
+            <div class="section-divider">Fields to Apply</div>
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:1rem;">Leave a field blank to skip it — only filled fields will be applied.</p>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.75rem;margin-bottom:1rem;">
+                <div class="ff">
+                    <label>Frequency</label>
+                    <input type="text" id="bulk-frequency" placeholder="145.500 MHz">
+                </div>
+                <div class="ff">
+                    <label>Mode</label>
+                    <select id="bulk-mode">
+                        <option value="">— don't change —</option>
+                        <option value="FM">FM</option>
+                        <option value="AM">AM</option>
+                        <option value="SSB">SSB</option>
+                        <option value="DMR">DMR</option>
+                        <option value="C4FM">C4FM</option>
+                    </select>
+                </div>
+                <div class="ff">
+                    <label>CTCSS Tone</label>
+                    <input type="text" id="bulk-ctcss" placeholder="88.5">
+                </div>
+                <div class="ff">
+                    <label>Channel Label</label>
+                    <input type="text" id="bulk-channel" placeholder="CH1">
+                </div>
+                <div class="ff">
+                    <label>Report Time</label>
+                    <input type="time" id="bulk-report">
+                </div>
+                <div class="ff">
+                    <label>Depart Time</label>
+                    <input type="time" id="bulk-depart">
+                </div>
+                <div class="ff">
+                    <label>Fallback Frequency</label>
+                    <input type="text" id="bulk-fal-freq" placeholder="433.500 MHz">
+                </div>
+                <div class="ff">
+                    <label>Fallback Mode</label>
+                    <select id="bulk-fal-mode">
+                        <option value="">— don't change —</option>
+                        <option value="FM">FM</option>
+                        <option value="AM">AM</option>
+                        <option value="SSB">SSB</option>
+                        <option value="DMR">DMR</option>
+                        <option value="C4FM">C4FM</option>
+                    </select>
+                </div>
+            </div>
+            <div class="ff" style="margin-bottom:.75rem;">
+                <label>Briefing Notes (appended to each member's existing notes)</label>
+                <textarea id="bulk-notes" placeholder="Notes to add to all selected members…" style="min-height:80px;width:100%;padding:.5rem .7rem;border:1px solid var(--grey-mid);font-family:var(--font);font-size:13px;resize:vertical;"></textarea>
+            </div>
+            <div class="ff" style="margin-bottom:1.25rem;">
+                <label>
+                    <input type="checkbox" id="bulk-notes-replace" style="accent-color:var(--navy);margin-right:.3rem;">
+                    Replace existing briefing notes instead of appending
+                </label>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
+                <button type="button" class="btn btn-primary" onclick="applyBulkFill()" id="bulk-apply-btn">
+                    ⚡ Apply to Selected Members
+                </button>
+                <button type="button" class="btn btn-ghost" onclick="bulkClearFields()">✕ Clear Fields</button>
+                <span id="bulk-status" style="font-size:12px;font-weight:bold;color:var(--green);display:none;"></span>
+            </div>
+        </div>
+    </div>
+
 @endsection
 
 {{-- ════════════════ BULK BRIEFING MODAL ════════════════ --}}
@@ -3223,4 +3375,80 @@ function openSingleBriefingModal(id, name) {
     document.getElementById('singleBriefingForm').action = '/admin/assignments/' + id + '/briefing';
     document.getElementById('singleBriefingModal').classList.add('open');
 }
+
+// ── BULK FILL ─────────────────────────────────────────────────────────────
+function bulkSelectAll()  { document.querySelectorAll('.bulk-member-cb').forEach(cb => cb.checked = true); }
+function bulkSelectNone() { document.querySelectorAll('.bulk-member-cb').forEach(cb => cb.checked = false); }
+function bulkClearFields() {
+    ['bulk-frequency','bulk-ctcss','bulk-channel','bulk-report','bulk-depart','bulk-fal-freq','bulk-notes'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = '';
+    });
+    document.getElementById('bulk-mode').value = '';
+    document.getElementById('bulk-fal-mode').value = '';
+    document.getElementById('bulk-notes-replace').checked = false;
+}
+
+async function applyBulkFill() {
+    const selected = [...document.querySelectorAll('.bulk-member-cb:checked')].map(cb => parseInt(cb.value));
+    if (!selected.length) { alert('Please select at least one member.'); return; }
+
+    const fields = {};
+    const get = id => (document.getElementById(id) || {}).value || '';
+    if (get('bulk-frequency'))  fields.frequency      = get('bulk-frequency');
+    if (get('bulk-mode'))       fields.mode           = get('bulk-mode');
+    if (get('bulk-ctcss'))      fields.ctcss_tone     = get('bulk-ctcss');
+    if (get('bulk-channel'))    fields.channel_label  = get('bulk-channel');
+    if (get('bulk-report'))     fields.report_time    = get('bulk-report');
+    if (get('bulk-depart'))     fields.depart_time    = get('bulk-depart');
+    if (get('bulk-fal-freq'))   fields.fallback_frequency = get('bulk-fal-freq');
+    if (get('bulk-fal-mode'))   fields.fallback_mode  = get('bulk-fal-mode');
+    if (get('bulk-notes'))      fields.briefing_notes = get('bulk-notes');
+    fields.notes_replace = document.getElementById('bulk-notes-replace').checked ? 1 : 0;
+
+    if (!Object.keys(fields).filter(k => k !== 'notes_replace').length) {
+        alert('Please fill in at least one field to apply.'); return;
+    }
+
+    const btn = document.getElementById('bulk-apply-btn');
+    const status = document.getElementById('bulk-status');
+    btn.disabled = true; btn.textContent = '⏳ Applying…';
+    status.style.display = 'none';
+
+    try {
+        const resp = await fetch(ROUTES.bulkFill, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({ assignment_ids: selected, fields: fields }),
+        });
+        const data = await resp.json();
+        if (data.success) {
+            status.textContent = '✓ Updated ' + data.updated + ' member(s) successfully';
+            status.style.color = 'var(--green)';
+            status.style.display = '';
+            // Update local AD data
+            if (data.assignments) {
+                data.assignments.forEach(a => {
+                    const idx = AD.findIndex(o => o.id === a.id);
+                    if (idx !== -1) AD[idx] = Object.assign(AD[idx], a);
+                });
+            }
+            setTimeout(() => { status.style.display = 'none'; }, 4000);
+        } else {
+            status.textContent = '⚠ Error: ' + (data.message || 'Unknown error');
+            status.style.color = 'var(--red)';
+            status.style.display = '';
+        }
+    } catch(e) {
+        status.textContent = '⚠ Request failed';
+        status.style.color = 'var(--red)';
+        status.style.display = '';
+    } finally {
+        btn.disabled = false; btn.textContent = '⚡ Apply to Selected Members';
+    }
+}
+
 </script>
