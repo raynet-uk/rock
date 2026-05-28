@@ -592,14 +592,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/my-training/scorm/{lessonId}/api/set', [\App\Http\Controllers\ScormController::class, 'apiSet'])->name('lms.scorm.api.set');
     Route::get('/my-training/scorm/{lessonId}/api/get',  [\App\Http\Controllers\ScormController::class, 'apiGet'])->name('lms.scorm.api.get');
 
-    Route::prefix('members/dmr-network')->name('dmr.')->group(function () {
-        Route::get('/',          [DmrNetworkController::class, 'index']        )->name('index');
-        Route::get('/lastheard', [DmrNetworkController::class, 'lastheard']    )->name('lastheard');
-        Route::get('/peers',     [DmrNetworkController::class, 'peers']        )->name('peers');
-        Route::get('/stream',    [DmrLogStreamController::class, 'stream']     )->name('stream');
-        Route::get('/api/masters',   [DmrNetworkController::class, 'masters']      )->name('api.masters');
-        Route::get('/api/lastheard', [DmrNetworkController::class, 'apiLastheard'] )->name('api.lastheard');
-    });
+    if (config('raynet.dmr_enabled')) {
+        Route::prefix('members/dmr-network')->name('dmr.')->group(function () {
+            Route::get('/',          [DmrNetworkController::class, 'index']        )->name('index');
+            Route::get('/lastheard', [DmrNetworkController::class, 'lastheard']    )->name('lastheard');
+            Route::get('/peers',     [DmrNetworkController::class, 'peers']        )->name('peers');
+            Route::get('/stream',    [DmrLogStreamController::class, 'stream']     )->name('stream');
+            Route::get('/api/masters',   [DmrNetworkController::class, 'masters']      )->name('api.masters');
+            Route::get('/api/lastheard', [DmrNetworkController::class, 'apiLastheard'] )->name('api.lastheard');
+        });
+    }
 
 
     // ── COMMITTEE ──────────────────────────────────────────────────────────
@@ -795,11 +797,13 @@ Route::prefix('admin')->group(function () {
         Route::post('users/{user}/callsign/approve', [CallsignController::class, 'approve'])->name('admin.callsign.approve');
         Route::post('users/{user}/callsign/reject',  [CallsignController::class, 'reject']) ->name('admin.callsign.reject');
 
-        // DMR access
-        Route::post('users/{user}/dmr-access/grant',   [UserAdminController::class, 'grantDmrAccess'])   ->name('admin.users.dmr.grant');
-        Route::post('users/{user}/dmr-access/revoke',  [UserAdminController::class, 'revokeDmrAccess'])  ->name('admin.users.dmr.revoke');
-        Route::post('users/{user}/dmr-masters/grant',  [UserAdminController::class, 'grantDmrMasters'])  ->name('admin.users.dmr.masters.grant');
-        Route::post('users/{user}/dmr-masters/revoke', [UserAdminController::class, 'revokeDmrMasters']) ->name('admin.users.dmr.masters.revoke');
+        // DMR access (Liverpool only — requires DMR_ENABLED=true in .env)
+        if (config('raynet.dmr_enabled')) {
+            Route::post('users/{user}/dmr-access/grant',   [UserAdminController::class, 'grantDmrAccess'])   ->name('admin.users.dmr.grant');
+            Route::post('users/{user}/dmr-access/revoke',  [UserAdminController::class, 'revokeDmrAccess'])  ->name('admin.users.dmr.revoke');
+            Route::post('users/{user}/dmr-masters/grant',  [UserAdminController::class, 'grantDmrMasters'])  ->name('admin.users.dmr.masters.grant');
+            Route::post('users/{user}/dmr-masters/revoke', [UserAdminController::class, 'revokeDmrMasters']) ->name('admin.users.dmr.masters.revoke');
+        }
 
         // Per-user activity logging
         Route::post('users/{user}/activity/add',      [UserAdminController::class, 'activityAdd'])     ->name('admin.users.activity.add');
@@ -912,7 +916,8 @@ Route::post('/admin/logout', [AdminController::class, 'logout'])       ->name('a
 Route::middleware('admin')->group(function () {
     Route::get('/admin', fn() => view('admin.dashboard'))->name('admin.dashboard');
 
-    Route::get('/admin/dmr-test', function () {
+    if (config('raynet.dmr_enabled')) {
+        Route::get('/admin/dmr-test', function () {
         $host = 'm0kkn.dragon-net.pl'; $port = 9002; $results = [];
         $ip = gethostbyname($host);
         $results['dns'] = ($ip !== $host) ? "✓ Resolves to: {$ip}" : "✗ DNS FAILED — cannot resolve {$host}";
@@ -932,7 +937,8 @@ Route::middleware('admin')->group(function () {
         foreach ($results as $k => $v) { $html .= strtoupper($k) . ": " . $v . "\n"; }
         $html .= '</pre>';
         return $html;
-    })->middleware('admin');
+            })->middleware('admin');
+    }
 
     Route::get('/admin/radioid-lookup/{callsign}', function (string $callsign) {
         $response = \Illuminate\Support\Facades\Http::timeout(5)->get(
@@ -1043,8 +1049,10 @@ Route::get('/emergency-access/{token}', function ($token) {
 | LARAVEL AUTH SCAFFOLDING ROUTES
 |--------------------------------------------------------------------------
 */
-Route::get('/dmr-auth',     [App\Http\Controllers\DmrAuthController::class, 'redirect'])      ->name('dmr.auth');
-Route::get('/dmr-validate', [App\Http\Controllers\DmrAuthController::class, 'validateToken'])->name('dmr.validate');
+if (config('raynet.dmr_enabled')) {
+    Route::get('/dmr-auth',     [App\Http\Controllers\DmrAuthController::class, 'redirect'])      ->name('dmr.auth');
+    Route::get('/dmr-validate', [App\Http\Controllers\DmrAuthController::class, 'validateToken'])->name('dmr.validate');
+}
 
 /*
 |--------------------------------------------------------------------------
