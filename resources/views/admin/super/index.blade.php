@@ -1063,7 +1063,7 @@ $storageOk = is_writable(storage_path());
                         <div class="maint-preview-icon-wrap">🔧</div>
                         <div>
                             <div class="maint-preview-title-text" id="prevTitle">{{ $maintTitle ?: 'Back Soon' }}</div>
-                            <div class="maint-preview-headline-text" id="prevHeadline">{{ $maintHeadline ?: AppHelpersRaynetSetting::groupName() }}</div>
+                            <div class="maint-preview-headline-text" id="prevHeadline">{{ $maintHeadline ?: \App\Helpers\RaynetSetting::groupName() }}</div>
                         </div>
                         <div class="maint-preview-msg-text" id="prevMsg">{{ $maintMsg ?: \App\Helpers\RaynetSetting::groupName() . ' Members Portal is temporarily offline.' }}</div>
                         <div id="prevReturn" style="display:{{ $maintReturnAt ? 'block' : 'none' }};font-size:11px;font-weight:700;color:rgba(255,255,255,.5);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);padding:.3rem .65rem;">
