@@ -344,7 +344,7 @@
             @endif
 
             <p class="message-text">
-                {{ $message ?: 'The ' . AppHelpersRaynetSetting::groupName() . ' Members Portal is currently undergoing scheduled maintenance. All services will be restored as soon as possible. We apologise for any inconvenience caused.' }}
+                {{ $message ?: 'The ' . \App\Helpers\RaynetSetting::groupName() . ' Members Portal is currently undergoing scheduled maintenance. All services will be restored as soon as possible. We apologise for any inconvenience caused.' }}
             </p>
 
             <div class="chips">
