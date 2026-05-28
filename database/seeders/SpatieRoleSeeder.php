@@ -15,7 +15,7 @@ class SpatieRoleSeeder extends Seeder
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
         // ── 1. Roles ──────────────────────────────────────────────────────
-        foreach (['super-admin', 'admin', 'committee', 'member'] as $role) {
+        foreach (['super-admin', 'admin', 'committee', 'member', 'temporary_guest'] as $role) {
             Role::firstOrCreate(['name' => $role, 'guard_name' => 'web']);
         }
 
@@ -72,7 +72,7 @@ class SpatieRoleSeeder extends Seeder
 
         // ── 4. Migrate existing users ─────────────────────────────────────
         $this->command->info('Assigning Spatie roles to existing users…');
-        $counts = ['super-admin' => 0, 'admin' => 0, 'committee' => 0, 'member' => 0];
+        $counts = ['super-admin' => 0, 'admin' => 0, 'committee' => 0, 'member' => 0, 'temporary_guest' => 0];
 
         User::chunk(100, function ($users) use (&$counts) {
             foreach ($users as $user) {
