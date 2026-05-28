@@ -744,9 +744,11 @@ $alertMeta   = $alertStatus?->meta();
                 <a href="https://www.qrz.com" target="_blank" class="ops-link">
                     <span class="ops-link-icon">📻</span> QRZ Lookup
                 </a>
+                @if(config('raynet.dmr_enabled'))
                 <a href="{{ route('dmr.index') }}" class="ops-link">
                     <span class="ops-link-icon">📡</span> DMR Network
                 </a>
+                @endif
                 <a href="https://www.radioid.net" target="_blank" class="ops-link">
                     <span class="ops-link-icon">🔢</span> RadioID
                 </a>

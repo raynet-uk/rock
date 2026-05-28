@@ -26,10 +26,14 @@
 
     // ── DMR Network permissions ────────────────────────────────────────────
     // Uses hasDirectPermission() to bypass Gate::before super-admin rule
-    $hasDmrDashboard = auth()->user()->hasDirectPermission('view dmr dashboard')
-        || auth()->user()->roles->flatMap->permissions->contains('name', 'view dmr dashboard');
-    $hasDmrMasters = auth()->user()->hasDirectPermission('view dmr masters')
-        || auth()->user()->roles->flatMap->permissions->contains('name', 'view dmr masters');
+    $hasDmrDashboard = config('raynet.dmr_enabled') && (
+        auth()->user()->hasDirectPermission('view dmr dashboard')
+        || auth()->user()->roles->flatMap->permissions->contains('name', 'view dmr dashboard')
+    );
+    $hasDmrMasters = config('raynet.dmr_enabled') && (
+        auth()->user()->hasDirectPermission('view dmr masters')
+        || auth()->user()->roles->flatMap->permissions->contains('name', 'view dmr masters')
+    );
     $hasDmrAny = $hasDmrDashboard || $hasDmrMasters;
 @endphp
 
