@@ -44,7 +44,7 @@ class UserAdminController extends Controller
         $memberCount     = \App\Models\User::role(['admin', 'committee', 'member', 'super-admin'])->count();
         $tempGuestCount  = \App\Models\User::role('temporary_guest')->count();
         $tempAdminCount  = \App\Models\User::role('temporary_admin')->count();
-        $testUserCount   = \App\Models\User::role('test_user')->count();
+        $testUserCount   = \Spatie\Permission\Models\Role::where('name', 'test_user')->exists() ? \App\Models\User::role('test_user')->count() : 0;
         return view('admin.users.index', compact('users', 'suspensionLogs', 'memberCount', 'tempGuestCount', 'tempAdminCount', 'testUserCount'));
     }
 
