@@ -6,12 +6,18 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void {
         Schema::table('net_schedules', function (Blueprint $table) {
-            $table->string('band')->nullable()->after('frequency');          // hf/vhf/uhf/shf
-            $table->string('repeat_type')->default('weekly')->after('days_of_week'); // weekly/fortnightly/monthly
-            $table->date('repeat_anchor')->nullable()->after('repeat_type'); // reference date for fortnightly/monthly
-            $table->string('priority')->default('routine')->after('repeat_anchor'); // routine/urgent/emergency
-            $table->text('announcement')->nullable()->after('description');  // pre-net message
-            $table->json('controller_slots')->nullable()->after('controller'); // [{callsign,from,to}]
+            if (!Schema::hasColumn('net_schedules', 'band'))
+                $table->string('band')->nullable()->after('frequency');
+            if (!Schema::hasColumn('net_schedules', 'repeat_type'))
+                $table->string('repeat_type')->default('weekly')->after('days_of_week');
+            if (!Schema::hasColumn('net_schedules', 'repeat_anchor'))
+                $table->date('repeat_anchor')->nullable()->after('repeat_type');
+            if (!Schema::hasColumn('net_schedules', 'priority'))
+                $table->string('priority')->default('routine')->after('repeat_anchor');
+            if (!Schema::hasColumn('net_schedules', 'announcement'))
+                $table->text('announcement')->nullable()->after('description');
+            if (!Schema::hasColumn('net_schedules', 'controller_slots'))
+                $table->json('controller_slots')->nullable()->after('controller');
         });
     }
     public function down(): void {
