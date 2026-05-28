@@ -36,6 +36,7 @@ class SpatieRoleSeeder extends Seeder
             'manage readiness', 'manage assets', 'manage networks',
             'manage exercises', 'manage actions', 'manage risks',
             'manage availability', 'view lrf report',
+            'approve photos', 'feature photos',
         ];
 
         foreach ($permissions as $perm) {
