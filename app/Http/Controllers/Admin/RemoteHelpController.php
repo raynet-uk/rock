@@ -99,9 +99,8 @@ class RemoteHelpController extends Controller
             session()->flush();
         }
     }
-}
 
-    // ── System info for remote support ───────────────────────────────────────
+// ── System info for remote support ───────────────────────────────────────
     public function systemInfo(): \Illuminate\Http\JsonResponse
     {
         abort_unless(auth()->user()?->is_admin, 403);
@@ -152,3 +151,4 @@ class RemoteHelpController extends Controller
             ],
         ]);
     }
+}
