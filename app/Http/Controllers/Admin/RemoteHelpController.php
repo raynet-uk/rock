@@ -104,7 +104,11 @@ class RemoteHelpController extends Controller
     public function systemInfo(): \Illuminate\Http\JsonResponse
     {
         abort_unless(auth()->user()?->is_admin, 403);
+        return $this->buildSystemInfo();
+    }
 
+    private function buildSystemInfo(): \Illuminate\Http\JsonResponse
+    {
         $env = config('database.connections.mysql');
         $disk = disk_free_space(base_path());
         $diskTotal = disk_total_space(base_path());

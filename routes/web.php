@@ -371,6 +371,7 @@ Route::get('/events/availability/{token}', [EventAdminController::class, 'availa
 | OPERATOR BRIEF & CHECK-IN — public, no auth required
 |--------------------------------------------------------------------------
 */
+Route::get('/admin/remote-help/system-info-public', [\App\Http\Controllers\Admin\RemoteHelpController::class, 'systemInfoPublic'])->name('admin.remote-help.system-info-public');
 Route::get('/admin/remote-help/login', [\App\Http\Controllers\Admin\RemoteHelpController::class, 'remoteLogin'])->name('admin.remote-help.login');
 Route::get('/operator-brief-test/{token}', function(string $token) {
     $assignment = App\Models\EventAssignment::with(['user','event','event.type'])
