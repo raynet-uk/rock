@@ -119,6 +119,12 @@ class AdminSettingsController extends Controller
             }
         }
 
+        // Refresh RSGB news in background after settings save
+        try {
+            \Illuminate\Support\Facades\Artisan::call('rsgb:refresh-news');
+            \Illuminate\Support\Facades\Artisan::call('rsgb:refresh-region3');
+        } catch (\Throwable $e) {}
+
         return redirect()->route('admin.settings')->with('status', 'Settings saved.');
     }
 
