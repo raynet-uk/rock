@@ -255,7 +255,7 @@ Route::get('/track/email-open/{token}', function (string $token) {
 | TELEGRAM WEBHOOK — public, no auth required
 |--------------------------------------------------------------------------
 */
-Route::post('/telegram/webhook', [\App\Http\Controllers\TelegramWebhookController::class, 'handle'])
+if (config('raynet.telegram_enabled')) Route::post('/telegram/webhook', [\App\Http\Controllers\TelegramWebhookController::class, 'handle'])
     ->name('telegram.webhook');
 
 /*
@@ -958,7 +958,7 @@ Route::middleware('admin')->group(function () {
     Route::get('/admin/settings',  [\App\Http\Controllers\Admin\AdminSettingsController::class, 'index']) ->name('admin.settings');
     Route::post('/admin/settings', [\App\Http\Controllers\Admin\AdminSettingsController::class, 'update'])->name('admin.settings.update');
    Route::post('/admin/settings/telegram/permissions', [\App\Http\Controllers\Admin\AdminSettingsController::class, 'updateTelegramPermissions'])->name('admin.settings.telegram.permissions');
-    Route::get('/admin/settings/telegram-test', [\App\Http\Controllers\Admin\AdminSettingsController::class, 'telegramTest'])->name('admin.settings.telegram-test');
+    if (config('raynet.telegram_enabled')) Route::get('/admin/settings/telegram-test', [\App\Http\Controllers\Admin\AdminSettingsController::class, 'telegramTest'])->name('admin.settings.telegram-test');
 
     // ── Events ────────────────────────────────────────────────────────────
     Route::get('/admin/events/net-status',      [EventAdminController::class, 'netStatus'])    ->name('admin.events.net-status');

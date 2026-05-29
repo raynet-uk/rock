@@ -246,7 +246,8 @@
     {{-- TELEGRAM SETTINGS --}}
     <form method="POST" action="{{ route('admin.settings.update') }}">
         @csrf
-        <div class="as-card">
+        @if(config('raynet.telegram_enabled'))
+<div class="as-card">
             <div class="as-card-head"><h2>📡 Telegram Notifications</h2></div>
             <div class="as-card-body">
                 <div class="as-field">
@@ -273,8 +274,8 @@
             </div>
         </div>
     </form>
-    @include('admin.partials.telegram_perms_card')
-
+@include('admin.partials.telegram_perms_card')
+    @endif
     {{-- HEADER CODE --}}
     <form method="POST" action="{{ route('admin.settings.update') }}">
         @csrf

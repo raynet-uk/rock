@@ -7,4 +7,5 @@ return [
     // This feature is disabled by default.
     'dmr_enabled' => env('DMR_ENABLED', false),
     'remote_help_provider' => env('REMOTE_HELP_PROVIDER', false),
+    'telegram_enabled'     => env('TELEGRAM_ENABLED', false),
 ];
