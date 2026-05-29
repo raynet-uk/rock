@@ -37,6 +37,8 @@ class AdminSettingsController extends Controller
             'group_number'              => ['nullable', 'string', 'max:20'],
             'group_callsign'            => ['nullable', 'string', 'max:20'],
             'group_phone'               => ['nullable', 'string', 'max:20'],
+            'qrz_username'              => ['nullable', 'string', 'max:30'],
+            'qrz_password'              => ['nullable', 'string', 'max:120'],
             'group_region'              => ['nullable', 'string', 'max:80'],
             'group_area'                => ['nullable', 'string', 'max:80'],
             'gc_name'                   => ['nullable', 'string', 'max:80'],
@@ -65,6 +67,23 @@ class AdminSettingsController extends Controller
         }
         if ($request->has('header_code')) {
             Setting::set('header_code', $request->header_code ?? '');
+
+            // Write QRZ credentials to .env
+            if ($request->has('qrz_username')) {
+                $envPath = base_path('.env');
+                if (file_exists($envPath)) {
+                    $env = file_get_contents($envPath);
+                    foreach (['QRZ_USERNAME' => $request->input('qrz_username',''), 'QRZ_PASSWORD' => $request->input('qrz_password','')] as $k => $v) {
+                        if (preg_match('/^' . $k . '=/m', $env)) {
+                            $env = preg_replace('/^' . $k . '=.*/m', $k . '=' . $v, $env);
+                        } else {
+                            $env .= "\n" . $k . '=' . $v;
+                        }
+                    }
+                    file_put_contents($envPath, $env);
+                    try { \Illuminate\Support\Facades\Artisan::call('config:clear'); } catch(\Throwable $e) {}
+                }
+            }
         }
         if ($request->has('telegram_group_chat_ids')) {
             Setting::set('telegram_group_chat_ids', trim($request->telegram_group_chat_ids ?? ''));
