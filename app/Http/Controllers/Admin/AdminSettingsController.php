@@ -36,6 +36,7 @@ class AdminSettingsController extends Controller
             'group_name'                => ['nullable', 'string', 'max:80'],
             'group_number'              => ['nullable', 'string', 'max:20'],
             'group_callsign'            => ['nullable', 'string', 'max:20'],
+            'group_phone'               => ['nullable', 'string', 'max:20'],
             'group_region'              => ['nullable', 'string', 'max:80'],
             'group_area'                => ['nullable', 'string', 'max:80'],
             'gc_name'                   => ['nullable', 'string', 'max:80'],
@@ -46,7 +47,7 @@ class AdminSettingsController extends Controller
         ]);
 
         $groupFields = [
-            'group_name', 'group_number', 'group_callsign', 'group_region', 'group_area',
+            'group_name', 'group_number', 'group_callsign', 'group_phone', 'group_region', 'group_area',
             'gc_name', 'gc_email', 'site_url', 'raynet_zone',
             'site_name', 'site_tagline',
         ];

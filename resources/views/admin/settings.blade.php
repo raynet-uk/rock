@@ -77,6 +77,12 @@
                                placeholder="e.g. {{ \App\Helpers\RaynetSetting::groupNumber() }}" maxlength="20">
                     </div>
                     <div class="as-field">
+                        <label class="as-label" for="group_phone">Group Phone Number</label>
+                        <input type="text" id="group_phone" name="group_phone" class="as-input"
+                               value="{{ old('group_phone', \App\Models\Setting::get('group_phone', '')) }}"
+                               placeholder="e.g. 01234 567890" maxlength="20">
+                    </div>
+                    <div class="as-field">
                         <label class="as-label" for="group_callsign">Group Callsign</label>
                         <input type="text" id="group_callsign" name="group_callsign" class="as-input"
                                value="{{ old('group_callsign', \App\Models\Setting::get('group_callsign', '')) }}"

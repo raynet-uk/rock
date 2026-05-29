@@ -13,6 +13,7 @@ return new class extends Migration
             // Group identity
             ['key' => 'group_name',       'value' => '',    'label' => 'Group Name',              'created_at' => now(), 'updated_at' => now()],
             ['key' => 'group_number',     'value' => '',    'label' => 'Group Number (e.g. 10/ME/179)', 'created_at' => now(), 'updated_at' => now()],
+            ['key' => 'group_phone',      'value' => '',    'label' => 'Group Phone Number',              'created_at' => now(), 'updated_at' => now()],
             ['key' => 'group_callsign',   'value' => '',    'label' => 'Group Callsign',           'created_at' => now(), 'updated_at' => now()],
             ['key' => 'group_region',     'value' => '',    'label' => 'Region / Area',            'created_at' => now(), 'updated_at' => now()],
             ['key' => 'gc_name',          'value' => '',    'label' => 'Group Controller Name',    'created_at' => now(), 'updated_at' => now()],

@@ -598,10 +598,10 @@
         <div class="footer-inner">
             <span>© {{ date('Y') }} {{ \App\Helpers\RaynetSetting::groupName() }} (Group {{ \App\Helpers\RaynetSetting::groupNumber() }}). All rights reserved.</span>
             <span style="margin-top:.3rem;display:block;">
-                &#128222;
-                <span style="display:inline-flex;gap:0;letter-spacing:0">
-                    <span>0151</span><span style="display:inline-block;width:4px"></span><span>440</span><span style="display:inline-block;width:4px"></span><span>2290</span>
-                </span>
+                @php $groupPhone = \App\Models\Setting::get('group_phone', ''); @endphp
+                @if($groupPhone)
+                &#128222; <span>{{ $groupPhone }}</span>
+                @endif
             </span>
             <span>Affiliated to RAYNET-UK · Volunteer emergency communications for {{ \App\Helpers\RaynetSetting::groupRegion() }}.</span>
         </div>
