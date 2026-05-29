@@ -1,5 +1,7 @@
 protected function schedule(Schedule $schedule): void
 {
+        \$schedule->command('cms:check-update')->daily();
+
     $schedule->command('net:run-scheduler')->everyMinute();
     $schedule->command('rsgb:refresh-news')
         ->everyMinute()

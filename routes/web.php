@@ -992,6 +992,10 @@ Route::middleware('admin')->group(function () {
     Route::get('/admin/events/{event}/ops-pack-pdf',             [EventAssignmentController::class, 'downloadOpsPack'])    ->name('admin.events.assignments.ops-pack');
     Route::post('/admin/activity-logs/reverse-event', [\App\Http\Controllers\Admin\ActivityLogController::class, 'reverseEvent'])->name('admin.activity-logs.reverse-event');
     Route::post('/admin/activity-logs/import-from-events', [\App\Http\Controllers\Admin\ActivityLogController::class, 'importFromEvents'])->name('admin.activity-logs.import-from-events');
+    Route::get('/admin/cms-update',         [\App\Http\Controllers\Admin\CmsUpdateController::class, 'index'])        ->name('admin.cms-update.index');
+    Route::post('/admin/cms-update/check',  [\App\Http\Controllers\Admin\CmsUpdateController::class, 'checkNow'])      ->name('admin.cms-update.check');
+    Route::post('/admin/cms-update/apply',  [\App\Http\Controllers\Admin\CmsUpdateController::class, 'applyUpdate'])   ->name('admin.cms-update.apply');
+    Route::post('/admin/cms-update/dismiss',[\App\Http\Controllers\Admin\CmsUpdateController::class, 'dismissInterstitial'])->name('admin.cms-update.dismiss');
     Route::get('/admin/remote-help/system-info',  [\App\Http\Controllers\Admin\RemoteHelpController::class, 'systemInfo'])   ->name('admin.remote-help.system-info');
     Route::get('/admin/remote-help',              [\App\Http\Controllers\Admin\RemoteHelpController::class, 'index'])       ->name('admin.remote-help.index');
     Route::post('/admin/remote-help/generate',    [\App\Http\Controllers\Admin\RemoteHelpController::class, 'generate'])    ->name('admin.remote-help.generate');

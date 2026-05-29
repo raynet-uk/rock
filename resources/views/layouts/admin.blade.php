@@ -318,6 +318,12 @@
                     @if(config('raynet.remote_help_provider'))
                     <a href="{{ route('admin.remote-help.access-panel') }}" class="sb-subitem">🔐 Remote Access</a>
                     @endif
+                    <a href="{{ route('admin.cms-update.index') }}" class="sb-subitem {{ str_starts_with($currentRoute,'admin.cms-update') ? 'active' : '' }}">
+                        🔄 CMS Update
+                        @if(\App\Models\Setting::get('update_available','0') === '1')
+                        <span style="background:#C8102E;color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;margin-left:4px;font-weight:bold;">NEW</span>
+                        @endif
+                    </a>
                     <a href="{{ route('admin.super.permissions.index') }}" class="sb-subitem {{ $currentRoute === 'admin.super.permissions.index' ? 'active' : '' }}">Permissions</a>
                     <a href="{{ route('admin.oauth.clients') }}" class="sb-subitem {{ str_starts_with($currentRoute,'admin.oauth') ? 'active' : '' }}">SSO / OAuth</a>
                     @endif
