@@ -303,8 +303,22 @@
                 <a href="{{ route('request-support') }}" class="{{ request()->routeIs('request-support') ? 'active' : '' }}">Request Support</a>
                 <a href="{{ route('training') }}"        class="{{ request()->routeIs('training')        ? 'active' : '' }}">Training</a>
                 <a href="{{ route('gallery') }}" class="{{ request()->routeIs('gallery') ? 'active' : '' }}">Gallery</a>
+                @auth
                 <div class="nav-dropdown">
-                    <button class="nav-dropdown-btn {{ request()->routeIs('data-dashboard') || request()->routeIs('ops-map*') || request()->routeIs('resources*') ? 'active' : '' }}" onclick="this.setAttribute('aria-expanded', this.getAttribute('aria-expanded')==='true'?'false':'true'); this.nextElementSibling.classList.toggle('open')" aria-expanded="false">
+                    <button class="nav-dropdown-btn {{ request()->routeIs('members*') ? 'active' : '' }}" onclick="this.setAttribute('aria-expanded', this.getAttribute('aria-expanded')==='true'?'false':'true'); this.nextElementSibling.classList.toggle('open')" aria-expanded="false">
+                        Members <span class="chev">▼</span>
+                    </button>
+                    <div class="nav-dropdown-menu">
+                        <a href="{{ route('members') }}" class="{{ request()->routeIs('members') ? 'active' : '' }}">🏠 Members Area</a>
+                        <a href="{{ route('members.raynet-news') }}" class="{{ request()->routeIs('members.raynet-news') ? 'active' : '' }}">📰 RAYNET News</a>
+                        <a href="{{ route('members.checkpoint') }}" class="{{ request()->routeIs('members.checkpoint') ? 'active' : '' }}">📋 Checkpoint</a>
+                        <a href="{{ route('members.activity') }}" class="{{ request()->routeIs('members.activity*') ? 'active' : '' }}">📅 Activity Log</a>
+                        <a href="{{ route('resources.index') }}" class="{{ request()->routeIs('resources*') ? 'active' : '' }}">📁 Drive</a>
+                    </div>
+                </div>
+                @endauth
+                <div class="nav-dropdown">
+                    <button class="nav-dropdown-btn {{ request()->routeIs('data-dashboard') || request()->routeIs('ops-map*') ? 'active' : '' }}" onclick="this.setAttribute('aria-expanded', this.getAttribute('aria-expanded')==='true'?'false':'true'); this.nextElementSibling.classList.toggle('open')" aria-expanded="false">
                         Tools <span class="chev">▼</span>
                     </button>
                     <div class="nav-dropdown-menu">
@@ -312,7 +326,6 @@
                         @auth
                         <a href="{{ route('ops-map') }}" class="{{ request()->routeIs('ops-map*') ? 'active' : '' }}">🗺️ Ops Map</a>
                         @endauth
-                        <a href="{{ route('resources.index') }}" class="{{ request()->routeIs('resources*') ? 'active' : '' }}">📁 Drive</a>
                     </div>
                 </div>
             </div>
@@ -467,6 +480,15 @@
                 <a href="{{ route('gallery') }}" class="{{ request()->routeIs('gallery') ? 'active' : '' }}"><span class="mobile-menu-icon">📸</span> Gallery</a>
                 <a href="{{ route('resources.index') }}"  class="{{ request()->routeIs('resources*')       ? 'active' : '' }}"><span class="mobile-menu-icon">&#128193;</span> Drive</a>
             </div>
+            @auth
+            <div class="mobile-nav-section">
+                <div class="mobile-nav-label">Members</div>
+                <a href="{{ route('members') }}" class="{{ request()->routeIs('members') ? 'active' : '' }}"><span class="mobile-menu-icon">🏠</span> Members Area</a>
+                <a href="{{ route('members.raynet-news') }}" class="{{ request()->routeIs('members.raynet-news') ? 'active' : '' }}"><span class="mobile-menu-icon">📰</span> RAYNET News</a>
+                <a href="{{ route('members.checkpoint') }}" class="{{ request()->routeIs('members.checkpoint') ? 'active' : '' }}"><span class="mobile-menu-icon">📋</span> Checkpoint</a>
+                <a href="{{ route('members.activity') }}" class="{{ request()->routeIs('members.activity*') ? 'active' : '' }}"><span class="mobile-menu-icon">📅</span> Activity Log</a>
+            </div>
+            @endauth
             <div class="mobile-nav-section">
                 <div class="mobile-nav-label">Tools</div>
                 <a href="{{ route('data-dashboard') }}"   class="{{ request()->routeIs('data-dashboard')   ? 'active' : '' }}"><span class="mobile-menu-icon">📡</span> Data Dashboard</a>
