@@ -311,7 +311,8 @@
 <div class="shell">
 
     <div class="top-bar">
-        <img class="logo-img" src="/images/raynet-uk-liverpool-banner.png" alt="{{ \App\Helpers\RaynetSetting::groupName() }}"
+        @php $mLogo = \App\Models\Setting::get('site_logo_path',''); $mLogoUrl = $mLogo ? \Illuminate\Support\Facades\Storage::url($mLogo) : asset('images/raynet-uk-liverpool-banner.png'); @endphp
+        <img class="logo-img" src="{{ $mLogoUrl }}" alt="{{ \App\Helpers\RaynetSetting::groupName() }}"
              onerror="this.style.display='none';document.getElementById('logo-fb').style.display='flex';">
         <div id="logo-fb" class="logo-fallback">
             <div class="logo-block"><span>RAY<br>NET</span></div>
