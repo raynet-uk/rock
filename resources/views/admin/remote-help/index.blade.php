@@ -39,7 +39,7 @@ body{background:var(--grey);font-family:Arial,sans-serif;font-size:14px;color:va
 </div>
 <div class="wrap">
     <div class="page-title">🛠 Remote Help</div>
-    <div class="page-sub">Generate a temporary access code to allow RAYNET Liverpool to log in and assist with technical issues.</div>
+    <div class="page-sub">Generate a temporary access code to allow technical support to log in and assist with technical issues.</div>
 
     @if(session('generated_code'))
     <div class="alert alert-green">
