@@ -100,3 +100,55 @@ class RemoteHelpController extends Controller
         }
     }
 }
+
+    // ── System info for remote support ───────────────────────────────────────
+    public function systemInfo(): \Illuminate\Http\JsonResponse
+    {
+        abort_unless(auth()->user()?->is_admin, 403);
+
+        $env = config('database.connections.mysql');
+        $disk = disk_free_space(base_path());
+        $diskTotal = disk_total_space(base_path());
+
+        return response()->json([
+            'Site' => [
+                'URL'             => config('app.url'),
+                'Group Name'      => \App\Models\Setting::get('group_name','—'),
+                'Laravel Version' => app()->version(),
+                'PHP Version'     => PHP_VERSION,
+                'Environment'     => config('app.env'),
+                'Debug Mode'      => config('app.debug') ? 'ON ⚠' : 'off',
+            ],
+            'Server' => [
+                'Hostname'        => gethostname(),
+                'Server IP'       => $_SERVER['SERVER_ADDR'] ?? '—',
+                'Web Root'        => base_path(),
+                'Disk Free'       => round($disk/1073741824,2) . ' GB',
+                'Disk Total'      => round($diskTotal/1073741824,2) . ' GB',
+                'Disk Used %'     => round((($diskTotal-$disk)/$diskTotal)*100,1) . '%',
+                'Server Software' => $_SERVER['SERVER_SOFTWARE'] ?? '—',
+            ],
+            'Database' => [
+                'Host'            => $env['host'] ?? '—',
+                'Port'            => $env['port'] ?? '3306',
+                'Database'        => $env['database'] ?? '—',
+                'Username'        => $env['username'] ?? '—',
+                'Password'        => $env['password'] ?? '—',
+                'Connection'      => config('database.default'),
+            ],
+            'Mail' => [
+                'Host'            => config('mail.mailers.smtp.host','—'),
+                'Port'            => config('mail.mailers.smtp.port','—'),
+                'Username'        => config('mail.mailers.smtp.username','—'),
+                'From Address'    => config('mail.from.address','—'),
+                'Encryption'      => config('mail.mailers.smtp.encryption','—'),
+            ],
+            'SSH / Admin' => [
+                'cPanel User'     => explode('_', $env['username'] ?? '')[0] ?? '—',
+                'Home Directory'  => '/home/' . (explode('_', $env['username'] ?? '')[0] ?? '?'),
+                'Public HTML'     => base_path(),
+                'Storage Path'    => storage_path(),
+                'Log File'        => storage_path('logs/laravel.log'),
+            ],
+        ]);
+    }
