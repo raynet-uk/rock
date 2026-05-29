@@ -43,8 +43,14 @@ class InstallController extends Controller
             'mail_password'         => ['required', 'string', 'max:255'],
             'mail_from_address'     => ['required', 'email', 'max:120'],
             'mail_from_name'        => ['nullable', 'string', 'max:80'],
-            'qrz_username'          => ['nullable', 'string', 'max:30'],
-            'qrz_password'          => ['nullable', 'string', 'max:120'],
+            'qrz_username'              => ['nullable', 'string', 'max:30'],
+            'qrz_password'              => ['nullable', 'string', 'max:120'],
+            'site_name'                 => ['nullable', 'string', 'max:80'],
+            'site_tagline'              => ['nullable', 'string', 'max:120'],
+            'group_phone'               => ['nullable', 'string', 'max:20'],
+            'group_area'                => ['nullable', 'string', 'max:80'],
+            'registration_notify_email' => ['nullable', 'email', 'max:120'],
+            'install_site_logo'         => ['nullable', 'image', 'max:2048'],
         ]);
 
         // ── Validate licence key against raynet-liverpool.net ─────────────
@@ -75,14 +81,28 @@ class InstallController extends Controller
         $fields = [
             'group_name', 'group_number', 'group_callsign', 'group_region',
             'gc_name', 'gc_email', 'support_request_email', 'site_url', 'raynet_zone',
+            'group_phone', 'group_area', 'site_tagline', 'registration_notify_email',
         ];
 
         foreach ($fields as $field) {
             Setting::set($field, $request->input($field, ''));
         }
 
-        Setting::set('site_name', $request->input('group_name'));
+        Setting::set('site_name', $request->input('site_name') ?: $request->input('group_name'));
         Setting::set('cms_licence_key', $licenceKey);
+
+        // ── Handle logo upload ────────────────────────────────────────────
+        if ($request->hasFile('install_site_logo') && $request->file('install_site_logo')->isValid()) {
+            try {
+                $path = $request->file('install_site_logo')->store('logos', 'public');
+                Setting::set('site_logo_path', $path);
+            } catch (\Throwable $e) {}
+        }
+
+        // If registration_notify_email empty, default to gc_email
+        if (!$request->input('registration_notify_email')) {
+            Setting::set('registration_notify_email', $request->input('gc_email', ''));
+        }
 
         // ── Write mail config to .env ──────────────────────────────────────
         $envPath = base_path('.env');

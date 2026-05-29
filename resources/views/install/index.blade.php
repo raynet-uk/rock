@@ -224,7 +224,7 @@ body{font-family:'Inter',Arial,sans-serif;background:#05080f;min-height:100vh;co
     @if($isPreview)
     <form method="POST" action="{{ route('install.preview.step1.post') }}">
     @else
-    <form method="POST" action="{{ route('install.step1.post') }}">
+    <form method="POST" action="{{ route('install.step1.post') }}" enctype="multipart/form-data">
     @endif
       @csrf
       <div class="iz-card-body">
@@ -365,6 +365,43 @@ body{font-family:'Inter',Arial,sans-serif;background:#05080f;min-height:100vh;co
             <input type="password" id="qrz_password" name="qrz_password" class="iz-input" value="{{ old('qrz_password') }}" placeholder="Your QRZ password">
             <div class="iz-hint">Can be added later via Admin → Settings if you don't have it now.</div>
           </div>
+        </div>
+
+        <div class="iz-divider"></div>
+        <div class="iz-field">
+          <label class="iz-label">🖼 Site Branding <span class="iz-label-opt">(optional)</span></label>
+          <div class="iz-hint" style="margin-bottom:.75rem;">Customise how your site looks. All of these can be changed later in Admin → Settings.</div>
+        </div>
+        <div class="iz-row">
+          <div class="iz-field">
+            <label class="iz-label" for="site_name">Site Name <span class="iz-label-opt">(optional)</span></label>
+            <input type="text" id="site_name" name="site_name" class="iz-input" value="{{ old('site_name') }}" placeholder="Auto-filled from group name">
+            <div class="iz-hint">Shown in browser tab. Defaults to group name.</div>
+          </div>
+          <div class="iz-field">
+            <label class="iz-label" for="site_tagline">Navbar Tagline <span class="iz-label-opt">(optional)</span></label>
+            <input type="text" id="site_tagline" name="site_tagline" class="iz-input" value="{{ old('site_tagline') }}" placeholder="e.g. Emergency Communications">
+          </div>
+        </div>
+        <div class="iz-row">
+          <div class="iz-field">
+            <label class="iz-label" for="group_phone">Group Phone Number <span class="iz-label-opt">(optional)</span></label>
+            <input type="text" id="group_phone" name="group_phone" class="iz-input" value="{{ old('group_phone') }}" placeholder="e.g. 01234 567890">
+          </div>
+          <div class="iz-field">
+            <label class="iz-label" for="group_area">Local Area Name <span class="iz-label-opt">(optional)</span></label>
+            <input type="text" id="group_area" name="group_area" class="iz-input" value="{{ old('group_area') }}" placeholder="e.g. Merseyside">
+          </div>
+        </div>
+        <div class="iz-field">
+          <label class="iz-label" for="registration_notify_email">New Registration Notification Email <span class="iz-label-opt">(optional)</span></label>
+          <input type="email" id="registration_notify_email" name="registration_notify_email" class="iz-input" value="{{ old('registration_notify_email') }}" placeholder="Notified when someone registers">
+          <div class="iz-hint">Defaults to GC email if left blank.</div>
+        </div>
+        <div class="iz-field">
+          <label class="iz-label" for="install_site_logo">Site Logo <span class="iz-label-opt">(optional)</span></label>
+          <input type="file" id="install_site_logo" name="install_site_logo" class="iz-input" accept="image/png,image/jpeg,image/svg+xml,image/webp">
+          <div class="iz-hint">PNG or SVG recommended. Shown in navbar and homepage header. Can be changed in Admin → Settings.</div>
         </div>
       </div>
       <div class="iz-card-foot">

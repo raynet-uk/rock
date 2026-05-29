@@ -234,7 +234,11 @@ body {
 
     <section class="hero">
         <div class="hero-banner">
-            <img src="{{ asset('images/raynet-uk-liverpool-banner.png') }}"
+            @php
+                $heroLogo = \App\Models\Setting::get('site_logo_path','');
+                $heroLogoUrl = $heroLogo ? \Illuminate\Support\Facades\Storage::url($heroLogo) : asset('images/raynet-uk-liverpool-banner.png');
+            @endphp
+            <img src="{{ $heroLogoUrl }}"
                  alt="RAYNET-UK Liverpool – Resilient Communications">
         </div>
         <div class="hero-body">
