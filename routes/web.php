@@ -440,6 +440,8 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/members', MemberDashboardController::class)->name('members');
+    Route::get('/members/raynet-news',       [\App\Http\Controllers\RaynetPublicationController::class, 'news'])       ->name('members.raynet-news');
+    Route::get('/members/checkpoint',        [\App\Http\Controllers\RaynetPublicationController::class, 'checkpoint']) ->name('members.checkpoint');
 
     // ── Resources management (committee and above) ───────────────────────────
     Route::middleware(['role:committee|admin|super-admin'])->group(function () {
@@ -996,6 +998,10 @@ Route::middleware('admin')->group(function () {
     Route::post('/admin/cms-update/check',  [\App\Http\Controllers\Admin\CmsUpdateController::class, 'checkNow'])      ->name('admin.cms-update.check');
     Route::post('/admin/cms-update/apply',  [\App\Http\Controllers\Admin\CmsUpdateController::class, 'applyUpdate'])   ->name('admin.cms-update.apply');
     Route::post('/admin/cms-update/dismiss',[\App\Http\Controllers\Admin\CmsUpdateController::class, 'dismissInterstitial'])->name('admin.cms-update.dismiss');
+    Route::get('/admin/publications',                  [\App\Http\Controllers\Admin\PublicationAdminController::class, 'index'])     ->name('admin.publications.index');
+    Route::post('/admin/publications',                 [\App\Http\Controllers\Admin\PublicationAdminController::class, 'store'])     ->name('admin.publications.store');
+    Route::post('/admin/publications/{publication}/current', [\App\Http\Controllers\Admin\PublicationAdminController::class, 'setCurrent'])->name('admin.publications.set-current');
+    Route::delete('/admin/publications/{publication}', [\App\Http\Controllers\Admin\PublicationAdminController::class, 'destroy'])   ->name('admin.publications.destroy');
     Route::get('/admin/remote-help/system-info',  [\App\Http\Controllers\Admin\RemoteHelpController::class, 'systemInfo'])   ->name('admin.remote-help.system-info');
     Route::get('/admin/remote-help',              [\App\Http\Controllers\Admin\RemoteHelpController::class, 'index'])       ->name('admin.remote-help.index');
     Route::post('/admin/remote-help/generate',    [\App\Http\Controllers\Admin\RemoteHelpController::class, 'generate'])    ->name('admin.remote-help.generate');
