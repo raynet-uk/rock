@@ -239,6 +239,7 @@ body{font-family:var(--font);background:var(--grey);color:var(--text);font-size:
         <div class="page-actions">
             <div class="page-datestamp no-print">{{ $now->format('D d M Y · H:i') }}</div>
             <button onclick="exportPDF()" class="btn-rn btn-outline no-print">⬇ Export PDF</button>
+            <button onclick="document.getElementById('import-modal').style.display='flex'" class="btn-rn btn-outline no-print">⚡ Import from Events</button>
             <a href="{{ route('admin.activity-logs.create') }}" class="btn-rn btn-red">+ New Entry</a>
         </div>
     </div>
@@ -907,4 +908,68 @@ async function exportPDF() {
     btn.textContent = '⬇ Export PDF'; btn.disabled = false;
 }
 </script>
+{{-- Import from Events modal --}}
+<div id="import-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-top:4px solid var(--navy);border-radius:0;padding:1.5rem;max-width:480px;width:100%;margin:1rem;box-shadow:0 8px 32px rgba(0,0,0,.25);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+            <div>
+                <div style="font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:var(--red);margin-bottom:.2rem;">Import from Events</div>
+                <div style="font-size:11px;color:var(--text-muted);">Creates activity log entries from confirmed/standby operator shift times.</div>
+            </div>
+            <button onclick="document.getElementById('import-modal').style.display='none'" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--grey-dark);padding:0 .25rem;">&times;</button>
+        </div>
+        <form method="POST" action="{{ route('admin.activity-logs.import-from-events') }}">
+            @csrf
+            <div style="margin-bottom:1rem;">
+                <label style="font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);display:block;margin-bottom:.35rem;">Specific Event (optional)</label>
+                <select name="event_id" style="width:100%;padding:.5rem .75rem;border:1px solid var(--grey-mid);font-family:var(--font);font-size:13px;outline:none;">
+                    <option value="">— All events (import everything) —</option>
+                    @foreach(\App\Models\Event::orderByDesc('starts_at')->get() as $ev)
+                        <option value="{{ $ev->id }}">{{ $ev->title }} — {{ $ev->starts_at?->format('j M Y') }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div style="background:var(--amber-bg);border:1px solid #e8c96a;border-left:3px solid #c8a030;padding:.6rem .85rem;font-size:11px;color:var(--amber);margin-bottom:1rem;">
+                ⚠ Only imports operators with shift or report/depart times set. Already-logged entries are skipped automatically.
+            </div>
+            <div style="display:flex;gap:.5rem;justify-content:flex-end;">
+                <button type="button" onclick="document.getElementById('import-modal').style.display='none'"
+                        style="padding:.5rem 1.1rem;background:transparent;border:1px solid var(--grey-mid);font-family:var(--font);font-size:12px;font-weight:bold;cursor:pointer;text-transform:uppercase;letter-spacing:.06em;">
+                    Cancel
+                </button>
+                <button type="submit"
+                        style="padding:.5rem 1.1rem;background:var(--navy);border:1px solid var(--navy);color:#fff;font-family:var(--font);font-size:12px;font-weight:bold;cursor:pointer;text-transform:uppercase;letter-spacing:.06em;">
+                    ⚡ Import Now
+                </button>
+            </div>
+        </form>
+
+        <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--grey-mid);">
+            <div style="font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:var(--red);margin-bottom:.5rem;">⚠ Reverse an Import</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:.75rem;">Removes all activity log entries that match an event name and date. Cannot be undone.</div>
+            <form method="POST" action="{{ route('admin.activity-logs.reverse-event') }}"
+                  onsubmit="return confirm('This will permanently delete all activity log entries for this event. Are you sure?')">
+                @csrf
+                <div style="display:flex;gap:.5rem;align-items:flex-end;">
+                    <div style="flex:1;">
+                        <label style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);display:block;margin-bottom:.3rem;">Select Event</label>
+                        <select name="event_id" required style="width:100%;padding:.45rem .75rem;border:1px solid var(--grey-mid);font-family:var(--font);font-size:12px;outline:none;">
+                            <option value="">— Choose event to reverse —</option>
+                            @foreach(\App\Models\Event::orderByDesc('starts_at')->get() as $ev)
+                                <option value="{{ $ev->id }}" data-title="{{ $ev->title }}" data-date="{{ $ev->starts_at?->toDateString() }}">
+                                    {{ $ev->title }} — {{ $ev->starts_at?->format('j M Y') }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <button type="submit"
+                            style="padding:.45rem 1rem;background:var(--red);border:1px solid var(--red);color:#fff;font-family:var(--font);font-size:12px;font-weight:bold;cursor:pointer;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;">
+                        ✕ Reverse
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @endsection

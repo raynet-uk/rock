@@ -26,7 +26,7 @@ return new class extends Migration
                 'slug'       => 'group-controller',
                 'sort_order' => 10,
                 'colour'     => '#22c55e',
-                'description'=> 'Overall lead for Liverpool RAYNET operations and governance.',
+                'description'=> 'Overall lead for RAYNET group operations and governance.',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],

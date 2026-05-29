@@ -37,6 +37,14 @@ class InstallController extends Controller
             'support_request_email' => ['required', 'email', 'max:120'],
             'site_url'              => ['required', 'url', 'max:120'],
             'raynet_zone'           => ['nullable', 'string', 'max:20'],
+            'mail_host'             => ['required', 'string', 'max:120'],
+            'mail_port'             => ['required', 'in:25,465,587'],
+            'mail_username'         => ['required', 'string', 'max:120'],
+            'mail_password'         => ['required', 'string', 'max:255'],
+            'mail_from_address'     => ['required', 'email', 'max:120'],
+            'mail_from_name'        => ['nullable', 'string', 'max:80'],
+            'qrz_username'          => ['nullable', 'string', 'max:30'],
+            'qrz_password'          => ['nullable', 'string', 'max:120'],
         ]);
 
         // ── Validate licence key against raynet-liverpool.net ─────────────
@@ -75,6 +83,40 @@ class InstallController extends Controller
 
         Setting::set('site_name', $request->input('group_name'));
         Setting::set('cms_licence_key', $licenceKey);
+
+        // ── Write mail config to .env ──────────────────────────────────────
+        $envPath = base_path('.env');
+        if (file_exists($envPath)) {
+            $encryption = $request->input('mail_port') === '587' ? 'tls' : 'ssl';
+            $fromName   = $request->input('mail_from_name') ?: $request->input('group_name');
+            $envUpdates = [
+                'MAIL_HOST'         => $request->input('mail_host'),
+                'MAIL_PORT'         => $request->input('mail_port'),
+                'MAIL_USERNAME'     => $request->input('mail_username'),
+                'MAIL_PASSWORD'     => $request->input('mail_password'),
+                'MAIL_ENCRYPTION'   => $encryption,
+                'MAIL_FROM_ADDRESS' => $request->input('mail_from_address'),
+                'MAIL_FROM_NAME'    => '"' . $fromName . '"',
+                'APP_URL'           => $request->input('site_url'),
+                'QRZ_USERNAME'      => $request->input('qrz_username', ''),
+                'QRZ_PASSWORD'      => $request->input('qrz_password', ''),
+            ];
+            $env = file_get_contents($envPath);
+            foreach ($envUpdates as $key => $value) {
+                if (preg_match('/^' . $key . '=/m', $env)) {
+                    $env = preg_replace('/^' . $key . '=.*/m', $key . '=' . $value, $env);
+                } else {
+                    $env .= "
+" . $key . '=' . $value;
+                }
+            }
+            file_put_contents($envPath, $env);
+
+            // Clear config cache so new .env values take effect immediately
+            try {
+                Artisan::call('config:clear');
+            } catch (\Throwable $e) {}
+        }
 
         // Insert into CmsLicence table so Command Centre API auth works
         \App\Models\CmsLicence::firstOrCreate(

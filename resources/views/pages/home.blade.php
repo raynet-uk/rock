@@ -287,7 +287,9 @@ body {
                                     <div style="display:inline-flex;align-items:center;gap:.3rem;padding:.1rem .5rem;background:rgba(200,16,46,.15);border:1px solid rgba(200,16,46,.6);border-radius:999px;font-size:.68rem;font-weight:700;color:#a00d25;white-space:nowrap;">🔒 Private</div>
                                 @endif
                             @endauth
-                            @if($nextEvent->supporting_group)
+                            @if($nextEvent->supporting_group === '__OWN__')
+                                <div style="display:inline-flex;align-items:center;gap:.3rem;padding:.1rem .5rem;background:rgba(0,51,102,.08);border:1px solid rgba(0,51,102,.25);border-radius:999px;font-size:.68rem;font-weight:700;color:var(--navy);white-space:nowrap;">📡 {{ \App\Helpers\RaynetSetting::groupName() }}</div>
+                            @elseif($nextEvent->supporting_group)
                                 <div style="display:inline-flex;align-items:center;gap:.3rem;padding:.1rem .5rem;background:rgba(200,16,46,.08);border:1px solid rgba(200,16,46,.25);border-radius:999px;font-size:.68rem;font-weight:700;color:var(--red);white-space:nowrap;">🤝 {{ $nextEvent->supporting_group }}</div>
                             @endif
                         </div>
@@ -331,7 +333,9 @@ body {
                                             <div style="display:inline-flex;align-items:center;gap:.3rem;padding:.1rem .5rem;background:rgba(200,16,46,.15);border:1px solid rgba(200,16,46,.6);border-radius:999px;font-size:.68rem;font-weight:700;color:#a00d25;white-space:nowrap;">🔒 Private</div>
                                         @endif
                                     @endauth
-                                    @if($event->supporting_group)
+                                    @if($event->supporting_group === '__OWN__')
+                                        <div style="display:inline-flex;align-items:center;gap:.3rem;padding:.1rem .5rem;background:rgba(0,51,102,.08);border:1px solid rgba(0,51,102,.25);border-radius:999px;font-size:.68rem;font-weight:700;color:var(--navy);white-space:nowrap;">📡 {{ \App\Helpers\RaynetSetting::groupName() }}</div>
+                                    @elseif($event->supporting_group)
                                         <div style="display:inline-flex;align-items:center;gap:.3rem;padding:.1rem .5rem;background:rgba(200,16,46,.08);border:1px solid rgba(200,16,46,.25);border-radius:999px;font-size:.68rem;font-weight:700;color:var(--red);white-space:nowrap;">🤝 {{ $event->supporting_group }}</div>
                                     @endif
                                 </div>

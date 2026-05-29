@@ -20,7 +20,7 @@ class ReadinessIndicatorsSeeder extends Seeder
                 'code' => 'M1',
                 'category' => 'Mobilisation & availability',
                 'category_weight' => 25,
-                'indicator_name' => 'Named operators deployable within 60 minutes inside Liverpool footprint',
+                'indicator_name' => 'Named operators deployable within 60 minutes inside group footprint',
                 'evidence_examples' => 'Duty roster; turnout drill; named contact list; recent mobilisation test',
                 'anchor_0' => 'No named local turnout or not tested',
                 'anchor_3' => 'Some likely local turnout but inconsistent',
@@ -32,7 +32,7 @@ class ReadinessIndicatorsSeeder extends Seeder
                 'code' => 'M2',
                 'category' => 'Mobilisation & availability',
                 'category_weight' => 25,
-                'indicator_name' => 'Named operators deployable within 120 minutes for wider Merseyside support',
+                'indicator_name' => 'Named operators deployable within 120 minutes for wider regional support',
                 'evidence_examples' => 'Roster; availability survey; exercise call-out records',
                 'anchor_0' => 'No defined 120-minute support capability',
                 'anchor_3' => 'Partial wider-area capability',
@@ -385,16 +385,16 @@ class ReadinessIndicatorsSeeder extends Seeder
 
         // Seed default service levels from the spreadsheet
         $serviceLevels = [
-            ['key' => 'organisation_name',      'value' => 'Liverpool RAYNET (Zone 10 / Group 179)', 'notes' => null],
-            ['key' => 'operating_area',         'value' => 'Liverpool city footprint; wider Merseyside support by arrangement', 'notes' => null],
-            ['key' => 'operators_60min',        'value' => '4', 'notes' => 'Use numbers you can evidence by named operators inside the Liverpool footprint.'],
+            ['key' => 'organisation_name',      'value' => 'Your RAYNET Group', 'notes' => null],
+            ['key' => 'operating_area',         'value' => 'Local group footprint; wider regional support by arrangement', 'notes' => null],
+            ['key' => 'operators_60min',        'value' => '4', 'notes' => 'Use numbers you can evidence by named operators inside your group footprint.'],
             ['key' => 'operators_120min',       'value' => '8', 'notes' => null],
             ['key' => 'oncall_team_leader',     'value' => 'Yes', 'notes' => null],
             ['key' => 'voice_modes',            'value' => 'VHF/UHF voice', 'notes' => null],
             ['key' => 'alternative_bearers',    'value' => 'DMR, YSF, VoIP, LoRa, APRS/location reporting', 'notes' => 'List only current, maintained fallback bearers you can evidence.'],
             ['key' => 'endurance_hours',        'value' => '12', 'notes' => 'Match endurance to power, relief, and welfare assumptions.'],
             ['key' => 'sustain_24hr',           'value' => 'Possible with relief/support', 'notes' => null],
-            ['key' => 'geographic_limits',      'value' => 'Best suited to Liverpool/local urban tasks; wider county support depends on transport, staffing, and task profile', 'notes' => null],
+            ['key' => 'geographic_limits',      'value' => 'Best suited to local tasks; wider regional support depends on transport, staffing, and task profile', 'notes' => null],
             ['key' => 'key_caveats',            'value' => 'Volunteer turnout; safety; power/internet conditions; vehicle availability; task clarity', 'notes' => 'State the boundaries plainly. Honest caveats increase credibility.'],
         ];
 

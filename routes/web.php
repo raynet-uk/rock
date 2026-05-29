@@ -797,7 +797,7 @@ Route::prefix('admin')->group(function () {
         Route::post('users/{user}/callsign/approve', [CallsignController::class, 'approve'])->name('admin.callsign.approve');
         Route::post('users/{user}/callsign/reject',  [CallsignController::class, 'reject']) ->name('admin.callsign.reject');
 
-        // DMR access (Liverpool only — requires DMR_ENABLED=true in .env)
+        // DMR access (requires DMR_ENABLED=true in .env to activate)
         if (config('raynet.dmr_enabled')) {
             Route::post('users/{user}/dmr-access/grant',   [UserAdminController::class, 'grantDmrAccess'])   ->name('admin.users.dmr.grant');
             Route::post('users/{user}/dmr-access/revoke',  [UserAdminController::class, 'revokeDmrAccess'])  ->name('admin.users.dmr.revoke');
@@ -988,6 +988,44 @@ Route::middleware('admin')->group(function () {
     Route::post('/admin/assignments/{assignment}/briefing',      [EventAssignmentController::class, 'sendSingleBriefing'])  ->name('admin.events.assignments.briefing-send');
     Route::get('/admin/assignments/{assignment}/briefing-pdf',   [EventAssignmentController::class, 'downloadBriefingPdf']) ->name('admin.events.assignments.briefing-pdf');
     Route::get('/admin/events/{event}/ops-pack-pdf',             [EventAssignmentController::class, 'downloadOpsPack'])    ->name('admin.events.assignments.ops-pack');
+    Route::post('/admin/activity-logs/reverse-event', [\App\Http\Controllers\Admin\ActivityLogController::class, 'reverseEvent'])->name('admin.activity-logs.reverse-event');
+    Route::post('/admin/activity-logs/import-from-events', [\App\Http\Controllers\Admin\ActivityLogController::class, 'importFromEvents'])->name('admin.activity-logs.import-from-events');
+    Route::get('/admin/event-assignment-hours', function(\Illuminate\Http\Request $request) {
+        $eventId = $request->query('event_id');
+        if (!$eventId) return response()->json([]);
+        $assignments = \App\Models\EventAssignment::with('user')
+            ->where('event_id', $eventId)
+            ->whereIn('status', ['confirmed', 'standby', 'pending'])
+            ->get()
+            ->map(function($a) {
+                // Calculate hours from shifts if available
+                $hours = 0;
+                if ($a->shifts && count($a->shifts)) {
+                    foreach ($a->shifts as $s) {
+                        if (!empty($s['start']) && !empty($s['end']) && ($s['type'] ?? 'shift') === 'shift') {
+                            [$sh, $sm] = explode(':', $s['start']);
+                            [$eh, $em] = explode(':', $s['end']);
+                            $diff = ((int)$eh * 60 + (int)$em) - ((int)$sh * 60 + (int)$sm);
+                            if ($diff > 0) $hours += $diff / 60;
+                        }
+                    }
+                } elseif ($a->report_time && $a->depart_time) {
+                    [$sh, $sm] = explode(':', substr($a->report_time, 0, 5));
+                    [$eh, $em] = explode(':', substr($a->depart_time, 0, 5));
+                    $diff = ((int)$eh * 60 + (int)$em) - ((int)$sh * 60 + (int)$sm);
+                    if ($diff > 0) $hours = $diff / 60;
+                }
+                return [
+                    'user_id'  => $a->user_id,
+                    'name'     => $a->user->name ?? '',
+                    'callsign' => $a->callsign ?? '',
+                    'hours'    => $hours > 0 ? round($hours * 2) / 2 : null,
+                    'role'     => $a->role ?? '',
+                ];
+            });
+        return response()->json($assignments);
+    })->name('admin.event-assignment-hours');
+
     Route::get('/admin/map-thumbnail',    [EventAssignmentController::class, 'mapThumbnail'])   ->name('admin.map-thumbnail');
     Route::get('/admin/streetview-thumbnail', [EventAssignmentController::class, 'streetViewThumbnail'])->name('admin.streetview-thumbnail');
     Route::post('/admin/events/{event}/assignments/notify',           [EventAssignmentController::class, 'notifyCrew'])          ->name('admin.events.assignments.notify');

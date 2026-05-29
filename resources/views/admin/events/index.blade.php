@@ -700,11 +700,46 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
 
 
                 <div class="form-field full">
-                    <label>Supporting Another Group <small style="text-transform:none;letter-spacing:0;font-weight:normal;">(optional — shown as a badge on the homepage &amp; calendar)</small></label>
-                    <input name="supporting_group" type="text"
-                           value="{{ old('supporting_group', $editingEvent->supporting_group ?? '') }}"
-                           placeholder="e.g. 10/NW/101 Cheshire RAYNET">
+                    <label>Event Origin</label>
+                    <div style="display:flex;gap:.4rem;margin-bottom:.55rem;">
+                        <label style="display:flex;align-items:center;gap:.35rem;padding:.3rem .75rem;border:1px solid var(--grey-mid);border-radius:999px;cursor:pointer;font-size:12px;font-weight:normal;text-transform:none;letter-spacing:0;white-space:nowrap;transition:all .12s;"
+                               id="origin-own-lbl" onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor=''">
+                            <input type="radio" name="event_origin" id="origin-own" value="own"
+                                   onchange="toggleOrigin()"
+                                   {{ old('event_origin', ($editingEvent->supporting_group ?? '') === '' || ($editingEvent->supporting_group ?? '') === '__OWN__' ? 'own' : 'supporting') === 'own' ? 'checked' : '' }}>
+                            📡 Our own event
+                        </label>
+                        <label style="display:flex;align-items:center;gap:.35rem;padding:.3rem .75rem;border:1px solid var(--grey-mid);border-radius:999px;cursor:pointer;font-size:12px;font-weight:normal;text-transform:none;letter-spacing:0;white-space:nowrap;transition:all .12s;"
+                               id="origin-sup-lbl" onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor=''">
+                            <input type="radio" name="event_origin" id="origin-supporting" value="supporting"
+                                   onchange="toggleOrigin()"
+                                   {{ old('event_origin', ($editingEvent->supporting_group ?? '') !== '' && ($editingEvent->supporting_group ?? '') !== '__OWN__' ? 'supporting' : 'own') === 'supporting' ? 'checked' : '' }}>
+                            🤝 Supporting another group
+                        </label>
+                    </div>
+                    <div id="supporting-group-wrap" style="display:{{ old('event_origin', ($editingEvent->supporting_group ?? '') !== '' && ($editingEvent->supporting_group ?? '') !== '__OWN__' ? 'supporting' : 'own') === 'supporting' ? 'block' : 'none' }};">
+                        <input name="supporting_group" type="text"
+                               value="{{ old('supporting_group', (($editingEvent->supporting_group ?? '') !== '__OWN__') ? ($editingEvent->supporting_group ?? '') : '') }}"
+                               placeholder="e.g. 10/NW/101 Cheshire RAYNET">
+                        <small style="color:var(--grey-dark);font-size:11px;">Shown as a 🤝 badge on the homepage &amp; calendar</small>
+                    </div>
+                    {{-- Hidden field to send __OWN__ when our own event selected --}}
+                    <input type="hidden" name="supporting_group" id="supporting-group-hidden" value="{{ old('supporting_group', $editingEvent->supporting_group ?? '') }}" {{ old('event_origin', ($editingEvent->supporting_group ?? '') !== '' ? 'supporting' : 'own') === 'supporting' ? 'disabled' : '' }}>
                 </div>
+                <script>
+                function toggleOrigin() {
+                    const isOwn = document.getElementById('origin-own').checked;
+                    const wrap  = document.getElementById('supporting-group-wrap');
+                    const hidden = document.getElementById('supporting-group-hidden');
+                    const textInput = wrap.querySelector('input[type="text"]');
+                    wrap.style.display = isOwn ? 'none' : 'block';
+                    hidden.disabled  = !isOwn;
+                    textInput.disabled = isOwn;
+                    if (isOwn) hidden.value = '__OWN__';
+                    else hidden.value = '';
+                }
+                toggleOrigin();
+                </script>
               {{-- ─── PRIVATE EVENT TOGGLE ─── --}}
                 <div class="form-privacy-row">
                     <input type="hidden" name="is_private" value="0">

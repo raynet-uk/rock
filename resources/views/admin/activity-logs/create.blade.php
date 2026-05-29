@@ -444,7 +444,58 @@ body { background: var(--grey); color: var(--text); font-family: var(--font); fo
 
         hiddenId.value = opt.value;
         setPrefilledNotice(true);
+
+        // Auto-fill hours from event assignments
+        fetchAssignmentHours(opt.value);
     });
+
+    function fetchAssignmentHours(eventId) {
+        if (!eventId) return;
+        fetch('/admin/event-assignment-hours?event_id=' + eventId, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            window._assignmentHours = data;
+
+            // If a member is already selected, fill hours immediately
+            autoFillHoursForSelectedMember();
+
+            // Show a hint if hours are available
+            const hoursInput = document.getElementById('hours');
+            const hint = document.getElementById('hours-autofill-hint');
+            if (hint) {
+                const withHours = data.filter(a => a.hours);
+                hint.textContent = withHours.length
+                    ? '⚡ ' + withHours.length + ' operator(s) have shift hours — selecting a member will auto-fill.'
+                    : 'No shift hours recorded for this event.';
+                hint.style.display = '';
+            }
+        })
+        .catch(() => {});
+    }
+
+    function autoFillHoursForSelectedMember() {
+        const data = window._assignmentHours;
+        if (!data || !data.length) return;
+        const userSelect = document.getElementById('user_id');
+        const hoursInput = document.getElementById('hours');
+        if (!userSelect || !hoursInput) return;
+        const userId = parseInt(userSelect.value);
+        if (!userId) return;
+        const match = data.find(a => a.user_id === userId);
+        if (match && match.hours) {
+            hoursInput.value = match.hours;
+            const hint = document.getElementById('hours-autofill-hint');
+            if (hint) {
+                hint.textContent = '✓ Hours auto-filled from shift data (' + match.hours + 'h). Edit if needed.';
+                hint.style.color = '#1a6b3c';
+            }
+        }
+    }
+
+    // Also listen for member selection changes
+    document.getElementById('user_id')?.addEventListener('change', autoFillHoursForSelectedMember);
 
     // ── Toggle custom mode ───────────────────────────────────────────────
     window.toggleCustomMode = function () {

@@ -250,7 +250,11 @@ a:hover { text-decoration: underline; }
             {{ $event->title }}
             @if($event->is_private)<span class="rn-private-badge">🔒 Members Only</span>@endif
         </h1>
-        @if($event->supporting_group)
+        @if($event->supporting_group === '__OWN__')
+            <div style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:4px 12px;background:rgba(0,51,102,.15);border:1px solid rgba(0,51,102,.4);border-radius:999px;font-size:12px;font-weight:700;color:#fff;">
+                📡 {{ \App\Helpers\RaynetSetting::groupName() }}
+            </div>
+        @elseif($event->supporting_group)
             <div style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:4px 12px;background:rgba(200,16,46,.12);border:1px solid rgba(200,16,46,.4);border-radius:999px;font-size:12px;font-weight:700;color:#fff;">
                 🤝 Supporting: {{ $event->supporting_group }}
             </div>

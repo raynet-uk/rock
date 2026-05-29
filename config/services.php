@@ -50,16 +50,16 @@ return [
     'group_chat_id'      => env('TELEGRAM_GROUP_CHAT_ID'),
 ],
 'raynet' => [
-    'portal_url' => env('RAYNET_PORTAL_URL', 'https://raynet-liverpool.net'),
+    'portal_url' => env('RAYNET_PORTAL_URL', ''),
 ],
 'imap' => [
-    'host'               => env('MAIL_HOST', 'mail.raynet-liverpool.net'),
+    'host'               => env('MAIL_HOST', 'localhost'),
     'publicfile_password'=> env('IMAP_PUBLICFILE_PASSWORD'),
     'memberfile_password'=> env('IMAP_MEMBERFILE_PASSWORD'),
 ],
 
     'imap' => [
-        'host'                  => env('MAIL_HOST', 'mail.raynet-liverpool.net'),
+        'host'                  => env('MAIL_HOST', 'localhost'),
         'publicfile_password'   => env('IMAP_PUBLICFILE_PASSWORD'),
         'memberfile_password'   => env('IMAP_MEMBERFILE_PASSWORD'),
         'committeefile_password'=> env('IMAP_COMMITTEEFILE_PASSWORD'),

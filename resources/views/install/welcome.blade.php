@@ -106,7 +106,7 @@ body{font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;background:#0a0f1a;
                 <span class="wl-info-icon">📻</span>
                 <div>
                     <strong>Built by RAYNET Liverpool</strong> (G4BDS &amp; M7NDN) for all RAYNET UK affiliated groups.<br>
-                    For support, visit <a href="https://raynet-liverpool.net/request-support" style="color:#1a6b3c;font-weight:bold">raynet-liverpool.net/request-support</a>
+                    For support, visit <a href="https://github.com/raynet-uk/raynet-cms/issues" style="color:#1a6b3c;font-weight:bold">GitHub Issues</a>
                     or check the <a href="https://github.com/raynet-uk/raynet-cms" style="color:#1a6b3c;font-weight:bold">GitHub repository</a>.
                 </div>
             </div>

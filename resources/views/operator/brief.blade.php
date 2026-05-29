@@ -419,7 +419,9 @@
         @if ($assignment->event->is_private)
             <span class="hero-chip" style="background:rgba(200,16,46,.2);border-color:rgba(200,16,46,.5);font-weight:700;">🔒 Members Only</span>
         @endif
-        @if ($assignment->event->supporting_group)
+        @if ($assignment->event->supporting_group === '__OWN__')
+            <span class="hero-chip" style="background:rgba(0,51,102,.25);border-color:rgba(0,51,102,.5);font-weight:700;">📡 {{ \App\Helpers\RaynetSetting::groupName() }}</span>
+        @elseif ($assignment->event->supporting_group)
             <span class="hero-chip" style="background:rgba(200,16,46,.12);border-color:rgba(200,16,46,.35);font-weight:700;">🤝 Supporting: {{ $assignment->event->supporting_group }}</span>
         @endif
         <span class="hero-chip" style="background:{{ match($assignment->status) {

@@ -70,7 +70,7 @@ class SampleEventsSeeder extends Seeder
                 'dow'      => 'monday',
                 'time'     => '20:00',
                 'duration' => 60,
-                'location' => 'Liverpool city-wide (VHF)',
+                'location' => 'City-wide (VHF)',
                 'description' => 'SAMPLE EVENT DATA – routine Monday training net. Used for testing the website layout and calendar.',
             ],
             [
@@ -80,7 +80,7 @@ class SampleEventsSeeder extends Seeder
                 'dow'      => 'saturday',
                 'time'     => '10:00',
                 'duration' => 180,
-                'location' => 'Pier Head, Liverpool',
+                'location' => 'Town Centre',
                 'description' => 'SAMPLE EVENT DATA – field exercise by the waterfront.',
             ],
             [

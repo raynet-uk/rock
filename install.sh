@@ -3,7 +3,7 @@
 # ============================================================
 # RAYNET-OS — Interactive Install Script
 # Usage: git clone https://github.com/raynet-uk/raynet-cms.git . && bash install.sh
-# Developed by RAYNET Liverpool (G4BDS & M7NDN)
+# Developed by RAYNET-UK volunteers
 # ============================================================
 
 RED='\033[0;31m'

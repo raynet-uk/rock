@@ -353,4 +353,87 @@ public function create()
             'attended_event_this_year'     => (clone $yearLogs)->exists(),
         ]);
     }
+
+    public function importFromEvents(\Illuminate\Http\Request $request): \Illuminate\Http\RedirectResponse
+    {
+        $eventId  = $request->input('event_id');
+        $imported = 0;
+        $skipped  = 0;
+
+        $query = \App\Models\EventAssignment::with(['user', 'event'])
+            ->whereHas('event')
+            ->whereIn('status', ['confirmed', 'standby']);
+
+        if ($eventId) {
+            $query->where('event_id', $eventId);
+        }
+
+        $assignments = $query->get();
+
+        foreach ($assignments as $a) {
+            // Calculate hours from shifts or report/depart times
+            $hours = 0;
+            if ($a->shifts && count($a->shifts)) {
+                foreach ($a->shifts as $s) {
+                    if (!empty($s['start']) && !empty($s['end']) && ($s['type'] ?? 'shift') === 'shift') {
+                        [$sh, $sm] = explode(':', $s['start']);
+                        [$eh, $em] = explode(':', $s['end']);
+                        $diff = ((int)$eh * 60 + (int)$em) - ((int)$sh * 60 + (int)$sm);
+                        if ($diff > 0) $hours += $diff / 60;
+                    }
+                }
+            } elseif ($a->report_time && $a->depart_time) {
+                [$sh, $sm] = explode(':', substr($a->report_time, 0, 5));
+                [$eh, $em] = explode(':', substr($a->depart_time, 0, 5));
+                $diff = ((int)$eh * 60 + (int)$em) - ((int)$sh * 60 + (int)$sm);
+                if ($diff > 0) $hours = $diff / 60;
+            }
+
+            if ($hours < 0.5) { $skipped++; continue; }
+
+            $hours    = round($hours * 2) / 2; // round to nearest 0.5
+            $eventDate = $a->event->starts_at?->toDateString() ?? now()->toDateString();
+            $eventName = $a->event->title ?? 'Event';
+
+            // Skip if already logged for this user/event/date
+            $exists = \App\Models\ActivityLog::where('user_id', $a->user_id)
+                ->where('event_date', $eventDate)
+                ->where('event_name', $eventName)
+                ->exists();
+
+            if ($exists) { $skipped++; continue; }
+
+            \App\Models\ActivityLog::create([
+                'user_id'    => $a->user_id,
+                'event_name' => $eventName,
+                'event_date' => $eventDate,
+                'hours'      => $hours,
+                'logged_by'  => auth()->id(),
+            ]);
+            $imported++;
+        }
+
+        $msg = "Imported {$imported} activity log entries from event assignments.";
+        if ($skipped) $msg .= " {$skipped} skipped (no hours set or already logged).";
+
+        return redirect()->route('admin.activity-logs.index')->with('status', $msg);
+    }
+
+
+    public function reverseEvent(\Illuminate\Http\Request $request): \Illuminate\Http\RedirectResponse
+    {
+        $eventId = $request->input('event_id');
+        if (!$eventId) return redirect()->back()->with('error', 'No event selected.');
+
+        $event = \App\Models\Event::find($eventId);
+        if (!$event) return redirect()->back()->with('error', 'Event not found.');
+
+        $deleted = \App\Models\ActivityLog::where('event_name', $event->title)
+            ->where('event_date', $event->starts_at?->toDateString())
+            ->delete();
+
+        return redirect()->route('admin.activity-logs.index')
+            ->with('status', 'Reversed: ' . $deleted . ' activity log entries removed for ' . $event->title . '.');
+    }
+
 }

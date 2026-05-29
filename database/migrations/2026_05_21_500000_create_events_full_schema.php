@@ -16,7 +16,7 @@ return new class extends Migration {
         Schema::create('event_support_packs', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
-            $table->string('group_ref')->default('10/ME/179');
+            $table->string('group_ref')->default('');
             $table->string('event_name');
             $table->date('event_date');
             $table->integer('duration_days')->default(1);

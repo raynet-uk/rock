@@ -361,7 +361,9 @@ body { background: var(--grey); color: var(--text); font-family: var(--font); fo
                                             </div>
                                         @endif
                                         <div class="tooltip-title">{{ $event->title }}</div>
-                                        @if($event->supporting_group)
+                                        @if($event->supporting_group === '__OWN__')
+                                            <div style="display:inline-flex;align-items:center;gap:.3rem;margin:.2rem 0 .3rem;padding:.15rem .55rem;background:rgba(0,51,102,.08);border:1px solid rgba(0,51,102,.25);border-radius:999px;font-size:.72rem;font-weight:700;color:#003366;">📡 {{ \App\Helpers\RaynetSetting::groupName() }}</div>
+                                        @elseif($event->supporting_group)
                                             <div style="display:inline-flex;align-items:center;gap:.3rem;margin:.2rem 0 .3rem;padding:.15rem .55rem;background:rgba(200,16,46,.08);border:1px solid rgba(200,16,46,.25);border-radius:999px;font-size:.72rem;font-weight:700;color:#C8102E;">🤝 {{ $event->supporting_group }}</div>
                                         @endif
                                         <div class="tooltip-meta">
