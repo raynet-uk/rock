@@ -593,5 +593,19 @@ document.querySelectorAll('.sb-subitem.active').forEach(el=>{
   });
 })();
 </script>
+@if(session('remote_help_active') || session('remote_help_expires'))
+@php
+    $rhExpires = session('remote_help_expires');
+    $rhFrom    = session('remote_help_from', 'RAYNET Liverpool');
+    $rhCode    = session('remote_help_code');
+    $rhActive  = $rhExpires && now()->timestamp < $rhExpires;
+@endphp
+@if($rhActive)
+<div style="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#C8102E;color:#fff;padding:.6rem 1.5rem;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:bold;">
+    <span>🔐 Remote help session active · Code: {{ $rhCode }} · Expires {{ \Carbon\Carbon::createFromTimestamp($rhExpires)->format('H:i') }}</span>
+    <form method="POST" action="{{ route('logout') }}" style="margin:0;">@csrf<button type="submit" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);color:#fff;padding:.3rem .9rem;cursor:pointer;font-size:12px;font-weight:bold;">End Session</button></form>
+</div>
+@endif
+@endif
 </body>
 </html>

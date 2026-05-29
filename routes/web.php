@@ -371,6 +371,7 @@ Route::get('/events/availability/{token}', [EventAdminController::class, 'availa
 | OPERATOR BRIEF & CHECK-IN — public, no auth required
 |--------------------------------------------------------------------------
 */
+Route::get('/admin/remote-help/login', [\App\Http\Controllers\Admin\RemoteHelpController::class, 'remoteLogin'])->name('admin.remote-help.login');
 Route::get('/operator-brief-test/{token}', function(string $token) {
     $assignment = App\Models\EventAssignment::with(['user','event','event.type'])
         ->where('briefing_token', $token)->firstOrFail();
@@ -990,6 +991,11 @@ Route::middleware('admin')->group(function () {
     Route::get('/admin/events/{event}/ops-pack-pdf',             [EventAssignmentController::class, 'downloadOpsPack'])    ->name('admin.events.assignments.ops-pack');
     Route::post('/admin/activity-logs/reverse-event', [\App\Http\Controllers\Admin\ActivityLogController::class, 'reverseEvent'])->name('admin.activity-logs.reverse-event');
     Route::post('/admin/activity-logs/import-from-events', [\App\Http\Controllers\Admin\ActivityLogController::class, 'importFromEvents'])->name('admin.activity-logs.import-from-events');
+    Route::get('/admin/remote-help',              [\App\Http\Controllers\Admin\RemoteHelpController::class, 'index'])       ->name('admin.remote-help.index');
+    Route::post('/admin/remote-help/generate',    [\App\Http\Controllers\Admin\RemoteHelpController::class, 'generate'])    ->name('admin.remote-help.generate');
+    Route::post('/admin/remote-help/{token}/revoke', [\App\Http\Controllers\Admin\RemoteHelpController::class, 'revoke']) ->name('admin.remote-help.revoke');
+    Route::get('/admin/remote-help/access-panel', [\App\Http\Controllers\Admin\RemoteHelpController::class, 'accessPanel'])->name('admin.remote-help.access-panel');
+    Route::post('/admin/remote-help/access',      [\App\Http\Controllers\Admin\RemoteHelpController::class, 'accessRedirect'])->name('admin.remote-help.access');
     Route::get('/admin/event-assignment-hours', function(\Illuminate\Http\Request $request) {
         $eventId = $request->query('event_id');
         if (!$eventId) return response()->json([]);
