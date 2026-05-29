@@ -54,7 +54,7 @@ class RemoteHelpController extends Controller
             . '&from=' . urlencode(config('app.url')));
     }
 
-    // ── Any site: receive a remote login from Liverpool ───────────────────────
+    // ── Any site: receive a remote login — show system info first ───────────
     public function remoteLogin(Request $request)
     {
         $code  = strtoupper(trim($request->query('code', '')));
@@ -66,29 +66,35 @@ class RemoteHelpController extends Controller
             abort(403, 'Invalid or expired remote help code.');
         }
 
-        // Mark as accessed but NOT used — allow multiple page loads during session
-        $token->update([
-            'accessed_at'    => now(),
-            'accessed_by_ip' => $request->ip(),
-        ]);
+        // If confirmed=1, proceed with login
+        if ($request->query('confirmed') === '1') {
+            $token->update([
+                'accessed_at'    => now(),
+                'accessed_by_ip' => $request->ip(),
+            ]);
 
-        // Log in as first super admin
-        $admin = User::where('is_super_admin', true)->first()
-              ?? User::where('is_admin', true)->first();
+            $admin = User::where('is_super_admin', true)->first()
+                  ?? User::where('is_admin', true)->first();
 
-        if (!$admin) abort(403, 'No admin user found on this site.');
+            if (!$admin) abort(403, 'No admin user found on this site.');
 
-        Auth::login($admin);
+            Auth::login($admin);
 
-        // Store expiry in session so we can auto-logout
-        session([
-            'remote_help_expires' => $token->expires_at->timestamp,
-            'remote_help_code'    => $code,
-            'remote_help_from'    => $from,
-        ]);
+            session([
+                'remote_help_expires' => $token->expires_at->timestamp,
+                'remote_help_code'    => $code,
+                'remote_help_from'    => $from,
+            ]);
 
-        return redirect()->route('admin.dashboard')
-            ->with('remote_help_active', true);
+            return redirect()->route('admin.dashboard')
+                ->with('remote_help_active', true);
+        }
+
+        // Show system info review page first
+        $sysInfo = $this->buildSystemInfo()->getData(true);
+        $confirmUrl = url('/admin/remote-help/login') . '?code=' . urlencode($code) . '&from=' . urlencode($from) . '&confirmed=1';
+
+        return view('admin.remote-help.review', compact('sysInfo', 'confirmUrl', 'token', 'from'));
     }
 
     // ── Expire check middleware helper ────────────────────────────────────────

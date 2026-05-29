@@ -42,81 +42,8 @@ body{background:var(--grey);font-family:Arial,sans-serif;font-size:14px;color:va
                        style="font-family:monospace;font-size:1.2rem;letter-spacing:.2em;text-transform:uppercase"
                        oninput="this.value=this.value.toUpperCase()">
             </div>
-            <button type="button" onclick="fetchAndConnect()" class="btn" id="connect-btn">Fetch System Info & Connect →</button>
+            <button type="submit" class="btn">Connect to Remote Site →</button>
         </form>
     </div>
-
-    {{-- System Info Panel --}}
-    <div id="sysinfo-panel" style="display:none;margin-top:1.5rem;background:#001f40;border-radius:6px;overflow:hidden;">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.25rem;border-bottom:1px solid rgba(255,255,255,.1);">
-            <div style="font-weight:bold;color:#7effa0;font-family:monospace;font-size:13px;">🖥 Remote Site System Info</div>
-            <div style="display:flex;gap:.5rem;">
-                <button onclick="copyInfo()" style="background:#003366;border:1px solid #0066cc;color:#7effa0;padding:.3rem .8rem;font-family:monospace;font-size:11px;cursor:pointer;border-radius:3px;">📋 Copy</button>
-                <button onclick="doConnect()" style="background:#C8102E;border:none;color:#fff;padding:.3rem .8rem;font-family:monospace;font-size:11px;cursor:pointer;border-radius:3px;font-weight:bold;">→ Connect Now</button>
-            </div>
-        </div>
-        <div id="sysinfo-content" style="padding:1.25rem;font-family:monospace;font-size:12px;color:#c8d8e8;max-height:50vh;overflow-y:auto;"></div>
-    </div>
 </div>
-
-<script>
-let siteUrl = '', code = '';
-
-function fetchAndConnect() {
-    siteUrl = document.querySelector('input[name=site_url]').value.trim().replace(/\/$/, '');
-    code    = document.querySelector('input[name=code]').value.trim().toUpperCase();
-
-    if (!siteUrl || !code) { alert('Please enter site URL and code'); return; }
-
-    const btn = document.getElementById('connect-btn');
-    btn.textContent = 'Fetching…';
-    btn.disabled = true;
-
-    fetch(siteUrl + '/admin/remote-help/system-info-public?code=' + encodeURIComponent(code), {
-        headers: { 'Accept': 'application/json' }
-    })
-    .then(r => {
-        if (!r.ok) throw new Error('Code invalid or site unreachable (HTTP ' + r.status + ')');
-        return r.json();
-    })
-    .then(data => {
-        const panel = document.getElementById('sysinfo-panel');
-        const el    = document.getElementById('sysinfo-content');
-        let html = '';
-        for (const [section, rows] of Object.entries(data)) {
-            html += '<div style="margin-bottom:1rem;">';
-            html += '<div style="color:#ffd700;font-size:10px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.4rem;border-bottom:1px solid rgba(255,215,0,.15);padding-bottom:.2rem;">' + section + '</div>';
-            for (const [k, v] of Object.entries(rows)) {
-                const sensitive = ['password','secret','key','token','pass'].some(s => k.toLowerCase().includes(s));
-                html += '<div style="display:flex;gap:1rem;padding:.15rem 0;">';
-                html += '<span style="color:#6b8fa8;min-width:160px;flex-shrink:0;">' + k + '</span>';
-                html += '<span style="color:' + (sensitive ? '#ffaa44' : '#7effa0') + ';word-break:break-all;">' + v + '</span>';
-                html += '</div>';
-            }
-            html += '</div>';
-        }
-        el.innerHTML = html;
-        panel.style.display = 'block';
-        btn.textContent = '✓ Info Loaded — Connect →';
-        btn.disabled = false;
-        btn.onclick = doConnect;
-    })
-    .catch(e => {
-        alert('Error: ' + e.message);
-        btn.textContent = 'Fetch System Info & Connect →';
-        btn.disabled = false;
-        btn.onclick = fetchAndConnect;
-    });
-}
-
-function doConnect() {
-    // Submit the form
-    document.querySelector('form').submit();
-}
-
-function copyInfo() {
-    const text = document.getElementById('sysinfo-content').innerText;
-    navigator.clipboard.writeText(text).then(() => alert('Copied to clipboard'));
-}
-</script>
 @endsection
