@@ -279,6 +279,32 @@
     <form method="POST" action="{{ route('admin.settings.update') }}">
         @csrf
         <div class="as-card">
+            <div class="as-card-head"><h2>🔍 QRZ XML Lookup</h2></div>
+            <div class="as-card-body">
+                <div class="as-hint" style="margin-bottom:1rem;font-size:12px;color:#6b7f96;">Used to auto-fill operator details during net logging and member management. Requires a QRZ.com XML subscription.</div>
+                <div class="as-row">
+                    <div class="as-field">
+                        <label class="as-label" for="qrz_username">QRZ Username</label>
+                        <input type="text" id="qrz_username" name="qrz_username" class="as-input"
+                               style="font-family:monospace"
+                               value="{{ old('qrz_username', env('QRZ_USERNAME','')) }}"
+                               placeholder="Your QRZ callsign">
+                    </div>
+                    <div class="as-field">
+                        <label class="as-label" for="qrz_password">QRZ Password</label>
+                        <input type="password" id="qrz_password" name="qrz_password" class="as-input"
+                               value="{{ old('qrz_password', env('QRZ_PASSWORD','')) }}"
+                               placeholder="Your QRZ password">
+                    </div>
+                </div>
+            </div>
+            <div class="as-foot">
+                <button type="submit" class="as-btn as-btn-primary">✓ Save QRZ Settings</button>
+            </div>
+        </div>
+
+        @csrf
+        <div class="as-card">
             <div class="as-card-head"><h2>🔧 Header Code</h2></div>
             <div class="as-card-body">
                 <div class="as-field">
