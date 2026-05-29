@@ -29,7 +29,7 @@ class HeartbeatCommandCentre extends Command
                 ->post($endpoint, [
                     'licence_key' => $licenceKey,
                     'site_url'    => config('app.url'),
-                    'cms_version' => '1.0.0',
+                    'cms_version' => trim(@file_get_contents(base_path('VERSION')) ?: '1.0.0'),
                 ]);
 
             if ($response->successful()) {
