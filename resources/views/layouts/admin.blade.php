@@ -312,8 +312,12 @@
                 <div class="sb-subnav" id="grp-system-sub">
                     <a href="{{ route('admin.settings') }}" class="sb-subitem {{ $currentRoute === 'admin.settings' ? 'active' : '' }}">Site Settings</a>
                     <a href="{{ route('admin.modules.index') }}" class="sb-subitem {{ str_starts_with($currentRoute,'admin.modules') ? 'active' : '' }}">Module Manager</a>
+                    <a href="{{ route('admin.remote-help.index') }}" class="sb-subitem {{ str_starts_with($currentRoute,'admin.remote-help') ? 'active' : '' }}">🛠 Remote Help</a>
                     @if($isSuperAdmin)
                     <a href="{{ route('admin.super.index') }}" class="sb-subitem">Super Admin</a>
+                    @if(config('raynet.remote_help_provider'))
+                    <a href="{{ route('admin.remote-help.access-panel') }}" class="sb-subitem">🔐 Remote Access</a>
+                    @endif
                     <a href="{{ route('admin.super.permissions.index') }}" class="sb-subitem {{ $currentRoute === 'admin.super.permissions.index' ? 'active' : '' }}">Permissions</a>
                     <a href="{{ route('admin.oauth.clients') }}" class="sb-subitem {{ str_starts_with($currentRoute,'admin.oauth') ? 'active' : '' }}">SSO / OAuth</a>
                     @endif

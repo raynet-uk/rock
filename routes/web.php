@@ -994,8 +994,10 @@ Route::middleware('admin')->group(function () {
     Route::get('/admin/remote-help',              [\App\Http\Controllers\Admin\RemoteHelpController::class, 'index'])       ->name('admin.remote-help.index');
     Route::post('/admin/remote-help/generate',    [\App\Http\Controllers\Admin\RemoteHelpController::class, 'generate'])    ->name('admin.remote-help.generate');
     Route::post('/admin/remote-help/{token}/revoke', [\App\Http\Controllers\Admin\RemoteHelpController::class, 'revoke']) ->name('admin.remote-help.revoke');
-    Route::get('/admin/remote-help/access-panel', [\App\Http\Controllers\Admin\RemoteHelpController::class, 'accessPanel'])->name('admin.remote-help.access-panel');
-    Route::post('/admin/remote-help/access',      [\App\Http\Controllers\Admin\RemoteHelpController::class, 'accessRedirect'])->name('admin.remote-help.access');
+    if (config('raynet.remote_help_provider')) {
+        Route::get('/admin/remote-help/access-panel', [\App\Http\Controllers\Admin\RemoteHelpController::class, 'accessPanel'])->name('admin.remote-help.access-panel');
+        Route::post('/admin/remote-help/access',      [\App\Http\Controllers\Admin\RemoteHelpController::class, 'accessRedirect'])->name('admin.remote-help.access');
+    }
     Route::get('/admin/event-assignment-hours', function(\Illuminate\Http\Request $request) {
         $eventId = $request->query('event_id');
         if (!$eventId) return response()->json([]);
