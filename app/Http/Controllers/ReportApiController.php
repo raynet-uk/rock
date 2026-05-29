@@ -15,7 +15,8 @@ class ReportApiController extends Controller
     public function index(Request $request)
     {
         $key    = $request->header('X-Licence-Key');
-        $stored = Setting::where('key', 'licence_key')->value('value');
+        $stored = Setting::where('key', 'cms_licence_key')->value('value') 
+                  ?? Setting::where('key', 'licence_key')->value('value');
 
         if (!$key || $key !== $stored) {
             return response()->json(['error' => 'Unauthorised'], 401);
