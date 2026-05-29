@@ -359,6 +359,7 @@
         </div>
         <div class="rn-topbar__right">
             <a href="{{ route('home') }}" style="display:inline-flex;align-items:center;gap:.4rem;padding:.28rem .75rem;background:var(--navy-faint);border:1px solid rgba(0,51,102,.2);color:var(--navy);font-size:11px;font-weight:bold;text-decoration:none;" target="_blank">↗ View Site</a>
+            <span style="display:inline-flex;align-items:center;padding:.28rem .65rem;background:rgba(0,0,0,.08);border:1px solid rgba(0,51,102,.15);border-radius:3px;font-size:10px;font-weight:bold;color:var(--text-muted);font-family:monospace;letter-spacing:.03em;">v{{ trim(file_get_contents(base_path('VERSION'))) }}</span>
             @if($pendingCount > 0)
             <a href="{{ route('admin.users.index') }}"
                style="display:inline-flex;align-items:center;gap:.4rem;padding:.28rem .75rem;background:var(--red-faint);border:1px solid rgba(200,16,46,.3);color:var(--red);font-size:11px;font-weight:bold;text-decoration:none;">
