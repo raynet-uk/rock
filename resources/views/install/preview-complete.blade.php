@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RAYNET-OS — Install Preview Complete</title>
+<title>ROCK — Install Preview Complete</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;background:#0a0f1a;min-height:100vh;color:#111827;overflow-x:hidden}
@@ -87,7 +87,7 @@ body{font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;background:#0a0f1a;
     <div class="iz-brand">
         <div class="iz-logo"><span>RAY<br>NET</span></div>
         <div>
-            <div class="iz-brand-name">RAYNET-OS</div>
+            <div class="iz-brand-name">ROCK</div>
             <div class="iz-brand-sub">Installer &mdash; Dry Run Complete</div>
         </div>
     </div>
@@ -263,7 +263,7 @@ body{font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;background:#0a0f1a;
     </div>
 
     <div class="iz-footer">
-        RAYNET-OS &middot; <a href="https://www.raynet-uk.net">RAYNET UK</a> &middot; Preview Mode
+        ROCK &middot; <a href="https://www.raynet-uk.net">RAYNET UK</a> &middot; Preview Mode
     </div>
 
 </div>

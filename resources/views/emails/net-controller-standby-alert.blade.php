@@ -84,10 +84,10 @@ body{font-family:Arial,sans-serif;background:#f4f6f9;margin:0;padding:0;color:#1
     </div>
 
     <p style="font-size:.78rem;color:#94a3b8;margin-top:1rem;">
-      This is an automated reminder from RAYNET-OS. If you are unable to take this slot, please contact your group administrator immediately.
+      This is an automated reminder from ROCK. If you are unable to take this slot, please contact your group administrator immediately.
     </p>
   </div>
-  <div class="footer">{{ $groupName }} · RAYNET-OS · <a href="{{ config('app.url') }}" style="color:#003366;">{{ config('app.url') }}</a></div>
+  <div class="footer">{{ $groupName }} · ROCK · <a href="{{ config('app.url') }}" style="color:#003366;">{{ config('app.url') }}</a></div>
 </div>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Welcome to RAYNET-OS</title>
+<title>Welcome to ROCK</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;background:#0a0f1a;min-height:100vh;color:#111827;overflow-x:hidden}
@@ -64,7 +64,7 @@ body{font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;background:#0a0f1a;
         <div class="iz-card-body">
             <div class="wl-hero">
                 <div class="wl-icon">🎉</div>
-                <h1 class="wl-title">Welcome to RAYNET-OS!</h1>
+                <h1 class="wl-title">Welcome to ROCK!</h1>
                 <p class="wl-sub">
                     <span class="wl-name">{{ Auth::user()->name }}</span>, your site is live and you're logged in as a super-administrator.
                     Here's what to do next to get your group website fully set up.
@@ -90,7 +90,7 @@ body{font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;background:#0a0f1a;
                     <div class="wl-step-num">3</div>
                     <div class="wl-step-body">
                         <div class="wl-step-title">Install modules</div>
-                        <div class="wl-step-desc">Go to <strong>Admin → Module Manager</strong> to browse and install additional features from the RAYNET-OS module repository.</div>
+                        <div class="wl-step-desc">Go to <strong>Admin → Module Manager</strong> to browse and install additional features from the ROCK module repository.</div>
                     </div>
                 </div>
                 <div class="wl-step">
@@ -125,7 +125,7 @@ body{font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;background:#0a0f1a;
     </div>
 
     <div class="iz-footer">
-        RAYNET-OS &middot; <a href="https://www.raynet-uk.net">RAYNET UK</a> &middot;
+        ROCK &middot; <a href="https://www.raynet-uk.net">RAYNET UK</a> &middot;
         <a href="https://github.com/raynet-uk/raynet-cms">GitHub</a>
     </div>
 </div>

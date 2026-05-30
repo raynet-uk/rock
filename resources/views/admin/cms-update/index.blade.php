@@ -92,7 +92,7 @@
     {{-- Hero --}}
     <div class="cu-hero">
         <div class="cu-hero-left">
-            <div class="cu-hero-eyebrow">RAYNET-OS · System</div>
+            <div class="cu-hero-eyebrow">ROCK · System</div>
             <div class="cu-hero-title">🔄 CMS Update</div>
             <div class="cu-hero-sub">Keep your installation up to date with the latest features and fixes.</div>
             <div class="cu-status-pill {{ $updateAvailable ? 'cu-status-warn' : 'cu-status-ok' }}">
@@ -232,7 +232,7 @@
 <div class="cu-progress" id="updateProgress">
     <div class="cu-progress-box">
         <div style="font-size:2rem;margin-bottom:1rem;">🔄</div>
-        <div class="cu-progress-title">Updating RAYNET-OS</div>
+        <div class="cu-progress-title">Updating ROCK</div>
         <div class="cu-progress-sub">Please wait — do not close this page.</div>
         <div class="cu-bar-wrap"><div class="cu-bar"></div></div>
         <div class="cu-progress-steps">

@@ -480,7 +480,7 @@ document.querySelectorAll('.sb-subitem.active').forEach(el=>{
 </div>
 
 <script>
-// ── RAYNET-OS Offline Manager ──────────────────────────────────────────────
+// ── ROCK Offline Manager ──────────────────────────────────────────────
 (function(){
   var TOKEN_KEY = 'raynet_offline_token';
   var TOKEN_EXP = 'raynet_offline_expires';
@@ -504,7 +504,7 @@ document.querySelectorAll('.sb-subitem.active').forEach(el=>{
       localStorage.setItem(TOKEN_KEY, d.token);
       localStorage.setItem(TOKEN_EXP, d.expires_at);
       updateTokenInfo(d.expires_at);
-      console.log('RAYNET-OS: offline token refreshed, expires', new Date(d.expires_at*1000).toLocaleTimeString());
+      console.log('ROCK: offline token refreshed, expires', new Date(d.expires_at*1000).toLocaleTimeString());
     }).catch(function(){});
   }
 
@@ -568,7 +568,7 @@ document.querySelectorAll('.sb-subitem.active').forEach(el=>{
   function showAuthFailed(msg) {
     var lbl = document.getElementById('offline-label');
     if (lbl) { lbl.textContent = '⚠ Auth expired'; lbl.style.color = '#fbbf24'; }
-    alert('RAYNET-OS: ' + msg);
+    alert('ROCK: ' + msg);
   }
 
   // Public API

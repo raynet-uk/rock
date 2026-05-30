@@ -12,7 +12,7 @@ class UpdateCms extends Command
 
     public function handle(): int
     {
-        $this->info('RAYNET-OS CMS Updater');
+        $this->info('ROCK CMS Updater');
         $this->line('Current version: ' . trim(file_get_contents(base_path('VERSION'))));
 
         // Fetch latest version from GitHub

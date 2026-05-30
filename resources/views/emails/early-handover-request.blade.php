@@ -79,10 +79,10 @@ body{font-family:Arial,sans-serif;background:#f4f6f9;margin:0;padding:0;color:#1
 
     <p style="font-size:.78rem;color:#94a3b8;margin-top:1rem;">
       This link is single-use. If you cannot take over, please ignore this email and contact the group administrator directly.
-      This notification was sent automatically by RAYNET-OS.
+      This notification was sent automatically by ROCK.
     </p>
   </div>
-  <div class="footer">{{ $groupName }} · RAYNET-OS · <a href="{{ config('app.url') }}" style="color:#C8102E;">{{ config('app.url') }}</a></div>
+  <div class="footer">{{ $groupName }} · ROCK · <a href="{{ config('app.url') }}" style="color:#C8102E;">{{ config('app.url') }}</a></div>
 </div>
 </body>
 </html>

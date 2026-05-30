@@ -83,11 +83,11 @@ body{font-family:Arial,sans-serif;background:#f4f6f9;margin:0;padding:0;color:#1
     @endif
 
     <p style="font-size:.82rem;color:#64748b;margin-top:1rem;">
-      This notification was sent automatically by RAYNET-OS when your callsign was assigned as Net Controller.
+      This notification was sent automatically by ROCK when your callsign was assigned as Net Controller.
       If you believe this was sent in error, please contact your group administrator.
     </p>
   </div>
-  <div class="footer">{{ $groupName }} · RAYNET-OS · <a href="{{ $netUrl ?? config('app.url') }}" style="color:#C8102E;">{{ config('app.url') }}</a></div>
+  <div class="footer">{{ $groupName }} · ROCK · <a href="{{ $netUrl ?? config('app.url') }}" style="color:#C8102E;">{{ config('app.url') }}</a></div>
 </div>
 </body>
 </html>

@@ -1,18 +1,16 @@
 {
-    "name":          "Net Log",
+    "name":          "ECHO",
     "alias":         "netlog",
-    "description":   "Record radio net sessions, check-ins, operator callsigns, frequencies and messages. Full session history with export to CSV.",
+    "description":   "Electronic Communications History & Operations. Radio net logging, station management, and net controller tools.",
     "version":       "1.0.0",
     "requires_core": ">=1.0.0",
     "author":        "RAYNET Liverpool",
     "author_uri":    "https://raynet-liverpool.net",
-    "module_uri":    "https://raynet-liverpool.net/modules/netlog",
-    "docs_uri":      "https://raynet-liverpool.net/modules/netlog/docs",
-    "license":       "GPL-2.0+",
-    "license_uri":   "https://www.gnu.org/licenses/gpl-2.0.txt",
-    "tags":          ["radio", "net", "logging", "operations"],
+    "system_code":   "ECHO",
+    "full_name":     "Electronic Communications History & Operations",
+    "tags":          ["net", "logging", "radio", "communications"],
     "changelog": {
-        "1.0.0": "Initial release. Session logging, check-ins, CSV export."
+        "1.0.0": "Initial release."
     },
     "providers": [
         "Modules\\NetLog\\Providers\\NetLogServiceProvider"

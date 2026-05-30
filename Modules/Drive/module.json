@@ -1,11 +1,13 @@
 {
-    "name":          "Drive",
+    "name":          "VAULT",
     "alias":         "drive",
-    "description":   "File library for sharing documents with members, committee, and admins. Supports email-to-upload via tagged addresses.",
+    "description":   "Verified Archive & Unified Library Tool. File library for sharing documents with members, committee, and admins. Supports email-to-upload via tagged addresses.",
     "version":       "1.0.0",
     "requires_core": ">=1.0.0",
     "author":        "RAYNET Liverpool",
     "author_uri":    "https://raynet-liverpool.net",
+    "system_code":   "VAULT",
+    "full_name":     "Verified Archive & Unified Library Tool",
     "tags":          ["files", "documents", "library", "drive"],
     "changelog": {
         "1.0.0": "Initial release — extracted from core."

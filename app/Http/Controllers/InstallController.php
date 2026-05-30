@@ -74,7 +74,7 @@ class InstallController extends Controller
         } catch (\Throwable $e) {
             return back()
                 ->withInput()
-                ->withErrors(['licence_key' => 'Could not connect to the RAYNET-OS licence server. Please check your internet connection and try again. If the problem persists, contact RAYNET Liverpool.']);
+                ->withErrors(['licence_key' => 'Could not connect to the ROCK licence server. Please check your internet connection and try again. If the problem persists, contact RAYNET Liverpool.']);
         }
 
         // ── Save settings ─────────────────────────────────────────────────

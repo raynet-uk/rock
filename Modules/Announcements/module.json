@@ -1,25 +1,21 @@
 {
-    "name":          "Announcements",
+    "name":          "BEACON",
     "alias":         "announcements",
-    "description":   "Post news and announcements to your group website. Supports pinned posts and draft/published workflow.",
+    "description":   "Strategic Information & Group Announcement Layer. Post news and announcements to your group website with pinned posts and draft/published workflow.",
     "version":       "1.0.0",
     "requires_core": ">=1.0.0",
-
     "author":        "RAYNET Liverpool",
     "author_uri":    "https://raynet-liverpool.net",
-
     "module_uri":    "https://raynet-liverpool.net/modules/announcements",
     "docs_uri":      "https://raynet-liverpool.net/modules/announcements/docs",
-
     "license":       "GPL-2.0+",
     "license_uri":   "https://www.gnu.org/licenses/gpl-2.0.txt",
-
     "tags":          ["news", "announcements", "content"],
-
+    "system_code":   "BEACON",
+    "full_name":     "Broadcast & Emergency Announcement Control & Notification",
     "changelog": {
         "1.0.0": "Initial release."
     },
-
     "providers": [
         "Modules\\Announcements\\Providers\\AnnouncementsServiceProvider"
     ]

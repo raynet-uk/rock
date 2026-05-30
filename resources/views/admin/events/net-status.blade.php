@@ -1001,7 +1001,7 @@ var OFFLINE_STORE_KEY = 'raynet_offline_log';
             return e && typeof e.callsign === 'string' && e.logged_at && !e.id && !e.checked_in_at;
         });
         if (clean.length !== q.length) {
-            console.warn('RAYNET-OS: cleared ' + (q.length - clean.length) + ' corrupted offline queue entries');
+            console.warn('ROCK: cleared ' + (q.length - clean.length) + ' corrupted offline queue entries');
             localStorage.setItem(OFFLINE_STORE_KEY, JSON.stringify(clean));
         }
     } catch(e) { localStorage.removeItem(OFFLINE_STORE_KEY); }

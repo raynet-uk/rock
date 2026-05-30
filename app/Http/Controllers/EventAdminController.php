@@ -965,7 +965,7 @@ class EventAdminController extends Controller
 
         $adif  = "ADIF Export — {$h->net_callsign} Net Log — {$h->ended_at->format('d M Y')}
 ";
-        $adif .= "<ADIF_VER:5>3.1.0 <PROGRAMID:9>RAYNET-OS <EOH>
+        $adif .= "<ADIF_VER:5>3.1.0 <PROGRAMID:9>ROCK <EOH>
 
 ";
 

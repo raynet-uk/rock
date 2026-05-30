@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAYNET-OS Updated</title>
+<title>ROCK Updated</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;background:#003366;}
@@ -44,7 +44,7 @@ body{display:flex;align-items:center;justify-content:center;font-family:Arial,sa
 
 <div class="card">
     <div class="logo-wrap">
-        <div class="logo-box">RAYNET-OS</div>
+        <div class="logo-box">ROCK</div>
     </div>
 
     <div class="checkmark">✓</div>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RAYNET-OS — Installation Wizard</title>
+<title>ROCK — Installation Wizard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -151,7 +151,7 @@ body{font-family:'Inter',Arial,sans-serif;background:#05080f;min-height:100vh;co
       </div>
     </div>
     <div class="iz-brand-info">
-      <div class="iz-brand-name" id="hdr-name">RAYNET-OS</div>
+      <div class="iz-brand-name" id="hdr-name">ROCK</div>
       <div class="iz-brand-sub">Installation Wizard</div>
       <div class="iz-brand-pill">Setup mode active</div>
     </div>
@@ -185,8 +185,8 @@ body{font-family:'Inter',Arial,sans-serif;background:#05080f;min-height:100vh;co
     <div class="iz-card-stripe"></div>
     <div class="iz-card-body">
       <div class="iz-welcome-hero">
-        <div class="iz-welcome-badge">📡 &nbsp; RAYNET-OS · Open Source Platform</div>
-        <h1 class="iz-welcome-title">Welcome to RAYNET-OS</h1>
+        <div class="iz-welcome-badge">📡 &nbsp; ROCK · Open Source Platform</div>
+        <h1 class="iz-welcome-title">Welcome to ROCK</h1>
         <p class="iz-welcome-sub">The complete web platform for RAYNET UK groups. Set up your group portal in about 2 minutes.</p>
       </div>
       <div class="iz-features">
@@ -237,7 +237,7 @@ body{font-family:'Inter',Arial,sans-serif;background:#05080f;min-height:100vh;co
             <div class="iz-preview-call" id="prev-call">CALLSIGN</div>
             <div class="iz-preview-tag">Live preview — updates as you type</div>
           </div>
-          <div class="iz-preview-badge">RAYNET-OS</div>
+          <div class="iz-preview-badge">ROCK</div>
         </div>
         @if($errors->any())
         <div class="iz-alert iz-alert-err">
@@ -509,7 +509,7 @@ body{font-family:'Inter',Arial,sans-serif;background:#05080f;min-height:100vh;co
       <div class="iz-complete">
         <span class="iz-complete-icon">🎉</span>
         <h2 class="iz-complete-title">{{ $groupName ?? 'Your Group' }} is ready!</h2>
-        <p class="iz-complete-sub">Your RAYNET-OS portal has been configured. Click <strong>Launch</strong> to log in and get started.</p>
+        <p class="iz-complete-sub">Your ROCK portal has been configured. Click <strong>Launch</strong> to log in and get started.</p>
       </div>
       <div class="iz-checklist">
         <div class="iz-check">Group details saved</div>
@@ -525,7 +525,7 @@ body{font-family:'Inter',Arial,sans-serif;background:#05080f;min-height:100vh;co
       </div>
     </div>
     <div class="iz-card-foot">
-      <span style="font-size:.7rem;color:#94a3b8">RAYNET-OS · Powered by RAYNET Liverpool</span>
+      <span style="font-size:.7rem;color:#94a3b8">ROCK · Powered by RAYNET Liverpool</span>
       @if($isPreview)
       <form method="POST" action="{{ route('install.preview.complete') }}">
       @else
@@ -538,7 +538,7 @@ body{font-family:'Inter',Arial,sans-serif;background:#05080f;min-height:100vh;co
   </div>
   @endif
   <div class="iz-footer">
-    RAYNET-OS &middot; Built for <a href="https://www.raynet-uk.net" target="_blank">RAYNET UK</a> &middot;
+    ROCK &middot; Built for <a href="https://www.raynet-uk.net" target="_blank">RAYNET UK</a> &middot;
     <a href="https://github.com/raynet-uk/raynet-cms" target="_blank">GitHub</a> &middot;
     73 de RAYNET Liverpool 📻
   </div>
@@ -566,7 +566,7 @@ function updatePreview() {
   const short = initials.length <= 2 ? initials.split('').join('<br>') : initials.substring(0,4);
   if (prevLogo) prevLogo.innerHTML = short;
   if (hdrLogo)  hdrLogo.innerHTML  = (initials.length <= 3 ? initials : initials.substring(0,3)).split('').join('<br>');
-  if (hdrName)  hdrName.textContent = name || 'RAYNET-OS';
+  if (hdrName)  hdrName.textContent = name || 'ROCK';
 }
 async function validateLicence() {
   const key    = document.getElementById('licence_key')?.value.trim();
