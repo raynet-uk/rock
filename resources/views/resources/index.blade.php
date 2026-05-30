@@ -267,28 +267,31 @@
             <div class="addr-box-title">&#128236; Your personal upload addresses</div>
             <div class="addr-row">
                 <span class="drive-chip public">Public</span>
-                <code class="addr-code">docs+{{ strtoupper($callsign) }}@raynet-liverpool.net</code>
-                <button class="addr-copy" onclick="navigator.clipboard.writeText('docs+{{ strtoupper($callsign) }}@raynet-liverpool.net');this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
+                @php
+                    $driveDomain = parse_url(config('app.url'), PHP_URL_HOST) ?? 'raynet-liverpool.net';
+                @endphp
+                <code class="addr-code">docs+{{ strtoupper($callsign) }}@{{ $driveDomain }}</code>
+                <button class="addr-copy" onclick="navigator.clipboard.writeText('docs+{{ strtoupper($callsign) }}@{{ $driveDomain }}');this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
             </div>
             @if(in_array('members', $allowedVisibilities))
             <div class="addr-row">
                 <span class="drive-chip members">Members</span>
                 <code class="addr-code">members-docs+{{ strtoupper($callsign) }}@raynet-liverpool.net</code>
-                <button class="addr-copy" onclick="navigator.clipboard.writeText('members-docs+{{ strtoupper($callsign) }}@raynet-liverpool.net');this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
+                <button class="addr-copy" onclick="navigator.clipboard.writeText('members-docs+{{ strtoupper($callsign) }}@{{ $driveDomain }}');this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
             </div>
             @endif
             @if(in_array('committee', $allowedVisibilities))
             <div class="addr-row">
                 <span class="drive-chip committee">Committee</span>
                 <code class="addr-code">committee-docs+{{ strtoupper($callsign) }}@raynet-liverpool.net</code>
-                <button class="addr-copy" onclick="navigator.clipboard.writeText('committee-docs+{{ strtoupper($callsign) }}@raynet-liverpool.net');this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
+                <button class="addr-copy" onclick="navigator.clipboard.writeText('committee-docs+{{ strtoupper($callsign) }}@{{ $driveDomain }}');this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
             </div>
             @endif
             @if(in_array('admin', $allowedVisibilities))
             <div class="addr-row">
                 <span class="drive-chip admin">Admin</span>
                 <code class="addr-code">admin-docs+{{ strtoupper($callsign) }}@raynet-liverpool.net</code>
-                <button class="addr-copy" onclick="navigator.clipboard.writeText('admin-docs+{{ strtoupper($callsign) }}@raynet-liverpool.net');this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
+                <button class="addr-copy" onclick="navigator.clipboard.writeText('admin-docs+{{ strtoupper($callsign) }}@{{ $driveDomain }}');this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
             </div>
             @endif
         </div>

@@ -70,6 +70,11 @@ class ModuleManager
         return $modules;
     }
 
+    public function isEnabled(string $alias): bool
+    {
+        return collect($this->enabled())->contains('alias', $alias);
+    }
+
     public function enabled(): array
     {
         return array_filter($this->all(), fn($m) => $m['enabled']);

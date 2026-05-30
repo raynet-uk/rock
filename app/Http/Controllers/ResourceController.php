@@ -21,6 +21,11 @@ class ResourceController extends Controller
 
     public function index(Request $request)
     {
+        // Gate behind Drive module
+        if (!app(\App\Services\ModuleManager::class)->isEnabled('drive')) {
+            abort(404);
+        }
+
         $user       = auth()->user();
         $sort       = $request->get('sort', 'date');
         $tag        = $request->get('tag');
