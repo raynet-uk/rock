@@ -186,6 +186,9 @@
             </div>
         </div>
     </form>
+    </div>{{-- /pane-identity --}}
+
+    <div id="pane-branding" class="settings-pane">
 
     {{-- LOGO & BRANDING --}}
     <form method="POST" action="{{ route('admin.settings.update') }}" enctype="multipart/form-data">
@@ -234,6 +237,9 @@
             </div>
         </div>
     </form>
+    </div>{{-- /pane-branding --}}
+
+    <div id="pane-email" class="settings-pane">
 
     {{-- EMAIL SETTINGS --}}
     <form method="POST" action="{{ route('admin.settings.update') }}">
@@ -261,6 +267,9 @@
             </div>
         </div>
     </form>
+    </div>{{-- /pane-email --}}
+
+    <div id="pane-telegram" class="settings-pane">
 
     {{-- TELEGRAM SETTINGS --}}
     <form method="POST" action="{{ route('admin.settings.update') }}">
@@ -292,10 +301,12 @@
                 <button type="submit" class="as-btn as-btn-primary">✓ Save Telegram Settings</button>
             </div>
         </div>
+        </div>
     </form>
 @include('admin.partials.telegram_perms_card')
     @endif
-    {{-- HEADER CODE --}}
+    </div>{{-- /pane-telegram --}}
+    <div id="pane-qrz" class="settings-pane">
     <form method="POST" action="{{ route('admin.settings.update') }}">
         @csrf
         <div class="as-card">
@@ -392,8 +403,7 @@
             </div>
         </div>
     </form>
-
-</div>
+    </div>{{-- /pane-advanced --}}
 
 <script>
 function previewLogo(input) {
@@ -417,7 +427,6 @@ function removeLogo() {
     event.target.style.opacity = '.4';
 }
 </script>
-    </div>{{-- /pane-advanced --}}
 
 <script>
 function showTab(name, btn) {
@@ -434,4 +443,6 @@ window.addEventListener('DOMContentLoaded', function() {
     if (hash && btn) { btn.click(); }
 });
 </script>
+</div>{{-- /pane-close --}}
+</div>{{-- /as-wrap --}}
 @endsection
