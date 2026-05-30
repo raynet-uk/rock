@@ -210,9 +210,8 @@ class ModuleController extends Controller
             return back()->with('error', "Could not delete '{$alias}': " . $e->getMessage());
         }
     }
-}
 
-    // ── Browse module registry ────────────────────────────────────────────
+// ── Browse module registry ────────────────────────────────────────────
     public function browseRegistry()
     {
         $registryUrl = config('raynet_modules.registry_url',
@@ -288,3 +287,4 @@ class ModuleController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+}
