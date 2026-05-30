@@ -211,3 +211,80 @@ class ModuleController extends Controller
         }
     }
 }
+
+    // ── Browse module registry ────────────────────────────────────────────
+    public function browseRegistry()
+    {
+        $registryUrl = config('raynet_modules.registry_url',
+            'https://raw.githubusercontent.com/raynet-uk/raynet-cms-modules/main/registry.json');
+
+        $ctx = stream_context_create(['http' => ['timeout' => 8, 'header' => "User-Agent: ROCK-CMS\r\n"]]);
+        $json = @file_get_contents($registryUrl, false, $ctx);
+
+        if (!$json) {
+            return response()->json(['error' => 'Could not reach the module registry. Check your internet connection.'], 503);
+        }
+
+        $registry = json_decode($json, true);
+        if (!$registry || empty($registry['modules'])) {
+            return response()->json(['error' => 'Registry response was invalid.'], 503);
+        }
+
+        // Mark which modules are already installed
+        $installed = $this->modules->all();
+        foreach ($registry['modules'] as &$mod) {
+            $mod['installed'] = isset($installed[$mod['alias']]);
+            $mod['enabled']   = $installed[$mod['alias']]['enabled'] ?? false;
+        }
+
+        return response()->json($registry);
+    }
+
+    // ── Install module from registry URL ─────────────────────────────────
+    public function installFromRegistry(Request $request)
+    {
+        $request->validate([
+            'download_url' => ['required', 'url'],
+            'alias'        => ['required', 'string', 'max:60'],
+        ]);
+
+        $url = $request->input('download_url');
+
+        // Only allow downloads from trusted sources
+        $allowed = ['github.com', 'raw.githubusercontent.com', 'objects.githubusercontent.com'];
+        $host = parse_url($url, PHP_URL_HOST);
+        if (!in_array($host, $allowed)) {
+            return response()->json(['error' => 'Download URL must be from github.com.'], 403);
+        }
+
+        // Download the ZIP
+        $ctx = stream_context_create(['http' => ['timeout' => 30, 'header' => "User-Agent: ROCK-CMS\r\n"]]);
+        $zip = @file_get_contents($url, false, $ctx);
+
+        if (!$zip) {
+            return response()->json(['error' => 'Could not download module ZIP.'], 503);
+        }
+
+        // Save to temp
+        $tmpPath = sys_get_temp_dir() . '/rock_module_' . uniqid() . '.zip';
+        file_put_contents($tmpPath, $zip);
+
+        // Use existing upload logic by faking a request
+        $tmpFile = new \Illuminate\Http\UploadedFile($tmpPath, basename($tmpPath), 'application/zip', null, true);
+        $fakeRequest = new Request();
+        $fakeRequest->files->set('module_zip', $tmpFile);
+        $fakeRequest->setMethod('POST');
+
+        try {
+            $result = $this->upload($fakeRequest);
+            @unlink($tmpPath);
+            $session = $result->getSession();
+            if ($session && $session->has('error')) {
+                return response()->json(['error' => $session->get('error')], 422);
+            }
+            return response()->json(['success' => true]);
+        } catch (\Throwable $e) {
+            @unlink($tmpPath);
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }

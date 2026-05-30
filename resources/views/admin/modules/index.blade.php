@@ -24,6 +24,9 @@
                     Check for updates
                 </button>
             </form>
+            <button class="mm-btn-secondary" onclick="openRegistry()">
+                🔌 Browse Modules
+            </button>
             <button class="mm-btn-primary" onclick="document.getElementById('mm-upload-panel').classList.toggle('mm-hidden')">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Upload Module
@@ -467,4 +470,183 @@ if (dropZone) {
 }
 </script>
 
+{{-- ── Module Registry Modal ── --}}
+<div id="mm-registry-modal" style="display:none;position:fixed;inset:0;background:rgba(0,15,30,.75);z-index:9999;overflow-y:auto;padding:2rem 1rem;">
+    <div style="max-width:1000px;margin:0 auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+        <div style="background:linear-gradient(135deg,#001f40,#003366);padding:1.5rem 1.75rem;display:flex;align-items:center;justify-content:space-between;">
+            <div>
+                <div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.2em;color:rgba(255,255,255,.4);margin-bottom:.25rem;">ROCK Module Registry</div>
+                <div style="font-size:1.25rem;font-weight:bold;color:#fff;">Browse & Install Modules</div>
+            </div>
+            <button onclick="closeRegistry()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;">✕</button>
+        </div>
+
+        <div style="padding:1.5rem;background:#f8f9fb;border-bottom:1px solid #dde2e8;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+            <input type="text" id="mm-reg-search" placeholder="Search modules..." oninput="filterRegistry()"
+                   style="padding:.5rem .85rem;border:1px solid #dde2e8;border-radius:5px;font-size:13px;width:250px;outline:none;">
+            <div id="mm-reg-count" style="font-size:12px;color:#6b7f96;"></div>
+            <div style="margin-left:auto;font-size:11px;color:#6b7f96;">
+                Source: <a href="https://github.com/raynet-uk/raynet-cms-modules" target="_blank" style="color:#003366;">raynet-uk/raynet-cms-modules</a>
+            </div>
+        </div>
+
+        <div id="mm-reg-loading" style="padding:3rem;text-align:center;color:#6b7f96;">
+            <div style="font-size:2rem;margin-bottom:.75rem;animation:spin 1s linear infinite;display:inline-block;">⟳</div>
+            <div>Loading module registry...</div>
+        </div>
+
+        <div id="mm-reg-error" style="display:none;padding:2rem;text-align:center;color:#C8102E;"></div>
+
+        <div id="mm-reg-grid" style="display:none;padding:1.5rem;display:none;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;"></div>
+
+        <div style="padding:1rem 1.5rem;background:#f8f9fb;border-top:1px solid #dde2e8;font-size:11px;color:#9aa3ae;text-align:center;">
+            Modules are provided by the ROCK community. Always review module code before installing on production sites.
+        </div>
+    </div>
+</div>
+
+<style>
+.mm-btn-secondary{display:inline-flex;align-items:center;gap:.4rem;padding:.5rem 1rem;font-size:12px;font-weight:bold;background:#e8eef5;border:1px solid #c5d5e8;color:#003366;border-radius:4px;cursor:pointer;transition:all .15s;font-family:inherit;}
+.mm-btn-secondary:hover{background:#d5e3f0;}
+.reg-card{background:#fff;border:1px solid #dde2e8;border-radius:8px;overflow:hidden;transition:box-shadow .15s;}
+.reg-card:hover{box-shadow:0 4px 16px rgba(0,51,102,.12);}
+.reg-card-head{padding:1rem;border-bottom:1px solid #f0f1f3;display:flex;align-items:center;gap:.75rem;}
+.reg-card-code{background:#003366;color:#fff;font-size:10px;font-weight:bold;padding:.2rem .5rem;border-radius:3px;letter-spacing:.08em;font-family:monospace;}
+.reg-card-name{font-size:14px;font-weight:bold;color:#001f40;}
+.reg-card-author{font-size:11px;color:#6b7f96;}
+.reg-card-body{padding:1rem;}
+.reg-card-desc{font-size:12px;color:#4b5563;line-height:1.5;margin-bottom:.75rem;}
+.reg-card-tags{display:flex;gap:.3rem;flex-wrap:wrap;margin-bottom:.75rem;}
+.reg-card-tag{background:#f0f4f8;color:#6b7f96;font-size:10px;padding:.15rem .45rem;border-radius:3px;}
+.reg-card-foot{padding:.75rem 1rem;background:#f8f9fb;border-top:1px solid #f0f1f3;display:flex;align-items:center;justify-content:space-between;}
+.reg-card-version{font-size:11px;color:#9aa3ae;font-family:monospace;}
+.reg-install-btn{padding:.4rem .9rem;font-size:12px;font-weight:bold;border:none;border-radius:4px;cursor:pointer;font-family:inherit;transition:all .15s;}
+.reg-install-btn.install{background:#003366;color:#fff;}
+.reg-install-btn.install:hover{background:#002244;}
+.reg-install-btn.installed{background:#eef7f2;color:#1a6b3c;border:1px solid #b8ddc9;cursor:default;}
+.reg-install-btn.installing{background:#f0f4f8;color:#6b7f96;cursor:wait;}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+</style>
+
+<script>
+let registryData = [];
+
+function openRegistry() {
+    document.getElementById('mm-registry-modal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+    if (registryData.length === 0) loadRegistry();
+}
+
+function closeRegistry() {
+    document.getElementById('mm-registry-modal').style.display = 'none';
+    document.body.style.overflow = '';
+}
+
+function loadRegistry() {
+    document.getElementById('mm-reg-loading').style.display = 'block';
+    document.getElementById('mm-reg-error').style.display = 'none';
+    document.getElementById('mm-reg-grid').style.display = 'none';
+
+    fetch('{{ route("admin.modules.browse") }}', {
+        headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'}
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) throw new Error(data.error);
+        registryData = data.modules || [];
+        document.getElementById('mm-reg-loading').style.display = 'none';
+        renderRegistry(registryData);
+    })
+    .catch(e => {
+        document.getElementById('mm-reg-loading').style.display = 'none';
+        document.getElementById('mm-reg-error').style.display = 'block';
+        document.getElementById('mm-reg-error').textContent = '⚠ ' + e.message;
+    });
+}
+
+function renderRegistry(modules) {
+    const grid = document.getElementById('mm-reg-grid');
+    document.getElementById('mm-reg-count').textContent = modules.length + ' module' + (modules.length !== 1 ? 's' : '') + ' available';
+    grid.style.display = 'grid';
+    grid.innerHTML = modules.map(m => `
+        <div class="reg-card" data-alias="${m.alias}">
+            <div class="reg-card-head">
+                <div>
+                    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.2rem;">
+                        <span class="reg-card-code">${m.system_code || m.alias.toUpperCase()}</span>
+                        ${m.installed ? '<span style="background:#eef7f2;color:#1a6b3c;font-size:10px;padding:.15rem .45rem;border-radius:3px;font-weight:bold;">✓ Installed</span>' : ''}
+                    </div>
+                    <div class="reg-card-name">${m.name}</div>
+                    <div class="reg-card-author">by ${m.author || 'RAYNET Liverpool'}</div>
+                </div>
+            </div>
+            <div class="reg-card-body">
+                <div class="reg-card-desc">${m.description}</div>
+                <div class="reg-card-tags">${(m.tags || []).map(t => `<span class="reg-card-tag">${t}</span>`).join('')}</div>
+            </div>
+            <div class="reg-card-foot">
+                <span class="reg-card-version">v${m.version}</span>
+                <div style="display:flex;gap:.4rem;">
+                    ${m.docs_url ? `<a href="${m.docs_url}" target="_blank" style="padding:.4rem .7rem;font-size:11px;font-weight:bold;border:1px solid #dde2e8;border-radius:4px;color:#6b7f96;text-decoration:none;">Docs</a>` : ''}
+                    <button class="reg-install-btn ${m.installed ? 'installed' : 'install'}"
+                            id="reg-btn-${m.alias}"
+                            ${m.installed ? 'disabled' : `onclick="installModule('${m.alias}','${m.download_url}',this)"`}>
+                        ${m.installed ? '✓ Installed' : '⬇ Install'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function filterRegistry() {
+    const q = document.getElementById('mm-reg-search').value.toLowerCase();
+    const filtered = registryData.filter(m =>
+        m.name.toLowerCase().includes(q) ||
+        m.alias.toLowerCase().includes(q) ||
+        m.description.toLowerCase().includes(q) ||
+        (m.tags || []).some(t => t.includes(q))
+    );
+    renderRegistry(filtered);
+}
+
+function installModule(alias, url, btn) {
+    if (!confirm('Install ' + alias + '? It will be downloaded from the ROCK module registry.')) return;
+    btn.textContent = '⟳ Installing...';
+    btn.className = 'reg-install-btn installing';
+    btn.disabled = true;
+
+    const token = document.querySelector('meta[name=csrf-token]')?.content || '';
+
+    fetch('{{ route("admin.modules.install-from-registry") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': token,
+            'Accept': 'application/json',
+        },
+        body: JSON.stringify({download_url: url, alias: alias})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) throw new Error(data.error);
+        btn.textContent = '✓ Installed';
+        btn.className = 'reg-install-btn installed';
+        btn.disabled = true;
+        // Refresh page after short delay so the module appears in list
+        setTimeout(() => location.reload(), 1200);
+    })
+    .catch(e => {
+        btn.textContent = '⬇ Install';
+        btn.className = 'reg-install-btn install';
+        btn.disabled = false;
+        alert('Install failed: ' + e.message);
+    });
+}
+
+// Close on backdrop click
+document.getElementById('mm-registry-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeRegistry();
+});
+</script>
 @endsection

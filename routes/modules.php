@@ -24,6 +24,8 @@ Route::prefix('modules')->name('admin.modules.')->group(function () {
     Route::post  ('/{alias}/delete',      [ModuleController::class, 'delete'])        ->name('delete');
     Route::post  ('/refresh-updates',     [ModuleController::class, 'refreshUpdates'])->name('refresh-updates');
     Route::post  ('/upload',              [ModuleController::class, 'upload'])        ->name('upload');
+    Route::get ('/browse',              [ModuleController::class, 'browseRegistry'])    ->name('browse');
+    Route::post('/install-from-registry',[ModuleController::class, 'installFromRegistry'])->name('install-from-registry');
     Route::get('updates/check',         [ModuleController::class, 'checkUpdates'])->name('modules.updates.check');
     Route::post('{alias}/update/apply', [ModuleController::class, 'applyUpdate']) ->name('modules.update.apply');
 
