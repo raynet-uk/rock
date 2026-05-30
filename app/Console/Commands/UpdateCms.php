@@ -17,7 +17,7 @@ class UpdateCms extends Command
 
         // Fetch latest version from GitHub
         $ctx = stream_context_create(['http' => ['timeout' => 10, 'header' => "User-Agent: RAYNET-CMS\r\n"]]);
-        $remoteVersion = @file_get_contents('https://raw.githubusercontent.com/raynet-uk/raynet-cms/main/VERSION', false, $ctx);
+        $remoteVersion = @file_get_contents('https://raw.githubusercontent.com/raynet-uk/rock/main/VERSION', false, $ctx);
 
         if (!$remoteVersion) {
             $this->error('Could not fetch remote version. Check internet connection.');

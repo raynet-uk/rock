@@ -12,7 +12,7 @@ class CheckCmsUpdate extends Command
     public function handle(): int
     {
         $ctx = stream_context_create(['http' => ['timeout' => 8, 'header' => "User-Agent: RAYNET-CMS\r\n"]]);
-        $remote = @file_get_contents('https://raw.githubusercontent.com/raynet-uk/raynet-cms/main/VERSION', false, $ctx);
+        $remote = @file_get_contents('https://raw.githubusercontent.com/raynet-uk/rock/main/VERSION', false, $ctx);
         if (!$remote) return 0;
 
         $remote = trim($remote);
