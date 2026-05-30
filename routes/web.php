@@ -371,6 +371,13 @@ Route::get('/events/availability/{token}', [EventAdminController::class, 'availa
 | OPERATOR BRIEF & CHECK-IN — public, no auth required
 |--------------------------------------------------------------------------
 */
+Route::get('/donate', function() {
+    if (\App\Models\Setting::get('donations_enabled','0') !== '1') abort(404);
+    $donationUrl     = \App\Models\Setting::get('donation_url','');
+    $donationMessage = \App\Models\Setting::get('donation_message','');
+    return view('pages.donate', compact('donationUrl','donationMessage'));
+})->name('donate');
+
 Route::get('/admin/remote-help/system-info-public', [\App\Http\Controllers\Admin\RemoteHelpController::class, 'systemInfoPublic'])->name('admin.remote-help.system-info-public');
 Route::get('/admin/remote-help/login', [\App\Http\Controllers\Admin\RemoteHelpController::class, 'remoteLogin'])->name('admin.remote-help.login');
 Route::get('/operator-brief-test/{token}', function(string $token) {

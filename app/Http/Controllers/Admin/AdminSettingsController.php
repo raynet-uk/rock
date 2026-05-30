@@ -39,6 +39,10 @@ class AdminSettingsController extends Controller
             'group_phone'               => ['nullable', 'string', 'max:20'],
             'qrz_username'              => ['nullable', 'string', 'max:30'],
             'qrz_password'              => ['nullable', 'string', 'max:120'],
+            'donations_enabled'         => ['nullable', 'boolean'],
+            'donations_footer_badge'    => ['nullable', 'boolean'],
+            'donation_url'              => ['nullable', 'url', 'max:500'],
+            'donation_message'          => ['nullable', 'string', 'max:1000'],
             'group_region'              => ['nullable', 'string', 'max:80'],
             'group_area'                => ['nullable', 'string', 'max:80'],
             'gc_name'                   => ['nullable', 'string', 'max:80'],
@@ -50,6 +54,7 @@ class AdminSettingsController extends Controller
 
         $groupFields = [
             'group_name', 'group_number', 'group_callsign', 'group_phone', 'group_region', 'group_area',
+            'donations_enabled', 'donations_footer_badge', 'donation_url', 'donation_message',
             'gc_name', 'gc_email', 'site_url', 'raynet_zone',
             'site_name', 'site_tagline',
         ];

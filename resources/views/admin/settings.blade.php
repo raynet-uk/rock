@@ -14,6 +14,12 @@
 .as-input:focus { border-color: #003366; box-shadow: 0 0 0 3px rgba(0,51,102,.08); }
 .as-hint { font-size: 11px; color: #9aa3ae; }
 .as-foot { padding: .75rem 1.2rem; border-top: 1px solid #dde2e8; background: #f4f5f7; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.settings-tabs { display: flex; gap: 0; border-bottom: 2px solid #dde2e8; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.settings-tab { padding: .65rem 1.25rem; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: .08em; cursor: pointer; background: none; border: none; color: #6b7f96; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all .15s; white-space: nowrap; font-family: inherit; }
+.settings-tab:hover { color: #003366; }
+.settings-tab.active { color: #003366; border-bottom-color: #003366; }
+.settings-pane { display: none; }
+.settings-pane.active { display: block; }
 .as-btn { display: inline-flex; align-items: center; gap: .35rem; padding: .45rem 1.1rem; border: 1px solid; font-family: inherit; font-size: 12px; font-weight: bold; cursor: pointer; transition: all .12s; text-transform: uppercase; letter-spacing: .05em; text-decoration: none; }
 .as-btn-primary { background: #003366; border-color: #003366; color: #fff; }
 .as-btn-primary:hover { background: #002244; }
@@ -48,6 +54,19 @@
     @if(session('error'))   <div class="as-notice as-notice--err">⚠ {{ session('error') }}</div>  @endif
 
     {{-- GROUP IDENTITY --}}
+    <div class="settings-tabs">
+        <button class="settings-tab active" onclick="showTab('identity',this)">📻 Group Identity</button>
+        <button class="settings-tab" onclick="showTab('branding',this)">🖼 Branding</button>
+        <button class="settings-tab" onclick="showTab('email',this)">📧 Email</button>
+        @if(config('raynet.telegram_enabled'))
+        <button class="settings-tab" onclick="showTab('telegram',this)">📡 Telegram</button>
+        @endif
+        <button class="settings-tab" onclick="showTab('qrz',this)">🔍 QRZ</button>
+        <button class="settings-tab" onclick="showTab('donations',this)">💳 Donations</button>
+        <button class="settings-tab" onclick="showTab('advanced',this)">🔧 Advanced</button>
+    </div>
+
+    <div id="pane-identity" class="settings-pane active">
     <form method="POST" action="{{ route('admin.settings.update') }}">
         @csrf
         <div class="as-card">
@@ -303,7 +322,58 @@
                 <button type="submit" class="as-btn as-btn-primary">✓ Save QRZ Settings</button>
             </div>
         </div>
+    </form>
+    </div>{{-- /pane-qrz --}}
 
+    <div id="pane-donations" class="settings-pane">
+    <form method="POST" action="{{ route('admin.settings.update') }}">
+        @csrf
+        <div class="as-card">
+            <div class="as-card-head"><h2>💳 Donations</h2></div>
+            <div class="as-card-body">
+                <div class="as-hint" style="margin-bottom:.5rem;">Accept voluntary donations from the public and members to support your group's activities.</div>
+                <div class="as-row">
+                    <div class="as-field">
+                        <label class="as-label">Donation Page</label>
+                        <label style="display:flex;align-items:center;gap:.5rem;font-size:13px;font-weight:normal;text-transform:none;letter-spacing:0;cursor:pointer;">
+                            <input type="hidden" name="donations_enabled" value="0">
+                            <input type="checkbox" name="donations_enabled" value="1"
+                                   {{ \App\Models\Setting::get('donations_enabled','0') === '1' ? 'checked' : '' }}>
+                            Enable public donation page at <code style="font-size:11px;">/donate</code>
+                        </label>
+                    </div>
+                    <div class="as-field">
+                        <label class="as-label">Footer Badge</label>
+                        <label style="display:flex;align-items:center;gap:.5rem;font-size:13px;font-weight:normal;text-transform:none;letter-spacing:0;cursor:pointer;">
+                            <input type="hidden" name="donations_footer_badge" value="0">
+                            <input type="checkbox" name="donations_footer_badge" value="1"
+                                   {{ \App\Models\Setting::get('donations_footer_badge','0') === '1' ? 'checked' : '' }}>
+                            Show donation badge in site footer
+                        </label>
+                    </div>
+                </div>
+                <div class="as-field">
+                    <label class="as-label" for="donation_url">Donation Link (SumUp, PayPal, etc.)</label>
+                    <input type="url" id="donation_url" name="donation_url" class="as-input"
+                           value="{{ old('donation_url', \App\Models\Setting::get('donation_url','')) }}"
+                           placeholder="https://pay.sumup.com/b2c/XXXXXXXX">
+                    <div class="as-hint">Paste your SumUp, PayPal, GoFundMe or similar donation link here.</div>
+                </div>
+                <div class="as-field">
+                    <label class="as-label" for="donation_message">Donation Page Message <span style="font-weight:normal;text-transform:none;letter-spacing:0;">(optional)</span></label>
+                    <textarea id="donation_message" name="donation_message" class="as-input" rows="3"
+                              placeholder="e.g. Your donation helps us maintain equipment and train volunteers...">{{ old('donation_message', \App\Models\Setting::get('donation_message','')) }}</textarea>
+                </div>
+            </div>
+            <div class="as-foot">
+                <button type="submit" class="as-btn as-btn-primary">✓ Save Donation Settings</button>
+            </div>
+        </div>
+    </form>
+    </div>{{-- /pane-donations --}}
+
+    <div id="pane-advanced" class="settings-pane">
+    <form method="POST" action="{{ route('admin.settings.update') }}">
         @csrf
         <div class="as-card">
             <div class="as-card-head"><h2>🔧 Header Code</h2></div>
@@ -346,5 +416,22 @@ function removeLogo() {
     event.target.disabled = true;
     event.target.style.opacity = '.4';
 }
+</script>
+    </div>{{-- /pane-advanced --}}
+
+<script>
+function showTab(name, btn) {
+    document.querySelectorAll('.settings-pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.settings-tab').forEach(b => b.classList.remove('active'));
+    document.getElementById('pane-' + name).classList.add('active');
+    btn.classList.add('active');
+    history.replaceState(null, '', '#' + name);
+}
+// Restore tab from URL hash
+window.addEventListener('DOMContentLoaded', function() {
+    var hash = location.hash.replace('#','');
+    var btn = document.querySelector('.settings-tab[onclick*="' + hash + '"]');
+    if (hash && btn) { btn.click(); }
+});
 </script>
 @endsection

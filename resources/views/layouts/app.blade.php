@@ -638,7 +638,15 @@
             &nbsp;·&nbsp;
             <button onclick="openCookieSettings()" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:.85rem;font-family:inherit;padding:0;text-decoration:underline;">Manage Cookies</button>
         </div>
-    </footer>
+        @php $donationBadge = \App\Models\Setting::get('donations_footer_badge','0') === '1'; $donationUrl = \App\Models\Setting::get('donation_url',''); @endphp
+    @if($donationBadge && $donationUrl)
+    <div style="background:var(--red);padding:.6rem 1rem;text-align:center;">
+        <a href="{{ route('donate') }}" style="color:#fff;font-size:13px;font-weight:bold;text-decoration:none;display:inline-flex;align-items:center;gap:.5rem;">
+            💙 Support {{ \App\Helpers\RaynetSetting::groupName() }} — Make a Donation
+        </a>
+    </div>
+    @endif
+</footer>
 
 </div>{{-- /.site-shell --}}
 
