@@ -640,9 +640,11 @@
         </div>
         @php $donationBadge = \App\Models\Setting::get('donations_footer_badge','0') === '1'; $donationUrl = \App\Models\Setting::get('donation_url',''); @endphp
     @if($donationBadge && $donationUrl)
-    <div style="background:var(--red);padding:.6rem 1rem;text-align:center;">
-        <a href="{{ route('donate') }}" style="color:#fff;font-size:13px;font-weight:bold;text-decoration:none;display:inline-flex;align-items:center;gap:.5rem;">
-            💙 Support {{ \App\Helpers\RaynetSetting::groupName() }} — Make a Donation
+    <div style="border-top:1px solid rgba(0,0,0,.06);background:#fafafa;padding:.55rem 1.5rem;display:flex;align-items:center;justify-content:center;gap:.6rem;">
+        <span style="font-size:11px;color:#9aa3ae;letter-spacing:.04em;">Support us</span>
+        <span style="width:1px;height:10px;background:#dde2e8;display:inline-block;"></span>
+        <a href="{{ route('donate') }}" style="font-size:12px;font-weight:bold;color:#C8102E;text-decoration:none;display:inline-flex;align-items:center;gap:.35rem;transition:opacity .15s;" onmouseover="this.style.opacity='.75'" onmouseout="this.style.opacity='1'">
+            💙 Make a donation to {{ \App\Helpers\RaynetSetting::groupName() }}
         </a>
     </div>
     @endif
