@@ -2731,6 +2731,11 @@ function updatePoiType(id, type) {
     savePois();
 }
 
+function togglePoiRow(id) {
+    const row = document.getElementById('poi-row-' + id);
+    if (row) row.classList.toggle('open');
+}
+
 function removePoi(id) {
     if (poiMarkers[id] && evtMap) { evtMap.removeLayer(poiMarkers[id]); delete poiMarkers[id]; }
     evtPois = evtPois.filter(x => x.id !== id);
