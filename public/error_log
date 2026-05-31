@@ -231,3 +231,5 @@ Stack trace:
 [25-May-2026 21:09:22 Europe/London] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Session/SessionManager.php on line 106
 [25-May-2026 21:09:29 Europe/London] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /home/raynetliverpool/public_html/vendor/symfony/error-handler/Exception/FlattenException.php on line 88
 [25-May-2026 21:11:33 Europe/London] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /home/raynetliverpool/public_html/vendor/laravel/framework/src/Illuminate/Foundation/AliasLoader.php on line 72
+[31-May-2026 14:01:07 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes) in /home/raynetliverpool/public_html/app/Http/Controllers/OpsMapController.php on line 341
+[31-May-2026 14:01:18 Europe/London] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 20480 bytes) in /home/raynetliverpool/public_html/app/Http/Controllers/OpsMapController.php on line 341

@@ -1,18 +1,14 @@
 {
     "name":          "ECHO",
     "alias":         "netlog",
-    "description":   "Electronic Communications History & Operations. Radio net logging, station management, and net controller tools.",
+    "system_code":   "ECHO",
+    "full_name":     "Electronic Communications History & Operations",
+    "description":   "Full radio net logging system with station management, net controller tools, frequency tracking, and exportable logs.",
     "version":       "1.0.0",
     "requires_core": ">=1.0.0",
     "author":        "RAYNET Liverpool",
     "author_uri":    "https://raynet-liverpool.net",
-    "system_code":   "ECHO",
-    "full_name":     "Electronic Communications History & Operations",
     "tags":          ["net", "logging", "radio", "communications"],
-    "changelog": {
-        "1.0.0": "Initial release."
-    },
-    "providers": [
-        "Modules\\NetLog\\Providers\\NetLogServiceProvider"
-    ]
+    "changelog": { "1.0.0": "Initial release." },
+    "providers": ["Modules\\NetLog\\Providers\\NetLogServiceProvider"]
 }

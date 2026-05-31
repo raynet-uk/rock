@@ -1,18 +1,14 @@
 {
     "name":          "DEBRIEF",
     "alias":         "afteractionreport",
-    "description":   "After Action Review & Lessons Learned. Capture operational lessons, evaluate performance, and build institutional knowledge.",
+    "system_code":   "DEBRIEF",
+    "full_name":     "Debrief, Review, Intelligence & Evaluation for Future Operational Performance",
+    "description":   "Capture operational lessons, evaluate performance, and build institutional knowledge with structured after action reviews.",
     "version":       "1.0.0",
     "requires_core": ">=1.0.0",
     "author":        "RAYNET Liverpool",
     "author_uri":    "https://raynet-liverpool.net",
-    "system_code":   "DEBRIEF",
-    "full_name":     "Debrief, Review, Intelligence & Evaluation for Future Operational Performance",
     "tags":          ["aar", "lessons", "review", "debrief"],
-    "changelog": {
-        "1.0.0": "Initial release."
-    },
-    "providers": [
-        "Modules\\Afteractionreport\\Providers\\AfteractionreportServiceProvider"
-    ]
+    "changelog": { "1.0.0": "Initial release." },
+    "providers": ["Modules\\Afteractionreport\\Providers\\AfteractionreportServiceProvider"]
 }
