@@ -245,7 +245,7 @@ class ControllerDashboardController extends Controller
 
         return [
             'year'             => $year,
-            'member_count'     => User::whereNotIn('status',['Inactive','Suspended'])->whereNull('guest_expires_at')->whereDoesntHave('roles', function(\$q){ \$q->whereIn('name',['temporary_guest','temporary_admin','test_user']); })->count(),
+            'member_count'     => User::whereNotIn('status',['Inactive','Suspended'])->whereNull('guest_expires_at')->whereDoesntHave('roles', function($q){ $q->whereIn('name',['temporary_guest','temporary_admin','test_user']); })->count(),
             'user_service_events' => DB::table('events')->whereBetween('starts_at',[$start,$end])->where('event_type_id', function($q){ $q->select('id')->from('event_types')->where('name','like','%user service%')->limit(1); })->count(),
             'exercises'        => DB::table('events')->whereBetween('starts_at',[$start,$end])->where('event_type_id', function($q){ $q->select('id')->from('event_types')->where('name','like','%exercise%')->limit(1); })->count(),
             'live_callouts'    => DB::table('controller_alerts')->where('type','callout')->whereBetween('raised_at',[$start,$end])->count(),
