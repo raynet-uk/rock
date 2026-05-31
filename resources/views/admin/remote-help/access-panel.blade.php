@@ -125,9 +125,9 @@ function loadPendingSessions() {
 
 function prefillSession(url, code, id) {
     document.querySelector('input[name=site_url]').value = url;
-    document.querySelector('input[name=code]').value = code;
+    document.querySelector('input[name=code]').value = '';
+    document.querySelector('input[name=code]').focus();
     document.querySelector('input[name=site_url]').scrollIntoView({behavior:'smooth'});
-    // Highlight the form briefly
     document.querySelector('.card').style.boxShadow = '0 0 0 3px rgba(126,255,160,.4)';
     setTimeout(() => document.querySelector('.card').style.boxShadow = '', 1500);
 }
