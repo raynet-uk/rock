@@ -684,6 +684,8 @@
                 {{ $user->name }}
                 @if ($user->is_admin)    <span class="bi bi-admin">⚡ Admin</span> @endif
                 @if ($user->is_super_admin) <span class="bi bi-super">★ Super</span> @endif
+                @if ($user->operator_title === 'Group Controller') <span class="bi" style="background:#003366;color:#fff;">🎖 GC</span> @endif
+                @if ($user->operator_title === 'Deputy Controller') <span class="bi" style="background:#1a3a5c;color:#fff;">🎖 DGC</span> @endif
                 @if ($user->force_password_reset) <span class="bi bi-reset">⚑ Reset</span> @endif
                 @if (!$user->email_verified_at)   <span class="bi bi-unverif">✗ Unverif.</span> @endif
                 @if ($user->created_at->gt(Carbon::now()->subDays(3))) <span class="bi bi-new">New</span> @endif
@@ -786,6 +788,8 @@
                 <div class="member-badges">
                     @if ($user->is_admin)           <span class="bi bi-admin">⚡ Admin</span>     @endif
                     @if ($user->is_super_admin) <span class="bi bi-super">★ Super</span> @endif
+                    @if ($user->operator_title === 'Group Controller') <span class="bi" style="background:#003366;color:#fff;">🎖 GC</span> @endif
+                    @if ($user->operator_title === 'Deputy Controller') <span class="bi" style="background:#1a3a5c;color:#fff;">🎖 DGC</span> @endif
                     @if ($user->force_password_reset)<span class="bi bi-reset">⚑ Reset</span>     @endif
                     @if (!$user->email_verified_at) <span class="bi bi-unverif">✗ Unverif.</span> @endif
                     @if (empty($user->password))    <span class="bi bi-nopwd">No pwd</span>       @endif
