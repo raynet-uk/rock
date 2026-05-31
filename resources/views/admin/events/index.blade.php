@@ -1261,6 +1261,28 @@ $openRsvp   = (request('rsvp') == $event->id);
                     @endforeach
                 </div>
             @endif
+
+            {{-- Admin Add RSVP --}}
+            <div style="margin-top:.75rem;padding-top:.75rem;border-top:1px solid var(--grey-mid);">
+                <div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:var(--grey-dark);margin-bottom:.5rem;">+ Add / Override RSVP</div>
+                <form method="POST" action="{{ route('admin.events.rsvp.store', $event->id) }}" style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
+                    @csrf
+                    <select name="user_id" required style="padding:.35rem .65rem;border:1px solid var(--grey-mid);border-radius:4px;font-size:12px;min-width:180px;outline:none;">
+                        <option value="">-- Select member --</option>
+                        @foreach(\App\Models\User::orderBy('name')->get() as $u)
+                            <option value="{{ $u->id }}">{{ $u->name }}{{ $u->callsign ? ' ('.$u->callsign.')' : '' }}</option>
+                        @endforeach
+                    </select>
+                    <select name="status" required style="padding:.35rem .65rem;border:1px solid var(--grey-mid);border-radius:4px;font-size:12px;outline:none;">
+                        <option value="attending">Going</option>
+                        <option value="maybe">Maybe</option>
+                        <option value="declined">Cannot Make It</option>
+                    </select>
+                    <input type="text" name="note" placeholder="Optional note" style="padding:.35rem .65rem;border:1px solid var(--grey-mid);border-radius:4px;font-size:12px;flex:1;min-width:120px;outline:none;">
+                    <button type="submit" style="padding:.35rem .85rem;background:var(--navy);color:#fff;border:none;border-radius:4px;font-size:12px;font-weight:bold;cursor:pointer;">Save</button>
+                </form>
+            </div>
+
         </div>
     </td>
 </tr>
