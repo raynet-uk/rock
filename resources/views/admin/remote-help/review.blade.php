@@ -57,8 +57,8 @@ body{background:#f2f4f7;font-family:Arial,sans-serif;font-size:13px;min-height:1
     <div class="hero">
         <div class="hero-icon">🔐</div>
         <div>
-            <div class="hero-title">Incoming Support Request</div>
-            <div class="hero-sub">A ROCK technician is requesting remote access to this site.</div>
+            <div class="hero-title">Remote Site Review</div>
+            <div class="hero-sub">Review system information before connecting to the remote site.</div>
         </div>
     </div>
 
@@ -67,10 +67,10 @@ body{background:#f2f4f7;font-family:Arial,sans-serif;font-size:13px;min-height:1
 
             {{-- Who is connecting --}}
             <div class="who-box">
-                <div class="who-avatar">🛠</div>
+                <div class="who-avatar">🌐</div>
                 <div>
-                    <div class="who-name">{{ $from ?: 'RAYNET Liverpool Technical Support' }}</div>
-                    <div class="who-meta">is requesting temporary admin access to <strong>{{ config('app.url') }}</strong></div>
+                    <div class="who-name">{{ \App\Models\Setting::get('group_name', config('app.name')) }}</div>
+                    <div class="who-meta">You are about to connect to <strong>{{ config('app.url') }}</strong> as super admin.</div>
                 </div>
             </div>
 
@@ -86,12 +86,12 @@ body{background:#f2f4f7;font-family:Arial,sans-serif;font-size:13px;min-height:1
                 </div>
                 <div class="access-chip">
                     <strong>Duration</strong>
-                    ~{{ $token->expires_at->diffInHours(now()) }}h remaining
+                    ~{{ now()->diffInMinutes($token->expires_at) }} min remaining
                 </div>
             </div>
 
             <div class="warning">
-                ⚠ Granting access allows the technician to log in as a super admin. They will be able to view and change site settings, but cannot access your .env file or delete your data. You can revoke access at any time from <strong>Admin → Remote Help</strong>.
+                ⚠ Once confirmed, you will be logged in as super admin on the remote site. The session is time-limited and can be revoked by the remote group at any time via their Admin → Remote Help page.
             </div>
 
             {{-- Compact system info --}}
@@ -112,9 +112,9 @@ body{background:#f2f4f7;font-family:Arial,sans-serif;font-size:13px;min-height:1
     </div>
 
     <div class="actions">
-        <a href="{{ $confirmUrl }}" class="btn-confirm">✓ Grant Access</a>
+        <a href="{{ $confirmUrl }}" class="btn-confirm">✓ Confirm & Connect</a>
         <button onclick="copyAll()" class="btn-copy">📋 Copy Info</button>
-        <a href="/" class="btn-cancel">✕ Deny</a>
+        <a href="/" class="btn-cancel">✕ Cancel</a>
     </div>
 </div>
 <script>
