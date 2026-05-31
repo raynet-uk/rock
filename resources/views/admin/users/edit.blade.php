@@ -1752,11 +1752,11 @@ $pct             = $totalCourses > 0 ? round(($completedCount / $totalCourses) *
                 @endif
             </div>
         </div>
+@if(config('raynet.dmr_enabled'))
 <div class="card fade-in">
     <div class="card-head">
         <div class="card-icon">📡</div>
         <div>
-@if(config('raynet.dmr_enabled'))
             <div class="card-title">DMR Network Access</div>
             <div class="card-sub">Control access level to the {{ \App\Helpers\RaynetSetting::groupName() }} DMR Network</div>
         </div>
@@ -1837,8 +1837,8 @@ $pct             = $totalCourses > 0 ? round(($completedCount / $totalCourses) *
     <div class="info-note">
         ℹ Full dashboard access implies masters access — no need to grant both. Sessions last 12 hours. Access changes take effect immediately.
     </div>
-@endif
 </div>
+@endif
         {{-- Password reset flag --}}
         <form method="POST" action="{{ route('admin.users.update', $user->id) }}">
             @csrf
