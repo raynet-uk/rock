@@ -49,12 +49,12 @@ body{background:var(--grey);font-family:Arial,sans-serif;font-size:14px;color:va
     {{-- Pending Sessions --}}
     <div style="margin-top:1.5rem;">
         <div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.15em;color:#6b7f96;margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem;">
-            <span style="width:6px;height:6px;border-radius:50%;background:#7effa0;display:inline-block;animation:pulse 2s infinite;"></span>
+            <span style="width:6px;height:6px;border-radius:50%;background:#1a6b3c;display:inline-block;animation:pulse 2s infinite;"></span>
             Sites Requesting Support
             <span id="pending-count" style="background:rgba(126,255,160,.15);border:1px solid rgba(126,255,160,.25);color:#7effa0;font-size:9px;padding:.1rem .4rem;border-radius:999px;">0</span>
         </div>
         <div id="pending-sessions" style="display:flex;flex-direction:column;gap:.5rem;">
-            <div id="pending-empty" style="font-size:13px;color:rgba(255,255,255,.35);font-style:italic;padding:.75rem 1rem;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.1);border-radius:6px;text-align:center;">
+            <div id="pending-empty" style="font-size:13px;color:#6b7f96;font-style:italic;padding:.75rem 1rem;background:#f8f9fb;border:1px dashed #dde2e8;border-radius:6px;text-align:center;">
                 📡 No sites are currently requesting support — when a ROCK site generates a code it will appear here automatically.
             </div>
         </div>
