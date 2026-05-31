@@ -859,6 +859,19 @@ Route::prefix('admin')->group(function () {
 
 
         // RSVP
+        Route::post('/admin/events/{event}/rsvp', function (\Illuminate\Http\Request $request, \App\Models\Event $event) {
+            $request->validate([
+                'user_id' => ['required', 'exists:users,id'],
+                'status'  => ['required', 'in:attending,maybe,declined'],
+                'note'    => ['nullable', 'string', 'max:255'],
+            ]);
+            \App\Models\EventRsvp::updateOrCreate(
+                ['event_id' => $event->id, 'user_id' => $request->user_id],
+                ['status'   => $request->status, 'note' => $request->note]
+            );
+            return back()->with('success', 'RSVP saved.');
+        })->name('admin.events.rsvp.store');
+
         Route::delete('/admin/events/rsvp/{rsvp}', function (\App\Models\EventRsvp $rsvp) {
             $rsvp->delete();
             return back()->with('status', 'RSVP removed.');
