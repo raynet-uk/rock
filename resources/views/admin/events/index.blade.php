@@ -857,14 +857,14 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
                         <div id="map-float-toolbar" style="position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:1000;display:flex;flex-direction:row;gap:3px;background:rgba(255,255,255,.96);border:1.5px solid rgba(0,0,0,.18);border-radius:8px;padding:4px 6px;box-shadow:0 2px 12px rgba(0,0,0,.2);flex-wrap:wrap;max-width:calc(100% - 20px);align-items:center;">
                             <span style="font-size:10px;font-weight:bold;color:#6b7f96;letter-spacing:.06em;padding:0 4px 0 2px;white-space:nowrap;">📍 Map Tools</span>
                             <div style="width:1px;height:20px;background:#dde2e8;margin:0 2px;"></div>
-                            <button type="button" onclick="setMapTool(evtCurrentTool==='pin'?null:'pin')" title="Place Pin" class="mft-btn" id="mft-pin">📍 Pin</button>
-                            <button type="button" onclick="setMapTool(evtCurrentTool==='polygon'?null:'polygon')" title="Draw Polygon" class="mft-btn" id="mft-polygon">✏ Polygon</button>
-                            <button type="button" onclick="setMapTool(evtCurrentTool==='route'?null:'route')" title="Draw Route" class="mft-btn" id="mft-route">〰 Route</button>
-                            <button type="button" onclick="setMapTool(evtCurrentTool==='poi'?null:'poi')" title="Add POI" class="mft-btn" id="mft-poi">🚩 POI</button>
+                            <button type="button" onclick="setMapTool('pin')" title="Place Pin" class="mft-btn" id="mft-pin">📍 Pin</button>
+                            <button type="button" onclick="setMapTool('polygon')" title="Draw Polygon" class="mft-btn" id="mft-polygon">✏ Polygon</button>
+                            <button type="button" onclick="setMapTool('route')" title="Draw Route" class="mft-btn" id="mft-route">〰 Route</button>
+                            <button type="button" onclick="setMapTool('poi')" title="Add POI" class="mft-btn" id="mft-poi">🚩 POI</button>
                             <div style="width:1px;height:20px;background:#dde2e8;margin:0 2px;"></div>
                             <button type="button" onclick="toggleEventSat()" title="Satellite" class="mft-btn" id="mft-sat">🛰 Sat</button>
                             <button type="button" onclick="toggleOsGrid()" title="OS Grid" class="mft-btn" id="mft-grid">⊞ OS</button>
-                            <button type="button" onclick="setMapTool(evtCurrentTool==='measure'?null:'measure')" title="Measure" class="mft-btn" id="mft-measure">📏 Measure</button>
+                            <button type="button" onclick="setMapTool('measure')" title="Measure" class="mft-btn" id="mft-measure">📏 Measure</button>
                             <button type="button" onclick="toggleW3wMode()" title="What3Words" class="mft-btn" id="mft-w3w">/// W3W</button>
                             <button type="button" onclick="fetchEventWeather()" title="Weather Forecast" class="mft-btn" id="mft-weather">🌬 Forecast</button>
                             <div style="width:1px;height:20px;background:#dde2e8;margin:0 2px;"></div>
