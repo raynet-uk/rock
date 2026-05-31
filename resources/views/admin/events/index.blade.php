@@ -930,6 +930,14 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
                 </div>
 
             </div>{{-- /form-body --}}
+            <div class="form-footer">
+                <button type="submit" class="{{ isset($editingEvent) ? 'btn btn-primary' : 'btn btn-green' }}">
+                    {{ isset($editingEvent) ? '✓ Update Event' : '+ Save Event' }}
+                </button>
+                @if (isset($editingEvent))
+                    <a href="{{ route('admin.events') }}" class="btn btn-ghost">Cancel</a>
+                @endif
+            </div>
             </div>{{-- /event-form-body --}}
 <script>
 @if(!isset($editingEvent))
@@ -951,14 +959,6 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
 @endif
 </script>
 
-            <div class="form-footer">
-                <button type="submit" class="{{ isset($editingEvent) ? 'btn btn-primary' : 'btn btn-green' }}">
-                    {{ isset($editingEvent) ? '✓ Update Event' : '+ Save Event' }}
-                </button>
-                @if (isset($editingEvent))
-                    <a href="{{ route('admin.events') }}" class="btn btn-ghost">Cancel</a>
-                @endif
-            </div>
         </form>
     </div>
 
