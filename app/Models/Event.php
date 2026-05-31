@@ -18,6 +18,7 @@ class Event extends Model
         'ends_at',
         'category',
         'description',
+        'members_description',
         'event_type_id',
         'is_public',
         'is_sample',

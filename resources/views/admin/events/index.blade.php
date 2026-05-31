@@ -700,7 +700,12 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
                 <div class="form-field full">
                     <label>Description <small style="text-transform:none;letter-spacing:0;font-weight:normal;">(optional)</small></label>
                     <textarea name="description"
-                              placeholder="Brief description shown on the calendar and members' hub…">{{ old('description', $editingEvent->description ?? '') }}</textarea>
+                              placeholder="Public description — shown to everyone…">{{ old('description', $editingEvent->description ?? '') }}</textarea>
+                    <label style="display:block;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-top:.85rem;margin-bottom:.3rem;">
+                        Members Description <span style="font-weight:normal;font-style:italic;text-transform:none;letter-spacing:0;">— logged-in members only</span>
+                    </label>
+                    <textarea name="members_description"
+                              placeholder="Additional details for logged-in members only (briefing notes, frequencies, grid refs etc.)…">{{ old('members_description', $editingEvent->members_description ?? '') }}</textarea>
                 </div>
 
 

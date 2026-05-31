@@ -50,6 +50,7 @@ class EventAdminController extends Controller
             'ends_at'            => ['nullable', 'date', 'after:starts_at'],
             'event_type_id'      => ['required', 'exists:event_types,id'],
             'description'        => ['nullable', 'string'],
+            'members_description' => ['nullable', 'string'],
             'is_private'         => ['nullable', 'boolean'],          // ← ADDED
             'supporting_group'   => ['nullable', 'string', 'max:120'],
             'event_lat'          => ['nullable', 'numeric', 'between:-90,90'],
@@ -73,6 +74,7 @@ class EventAdminController extends Controller
         $event->ends_at            = !empty($data['ends_at']) ? Carbon::parse($data['ends_at']) : null;
         $event->event_type_id      = $data['event_type_id'];
         $event->description        = $data['description'] ?? null;
+        $event->members_description  = $data['members_description'] ?? null;
         $event->is_public          = true;
         $event->is_private         = $request->boolean('is_private');  // ← ADDED
         $event->supporting_group   = $request->filled('supporting_group') ? trim($request->input('supporting_group')) : null;
@@ -103,6 +105,7 @@ class EventAdminController extends Controller
             'ends_at'            => ['nullable', 'date', 'after:starts_at'],
             'event_type_id'      => ['required', 'exists:event_types,id'],
             'description'        => ['nullable', 'string'],
+            'members_description' => ['nullable', 'string'],
             'is_private'         => ['nullable', 'boolean'],          // ← ADDED
             'supporting_group'   => ['nullable', 'string', 'max:120'],
             'event_lat'          => ['nullable', 'numeric', 'between:-90,90'],
