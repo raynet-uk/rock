@@ -149,6 +149,7 @@ class SuperAdminController extends Controller
         $enabled = (bool) $request->maintenance_mode;
 
         Setting::set('maintenance_mode', $enabled ? '1' : '0');
+        \Illuminate\Support\Facades\Artisan::call('cache:clear');
         Setting::set('maintenance_message', $request->maintenance_message ?? '');
 
         // ── Additional settings for the enhanced maintenance UI ───────────

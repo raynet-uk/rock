@@ -17,6 +17,7 @@ class CheckMaintenanceAutoDisable extends Command
         if (now()->gte(\Carbon\Carbon::parse($autoOff))) {
             Setting::set('maintenance_mode', '0');
             Setting::set('maintenance_auto_disable_at', '');
+            \Illuminate\Support\Facades\Artisan::call('cache:clear');
             $this->info('Maintenance mode automatically disabled at ' . now()->format('j M Y H:i'));
         } else {
             $this->info('Maintenance auto-disable scheduled for ' . $autoOff . ' — not yet.');
