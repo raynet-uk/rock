@@ -1,81 +1,120 @@
 @extends('layouts.admin')
-@section('title', 'Remote Access Panel — Admin')
+@section('title', 'Remote Access Panel')
 @section('content')
 <style>
-:root{--navy:#003366;--red:#C8102E;--grey:#f2f2f2;--grey-mid:#dde2e8;--text:#001f40;--text-muted:#6b7f96;}
 *{box-sizing:border-box;}
-body{background:var(--grey);font-family:Arial,sans-serif;font-size:14px;color:var(--text);}
-.rn-header{background:var(--navy);border-bottom:4px solid var(--red);padding:0 1.5rem;}
-.rn-header-inner{max-width:700px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:.75rem 0;}
-.rn-logo{background:var(--red);padding:4px 10px;font-size:11px;font-weight:bold;color:#fff;letter-spacing:.1em;}
-.rn-back{color:rgba(255,255,255,.8);text-decoration:none;font-size:12px;border:1px solid rgba(255,255,255,.25);padding:.3rem .8rem;}
-.wrap{max-width:700px;margin:2rem auto;padding:0 1.5rem 4rem;}
-.card{background:#fff;border:1px solid var(--grey-mid);border-top:3px solid var(--red);padding:1.5rem;}
-.page-title{font-size:22px;font-weight:bold;color:var(--navy);margin-bottom:.25rem;}
-.page-sub{font-size:13px;color:var(--text-muted);margin-bottom:1.5rem;}
-.field{margin-bottom:1rem;}
-.field label{display:block;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin-bottom:.35rem;}
-.field input{width:100%;padding:.5rem .75rem;border:1px solid var(--grey-mid);font-size:13px;outline:none;}
-.btn{padding:.65rem 1.5rem;font-size:13px;font-weight:bold;cursor:pointer;border:none;background:var(--red);color:#fff;width:100%;letter-spacing:.05em;}
-.warning{background:#fff8e1;border:1px solid #ffe082;border-left:3px solid #f9a825;padding:.75rem 1rem;font-size:12px;color:#7a5800;margin-bottom:1rem;}
+.rap-wrap{max-width:780px;margin:0 auto;padding:2rem 1.5rem 5rem;}
+
+/* Hero */
+.rap-hero{background:linear-gradient(135deg,#001f40 0%,#003366 60%,#0a1f3a 100%);border-radius:12px;padding:2rem 2.5rem;margin-bottom:1.5rem;position:relative;overflow:hidden;display:flex;align-items:center;gap:1.5rem;}
+.rap-hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");pointer-events:none;}
+.rap-hero-icon{position:relative;z-index:1;width:56px;height:56px;background:rgba(200,16,46,.2);border:2px solid rgba(200,16,46,.4);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.75rem;flex-shrink:0;}
+.rap-hero-text{position:relative;z-index:1;}
+.rap-hero-eyebrow{font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.2em;color:rgba(255,255,255,.4);margin-bottom:.3rem;}
+.rap-hero-title{font-size:1.5rem;font-weight:bold;color:#fff;margin-bottom:.25rem;}
+.rap-hero-sub{font-size:.875rem;color:rgba(255,255,255,.5);}
+
+/* Connection card */
+.rap-card{background:#fff;border:1px solid #dde2e8;border-radius:10px;overflow:hidden;margin-bottom:1.25rem;box-shadow:0 2px 8px rgba(0,51,102,.06);}
+.rap-card-head{padding:.85rem 1.5rem;background:#f8f9fb;border-bottom:1px solid #dde2e8;display:flex;align-items:center;gap:.5rem;}
+.rap-card-head-icon{font-size:1rem;}
+.rap-card-head-title{font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:#003366;}
+.rap-card-body{padding:1.5rem;}
+.rap-warning{background:linear-gradient(135deg,#fffbeb,#fff8e1);border:1px solid #ffe082;border-left:4px solid #f9a825;border-radius:0 6px 6px 0;padding:.75rem 1rem;font-size:12px;color:#7a5800;margin-bottom:1.25rem;display:flex;align-items:flex-start;gap:.5rem;}
+
+/* Fields */
+.rap-field{margin-bottom:1.1rem;}
+.rap-label{display:block;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:#6b7f96;margin-bottom:.4rem;}
+.rap-input{width:100%;padding:.6rem .85rem;border:1px solid #dde2e8;border-radius:5px;font-size:13px;outline:none;transition:border-color .15s,box-shadow .15s;font-family:inherit;}
+.rap-input:focus{border-color:#003366;box-shadow:0 0 0 3px rgba(0,51,102,.08);}
+.rap-input-code{font-family:monospace;font-size:1.3rem;letter-spacing:.25em;text-transform:uppercase;text-align:center;}
+
+/* Connect button */
+.rap-connect-btn{width:100%;padding:.8rem;background:linear-gradient(135deg,#C8102E,#a00d25);color:#fff;font-size:14px;font-weight:bold;border:none;border-radius:6px;cursor:pointer;letter-spacing:.05em;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:.5rem;box-shadow:0 2px 8px rgba(200,16,46,.3);}
+.rap-connect-btn:hover{background:linear-gradient(135deg,#a00d25,#800a1e);box-shadow:0 4px 12px rgba(200,16,46,.4);transform:translateY(-1px);}
+
+/* Pending sessions */
+.rap-sessions-head{display:flex;align-items:center;gap:.6rem;margin-bottom:.85rem;}
+.rap-sessions-label{font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.12em;color:#6b7f96;}
+.rap-live-dot{width:7px;height:7px;border-radius:50%;background:#1a6b3c;display:inline-block;animation:rap-pulse 2s infinite;}
+.rap-count-badge{background:#eef7f2;border:1px solid #b8ddc9;color:#1a6b3c;font-size:10px;font-weight:bold;padding:.15rem .5rem;border-radius:999px;}
+.rap-empty{font-size:13px;color:#9aa3ae;padding:1.25rem;background:#f8f9fb;border:1px dashed #dde2e8;border-radius:8px;text-align:center;line-height:1.6;}
+
+/* Session cards */
+.rap-session{background:#fff;border:1px solid #dde2e8;border-radius:8px;padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;transition:all .15s;margin-bottom:.6rem;border-left:3px solid #1a6b3c;}
+.rap-session:hover{box-shadow:0 2px 12px rgba(0,51,102,.1);border-color:#003366;border-left-color:#C8102E;}
+.rap-session-left{display:flex;flex-direction:column;gap:.2rem;}
+.rap-session-name{font-size:14px;font-weight:bold;color:#001f40;}
+.rap-session-url{font-size:11px;color:#6b7f96;font-family:monospace;}
+.rap-session-meta{font-size:10px;color:#9aa3ae;display:flex;align-items:center;gap:.3rem;}
+.rap-session-right{display:flex;align-items:center;gap:.5rem;flex-shrink:0;}
+.rap-session-connect{background:#003366;color:#fff;font-size:11px;font-weight:bold;padding:.4rem .9rem;border-radius:5px;cursor:pointer;border:none;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:.3rem;}
+.rap-session-connect:hover{background:#002244;}
+.rap-session-dismiss{background:none;border:none;color:#dde2e8;cursor:pointer;font-size:1.1rem;padding:.2rem .4rem;border-radius:4px;transition:all .15s;}
+.rap-session-dismiss:hover{background:#fef2f2;color:#C8102E;}
+
+@keyframes rap-pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.85);}}
 </style>
-<div class="rn-header">
-    <div class="rn-header-inner">
-        <div class="rn-logo">RAYNET — Liverpool Support</div>
-        <a href="{{ route('admin.dashboard') }}" class="rn-back">← Admin</a>
-    </div>
-</div>
-<div class="wrap">
-    <div class="page-title">🔐 Remote Site Access</div>
-    <div class="page-sub">Enter the site URL and support code provided by the group requesting help.</div>
-    <div class="card">
-        <div class="warning">⚠ This will log you in as the super admin on the remote site. Only use codes shared directly by the group controller.</div>
-        <form method="POST" action="{{ route('admin.remote-help.access') }}">
-            @csrf
-            <div class="field">
-                <label>Site URL</label>
-                <input type="url" name="site_url" value="https://" placeholder="https://raynet-grampian.net" required>
-            </div>
-            <div class="field">
-                <label>Support Code</label>
-                <input type="text" name="code" placeholder="XXXX-XXXX" required
-                       style="font-family:monospace;font-size:1.2rem;letter-spacing:.2em;text-transform:uppercase"
-                       oninput="this.value=this.value.toUpperCase()">
-            </div>
-            <button type="submit" class="btn">Connect to Remote Site →</button>
-        </form>
+
+<div class="rap-wrap">
+
+    {{-- Hero --}}
+    <div class="rap-hero">
+        <div class="rap-hero-icon">🔐</div>
+        <div class="rap-hero-text">
+            <div class="rap-hero-eyebrow">ROCK · Remote Support</div>
+            <div class="rap-hero-title">Remote Site Access Panel</div>
+            <div class="rap-hero-sub">Connect to a ROCK site requesting technical support. Sites appear below automatically when a code is generated.</div>
+        </div>
     </div>
 
-    {{-- Pending Sessions --}}
-    <div style="margin-top:1.5rem;">
-        <div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.15em;color:#6b7f96;margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem;">
-            <span style="width:6px;height:6px;border-radius:50%;background:#1a6b3c;display:inline-block;animation:pulse 2s infinite;"></span>
-            Sites Requesting Support
-            <span id="pending-count" style="background:rgba(126,255,160,.15);border:1px solid rgba(126,255,160,.25);color:#7effa0;font-size:9px;padding:.1rem .4rem;border-radius:999px;">0</span>
+    {{-- Connection form --}}
+    <div class="rap-card">
+        <div class="rap-card-head">
+            <span class="rap-card-head-icon">🌐</span>
+            <span class="rap-card-head-title">Connect to Remote Site</span>
         </div>
-        <div id="pending-sessions" style="display:flex;flex-direction:column;gap:.5rem;">
-            <div id="pending-empty" style="font-size:13px;color:#6b7f96;font-style:italic;padding:.75rem 1rem;background:#f8f9fb;border:1px dashed #dde2e8;border-radius:6px;text-align:center;">
-                📡 No sites are currently requesting support — when a ROCK site generates a code it will appear here automatically.
+        <div class="rap-card-body">
+            <div class="rap-warning">
+                ⚠ <span>This grants super admin access to the remote site. Only use codes shared directly by the group controller — never connect to sites you don't recognise.</span>
             </div>
+            <form method="POST" action="{{ route('admin.remote-help.access') }}">
+                @csrf
+                <div class="rap-field">
+                    <label class="rap-label">Site URL</label>
+                    <input type="url" name="site_url" class="rap-input" value="https://"
+                           placeholder="https://raynet-grampian.net" required>
+                </div>
+                <div class="rap-field">
+                    <label class="rap-label">Support Code</label>
+                    <input type="text" name="code" class="rap-input rap-input-code"
+                           placeholder="XXXX-XXXX" required
+                           oninput="this.value=this.value.toUpperCase()">
+                    <div style="font-size:11px;color:#9aa3ae;margin-top:.4rem;">Provided by the group requesting support. Click a pending session below to auto-fill the URL.</div>
+                </div>
+                <button type="submit" class="rap-connect-btn">
+                    🔗 Connect to Remote Site
+                </button>
+            </form>
         </div>
     </div>
-</div>
 
-<style>
-@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
-.session-card{background:#fff;border:1px solid #dde2e8;border-radius:6px;padding:.85rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;transition:all .15s;}
-.session-card:hover{background:#f8f9fb;border-color:#003366;}
-.session-card-left{display:flex;flex-direction:column;gap:.2rem;}
-.session-card-name{font-size:13px;font-weight:bold;color:#001f40;}
-.session-card-url{font-size:11px;color:#6b7f96;font-family:monospace;}
-.session-card-meta{font-size:10px;color:#9aa3ae;}
-.session-card-right{display:flex;align-items:center;gap:.5rem;}
-.session-card-code{font-family:monospace;font-size:13px;font-weight:bold;color:#ffd700;background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.2);padding:.25rem .6rem;border-radius:4px;}
-.session-dismiss{background:none;border:none;color:#9aa3ae;cursor:pointer;font-size:1rem;padding:.2rem;line-height:1;}
-.session-dismiss:hover{color:#C8102E;}
-.session-connect-btn{background:#1a6b3c;border:1px solid rgba(126,255,160,.3);color:#7effa0;font-size:11px;font-weight:bold;padding:.3rem .7rem;border-radius:4px;cursor:pointer;font-family:inherit;transition:all .15s;}
-.session-connect-btn:hover{background:#1f8049;}
-</style>
+    {{-- Pending sessions --}}
+    <div class="rap-sessions-head">
+        <span class="rap-live-dot"></span>
+        <span class="rap-sessions-label">Sites Requesting Support</span>
+        <span class="rap-count-badge" id="pending-count">0</span>
+        <span style="margin-left:auto;font-size:11px;color:#9aa3ae;">Updates every 10s</span>
+    </div>
+
+    <div id="pending-sessions">
+        <div id="pending-empty" class="rap-empty">
+            📡 No sites are currently requesting support.<br>
+            <span style="font-size:12px;">When a ROCK site generates a support code it will appear here automatically.</span>
+        </div>
+    </div>
+
+</div>
 
 <script>
 const CSRF = document.querySelector('meta[name=csrf-token]')?.content || '';
@@ -92,28 +131,35 @@ function loadPendingSessions() {
         const count = document.getElementById('pending-count');
 
         count.textContent = sessions.length;
+        count.style.background = sessions.length > 0 ? '#fff3cd' : '#eef7f2';
+        count.style.borderColor = sessions.length > 0 ? '#fde68a' : '#b8ddc9';
+        count.style.color = sessions.length > 0 ? '#92400e' : '#1a6b3c';
 
-        // Remove old cards
-        container.querySelectorAll('.session-card').forEach(c => c.remove());
+        container.querySelectorAll('.rap-session').forEach(c => c.remove());
 
         if (sessions.length === 0) {
             empty.style.display = 'block';
         } else {
             empty.style.display = 'none';
             sessions.forEach(s => {
-                const card = document.createElement('div');
-                card.className = 'session-card';
-                card.id = 'session-' + s.id;
                 const expiresIn = Math.max(0, Math.round((new Date(s.expires_at) - Date.now()) / 60000));
+                const card = document.createElement('div');
+                card.className = 'rap-session';
+                card.id = 'session-' + s.id;
                 card.innerHTML = `
-                    <div class="session-card-left">
-                        <div class="session-card-name">${s.group_name || s.site_name || 'Unknown Group'}</div>
-                        <div class="session-card-url">${s.site_url}</div>
-                        <div class="session-card-meta">⏱ Code expires in ~${expiresIn} min</div>
+                    <div class="rap-session-left">
+                        <div class="rap-session-name">${s.group_name || s.site_name || 'Unknown Group'}</div>
+                        <div class="rap-session-url">${s.site_url}</div>
+                        <div class="rap-session-meta">
+                            <span style="width:5px;height:5px;border-radius:50%;background:#1a6b3c;display:inline-block;"></span>
+                            Code active · expires in ~${expiresIn} min
+                        </div>
                     </div>
-                    <div class="session-card-right">
-                        <button class="session-connect-btn" onclick="prefillSession('${s.site_url}','${s.code}',${s.id})">🔗 Connect →</button>
-                        <button class="session-dismiss" onclick="dismissSession(${s.id})" title="Dismiss">✕</button>
+                    <div class="rap-session-right">
+                        <button class="rap-session-connect" onclick="prefillSession('${s.site_url}','${s.code}',${s.id})">
+                            🔗 Connect
+                        </button>
+                        <button class="rap-session-dismiss" onclick="dismissSession(${s.id})" title="Dismiss">✕</button>
                     </div>
                 `;
                 container.appendChild(card);
@@ -127,9 +173,11 @@ function prefillSession(url, code, id) {
     document.querySelector('input[name=site_url]').value = url;
     document.querySelector('input[name=code]').value = '';
     document.querySelector('input[name=code]').focus();
-    document.querySelector('input[name=site_url]').scrollIntoView({behavior:'smooth'});
-    document.querySelector('.card').style.boxShadow = '0 0 0 3px rgba(126,255,160,.4)';
-    setTimeout(() => document.querySelector('.card').style.boxShadow = '', 1500);
+    const card = document.querySelector('.rap-card');
+    card.style.boxShadow = '0 0 0 3px rgba(26,107,60,.3)';
+    card.style.borderColor = '#1a6b3c';
+    setTimeout(() => { card.style.boxShadow = ''; card.style.borderColor = ''; }, 1500);
+    card.scrollIntoView({behavior:'smooth'});
 }
 
 function dismissSession(id) {
@@ -138,13 +186,11 @@ function dismissSession(id) {
         headers: {'Content-Type':'application/json','X-CSRF-TOKEN':CSRF,'Accept':'application/json'},
         body: JSON.stringify({id})
     }).then(() => {
-        const card = document.getElementById('session-' + id);
-        if (card) card.remove();
+        document.getElementById('session-' + id)?.remove();
         loadPendingSessions();
     });
 }
 
-// Poll every 10 seconds
 loadPendingSessions();
 setInterval(loadPendingSessions, 10000);
 </script>
