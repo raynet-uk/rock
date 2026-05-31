@@ -1744,6 +1744,18 @@ function updateMftButtons() {
     });
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.fullscreenElement) evtMapToggleFullscreen(); });
 
+    // Sync marker position to hidden inputs on form submit (safety net for drag)
+    const evtForm = document.querySelector('form[action*="admin/events"]');
+    if (evtForm) {
+        evtForm.addEventListener('submit', function() {
+            if (evtMarker) {
+                const p = evtMarker.getLatLng();
+                document.getElementById('event-lat').value = p.lat.toFixed(6);
+                document.getElementById('event-lng').value = p.lng.toFixed(6);
+            }
+        });
+    }
+
     // Satellite toggle
     let evtSatOn = false;
     window.evtMapSatToggle = function() {
