@@ -135,6 +135,16 @@ class RemoteHelpController extends Controller
         return view('admin.remote-help.review', compact('sysInfo', 'confirmUrl', 'token', 'from'));
     }
 
+    // ── End remote session manually ──────────────────────────────────────────
+    public function endSession(): \Illuminate\Http\RedirectResponse
+    {
+        \App\Models\Setting::set('maintenance_mode', '0');
+        \App\Models\Setting::set('maintenance_support_mode', '0');
+        Auth::logout();
+        session()->flush();
+        return redirect('/');
+    }
+
     // ── Expire check middleware helper ────────────────────────────────────────
     public static function checkExpiry(): void
     {
