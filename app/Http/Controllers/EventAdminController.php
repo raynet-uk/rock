@@ -128,6 +128,7 @@ class EventAdminController extends Controller
         $event->ends_at            = !empty($data['ends_at']) ? Carbon::parse($data['ends_at']) : null;
         $event->event_type_id      = $data['event_type_id'];
         $event->description        = $data['description'] ?? null;
+        $event->members_description  = $data['members_description'] ?? null;
         $event->is_private         = $request->boolean('is_private');  // ← ADDED
         $event->supporting_group   = $request->filled('supporting_group') ? trim($request->input('supporting_group')) : null;
         $event->event_lat          = isset($data['event_lat']) && $data['event_lat'] !== '' ? (float) $data['event_lat'] : null;
