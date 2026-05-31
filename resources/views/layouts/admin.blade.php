@@ -319,6 +319,9 @@
                     <a href="{{ route('admin.remote-help.access-panel') }}" class="sb-subitem">🔐 Remote Access</a>
                     @endif
                     <a href="{{ route('admin.publications.index') }}" class="sb-subitem {{ str_starts_with($currentRoute,'admin.publications') ? 'active' : '' }}">📚 Publications</a>
+                    @if(auth()->user()->is_admin || in_array(auth()->user()->operator_title ?? '', ['Group Controller','Deputy Controller']))
+                    <a href="{{ route('admin.controller.index') }}" class="sb-subitem {{ str_starts_with($currentRoute,'admin.controller') ? 'active' : '' }}">🎖 Controller</a>
+                    @endif
                     <a href="{{ route('admin.cms-update.index') }}" class="sb-subitem {{ str_starts_with($currentRoute,'admin.cms-update') ? 'active' : '' }}">
                         🔄 CMS Update
                         @if(\App\Models\Setting::get('update_available','0') === '1')
