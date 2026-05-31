@@ -2600,7 +2600,7 @@ const POI_TYPES = {
 
 var evtPois    = [];
 var poiMarkers = {};
-window.EVT_MEMBERS = @json(\App\Models\User::orderBy('name')->get(['id','name','callsign'])->map(function($u){ return ['id'=>$u->id,'name'=>$u->name,'callsign'=>$u->callsign??'']; }));
+window.EVT_MEMBERS = window._EVT_MEMBERS_DATA || [];
 
 function makePoi(lat, lng) {
     return {
