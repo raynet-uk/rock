@@ -494,7 +494,7 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
 }
 
 /* ─── ADDITIONAL MAP TOOL STATES ─── */
-.poi-callsign-select { min-width:100px; }
+.poi-callsign-select { flex:1;min-width:110px;max-width:175px;border:1px solid var(--grey-mid);padding:.22rem .35rem;font-size:11px;font-family:var(--font);color:var(--text);outline:none;background:var(--white); }
 .map-tool-btn.tool-measure { color: #00897b; border-color: rgba(0,137,123,.3); background: #e0f2f1; }
 .map-tool-btn.tool-measure:hover { background: #b2dfdb; border-color: #00897b; }
 .map-tool-btn.tool-w3w { color: #e65c00; border-color: rgba(230,92,0,.3); background: #fff3e0; }
@@ -518,16 +518,16 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
 
 /* ─── POI ROW ─── */
 .poi-row {
-    display: grid;
-    grid-template-columns: 12px auto 1fr 1.4fr auto auto;
-    align-items: center;
-    gap: .4rem;
-    padding: .4rem .85rem;
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+    padding: .6rem .85rem;
     border-bottom: 1px solid var(--grey-mid);
     background: var(--white);
-    min-width: 0;
 }
 .poi-row:last-child { border-bottom: none; }
+.poi-row-top { display:flex;align-items:center;gap:.4rem;flex-wrap:wrap; }
+.poi-row-bottom { display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-top:.15rem; }
 .poi-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; border: 1px solid rgba(0,0,0,.15); }
 .poi-type-select {
     border: 1px solid var(--grey-mid); padding: .22rem .35rem; font-size: 11px;
@@ -536,12 +536,12 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
 }
 .poi-type-select:focus { border-color: var(--navy); }
 .poi-name-input {
-    width: 100%; min-width: 0; border: 1px solid var(--grey-mid); padding: .22rem .5rem;
+    flex:1; min-width:80px; border: 1px solid var(--grey-mid); padding: .22rem .5rem;
     font-size: 12px; font-family: var(--font); color: var(--text); outline: none;
 }
 .poi-name-input:focus { border-color: var(--navy); }
 .poi-desc-input {
-    width: 100%; min-width: 0; border: 1px solid var(--grey-mid); padding: .22rem .5rem;
+    flex:1; min-width:80px; border: 1px solid var(--grey-mid); padding: .22rem .5rem;
     font-size: 11px; font-family: var(--font); color: var(--text-muted); outline: none;
 }
 .poi-desc-input:focus { border-color: var(--navy); }
@@ -2600,6 +2600,7 @@ const POI_TYPES = {
 
 var evtPois    = [];
 var poiMarkers = {};
+window.EVT_MEMBERS = @json(\App\Models\User::orderBy('name')->get(['id','name','callsign'])->map(fn($u) => ['id'=>$u->id,'name'=>$u->name,'callsign'=>$u->callsign??'']));
 
 function makePoi(lat, lng) {
     return {
