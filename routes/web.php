@@ -378,6 +378,7 @@ Route::get('/donate', function() {
     return view('pages.donate', compact('donationUrl','donationMessage'));
 })->name('donate');
 
+Route::post('/admin/remote-help/dismiss-by-code', [\App\Http\Controllers\Admin\RemoteHelpController::class, 'dismissByCode'])->name('admin.remote-help.dismiss-by-code');
 Route::post('/admin/remote-help/notify', [\App\Http\Controllers\Admin\RemoteHelpController::class, 'receiveNotification'])->name('admin.remote-help.notify');
 Route::get('/admin/remote-help/pending-sessions', [\App\Http\Controllers\Admin\RemoteHelpController::class, 'pendingSessions'])->name('admin.remote-help.pending-sessions');
 Route::post('/admin/remote-help/dismiss-session', [\App\Http\Controllers\Admin\RemoteHelpController::class, 'dismissSession'])->name('admin.remote-help.dismiss-session');

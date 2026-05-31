@@ -21,6 +21,8 @@ return Application::configure(
     ]);
     // Exclude Passport OAuth endpoints from CSRF verification
     $middleware->validateCsrfTokens(except: [
+            'admin/remote-help/notify',
+            'admin/remote-help/dismiss-by-code',
         'oauth/authorize',
         'oauth/token',
         'oauth/token/refresh',

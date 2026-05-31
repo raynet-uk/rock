@@ -43,6 +43,18 @@ class RemoteHelpController extends Controller
 
     public function revoke(RemoteHelpToken $token)
     {
+        // Notify Liverpool to dismiss the pending session
+        try {
+            $notifyUrl = config('raynet.remote_help_provider_url',
+                'https://raynet-liverpool.net/admin/remote-help/notify');
+            if (!config('raynet.remote_help_provider')) {
+                \Illuminate\Support\Facades\Http::timeout(5)->post(
+                    str_replace('/notify', '/dismiss-by-code', $notifyUrl),
+                    ['code' => $token->code, 'site_url' => config('app.url')]
+                );
+            }
+        } catch (\Throwable $e) {}
+
         $token->update(['used' => true]);
         return back()->with('status', 'Access code revoked.');
     }
@@ -175,6 +187,16 @@ class RemoteHelpController extends Controller
                 'Log File'        => storage_path('logs/laravel.log'),
             ],
         ]);
+    }
+
+    // ── Dismiss notification by code (called when remote site revokes) ─────────
+    public function dismissByCode(\Illuminate\Http\Request $request): \Illuminate\Http\JsonResponse
+    {
+        \Illuminate\Support\Facades\DB::table('remote_help_notifications')
+            ->where('code', strtoupper($request->input('code', '')))
+            ->where('site_url', rtrim($request->input('site_url', ''), '/'))
+            ->update(['dismissed' => true]);
+        return response()->json(['success' => true]);
     }
 
     // ── Receive notification from remote site that a code was generated ────────
