@@ -464,6 +464,17 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
 .mft-btn{padding:3px 7px;font-size:11px;font-weight:bold;background:#fff;border:1.5px solid #dde2e8;border-radius:5px;cursor:pointer;white-space:nowrap;color:#001f40;transition:all .12s;font-family:inherit;}
 .mft-btn:hover{background:#e8eef5;border-color:#003366;}
 .mft-btn.active{background:#003366;color:#fff;border-color:#003366;}
+/* Fullscreen map */
+.map-picker-section.map-fs{position:fixed!important;inset:0!important;z-index:99999!important;background:#fff;display:flex;flex-direction:column;padding:0!important;margin:0!important;}
+.map-picker-section.map-fs .map-picker-header{position:relative;z-index:2;background:#001f40;padding:.5rem .75rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;flex-shrink:0;}
+.map-picker-section.map-fs .map-picker-label{color:#fff!important;}
+.map-picker-section.map-fs .map-picker-tools{display:flex!important;flex-wrap:wrap;gap:3px;flex:1;}
+.map-picker-section.map-fs .map-tool-btn{font-size:11px!important;}
+.map-picker-section.map-fs #event-map-wrap{flex:1;position:relative;}
+.map-picker-section.map-fs #event-map-picker{height:100%!important;width:100%!important;}
+.map-picker-section.map-fs .map-coord-row,.map-picker-section.map-fs .map-search-row,.map-picker-section.map-fs .map-summary-bar{display:none!important;}
+body.map-fs-active{overflow:hidden!important;}
+#btn-fullscreen-map{display:inline-flex;align-items:center;}
 #map-fullscreen-overlay { display:none;position:fixed;inset:0;z-index:99999;background:#000;flex-direction:column; }
 #map-fullscreen-overlay.active { display:flex; }
 #map-fullscreen-overlay #event-map-picker { position:absolute;top:40px;left:0;right:0;bottom:0;height:calc(100vh - 40px) !important;width:100vw !important; }
@@ -836,7 +847,8 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
                                     style="color:#2e7d32;border-color:rgba(46,125,50,.3);"
                                     onclick="fetchEventWeather()">🌬 Forecast</button>
                             <button type="button" class="map-tool-btn"
-                                    onclick="evtMapFullscreen()" id="btn-fullscreen-map"
+                                    onclick="document.querySelector('.map-picker-section').classList.contains('map-fs')?evtMapExitFullscreen():evtMapFullscreen()"
+                                    id="btn-fullscreen-map"
                                     style="margin-left:4px;background:#003366;color:#fff;border-color:#003366;">⛶ Fullscreen</button>
                         </div>
                     </div>
@@ -2817,11 +2829,5 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 {{-- Map fullscreen overlay --}}
-<div id="map-fullscreen-overlay">
-    <div id="map-fs-exit-bar" style="position:absolute;top:0;left:0;right:0;height:40px;background:rgba(0,31,64,.92);z-index:10001;display:flex;align-items:center;padding:0 1rem;gap:.5rem;backdrop-filter:blur(4px);">
-        <span style="color:#fff;font-size:13px;font-weight:bold;flex:1;">🗺 Event Map — Fullscreen</span>
-        <button type="button" onclick="evtMapExitFullscreen()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:.3rem .9rem;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;">✕ Exit Fullscreen</button>
-    </div>
-    <div id="map-fs-toolbar-float" style="position:absolute;top:50px;left:50%;transform:translateX(-50%);z-index:10001;background:rgba(255,255,255,.97);border:1.5px solid rgba(0,0,0,.15);border-radius:8px;padding:4px 8px;box-shadow:0 2px 16px rgba(0,0,0,.25);display:flex;align-items:center;gap:3px;flex-wrap:wrap;"></div>
-</div>
+
 @endsection
