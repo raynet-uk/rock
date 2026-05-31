@@ -326,17 +326,19 @@ a:hover { text-decoration: underline; }
 
         {{-- Description --}}
         <div class="rn-content">
-            @if($event->description)
-                <div class="rn-body">{!! nl2br(e($event->description)) !!}</div>
-            @elseif(!auth()->check() || !$event->members_description)
-                <p class="rn-body-empty">No additional details have been added for this event.</p>
-            @endif
             @auth
             @if($event->members_description)
-                <div style="margin-top:1rem;padding:1rem 1.25rem;background:#f0f4f8;border-left:3px solid #003366;border-radius:0 6px 6px 0;">
-                    <div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:#6b7f96;margin-bottom:.5rem;">🔒 Members Information</div>
-                    <div class="rn-body">{!! nl2br(e($event->members_description)) !!}</div>
-                </div>
+                <div class="rn-body">{!! nl2br(e($event->members_description)) !!}</div>
+            @elseif($event->description)
+                <div class="rn-body">{!! nl2br(e($event->description)) !!}</div>
+            @else
+                <p class="rn-body-empty">No additional details have been added for this event.</p>
+            @endif
+            @else
+            @if($event->description)
+                <div class="rn-body">{!! nl2br(e($event->description)) !!}</div>
+            @else
+                <p class="rn-body-empty">No additional details have been added for this event.</p>
             @endif
             @endauth
         </div>
