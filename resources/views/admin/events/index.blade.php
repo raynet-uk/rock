@@ -461,9 +461,10 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
 .map-tool-btn.tool-clear:hover  { background: var(--red-faint); border-color: var(--red); }
 .map-tool-btn.tool-active { outline: 2px solid currentColor; outline-offset: 1px; }
 #event-map-picker { height: 320px; width: 100%; }
-#event-map-wrap.fullscreen { position: fixed !important; inset: 0 !important; z-index: 9999 !important; background: #000; }
-#event-map-wrap.fullscreen #event-map-picker { height: 100vh !important; width: 100vw !important; }
-#event-map-wrap.fullscreen #map-float-toolbar { top: 10px; right: 10px; }
+#map-fullscreen-overlay { display:none;position:fixed;inset:0;z-index:99999;background:#000;flex-direction:column; }
+#map-fullscreen-overlay.active { display:flex; }
+#map-fullscreen-overlay #event-map-picker { flex:1;height:calc(100vh - 44px) !important;width:100vw !important; }
+#map-fullscreen-topbar { height:44px;background:#001f40;display:flex;align-items:center;padding:0 1rem;gap:.5rem;flex-shrink:0; }
 .map-coord-row {
     display: flex; gap: .5rem; padding: .5rem .85rem;
     border-top: 1px solid var(--grey-mid); flex-wrap: wrap;
@@ -1707,16 +1708,33 @@ function initEventMap() {
 
     evtMap = L.map('event-map-picker', { center: [existLat, existLng], zoom: hasPin ? 15 : 12, zoomControl: true });
 
-    // Fullscreen
+    // Fullscreen — teleport map into overlay
+    const mapOriginalParent = document.getElementById('event-map-picker').parentElement;
+
     window.evtMapFullscreen = function() {
-        const wrap = document.getElementById('event-map-wrap');
-        wrap.classList.toggle('fullscreen');
-        setTimeout(() => evtMap.invalidateSize(), 100);
-        const btn = document.querySelector('#map-float-toolbar button[title="Fullscreen"]');
-        btn.textContent = wrap.classList.contains('fullscreen') ? '✕' : '⛶';
-        btn.title = wrap.classList.contains('fullscreen') ? 'Exit Fullscreen' : 'Fullscreen';
+        const overlay = document.getElementById('map-fullscreen-overlay');
+        const picker  = document.getElementById('event-map-picker');
+        const toolbar = document.getElementById('map-float-toolbar');
+        overlay.classList.add('active');
+        overlay.insertBefore(picker, overlay.querySelector('#map-fullscreen-topbar').nextSibling);
+        overlay.querySelector('#map-fullscreen-topbar').appendChild(toolbar);
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => evtMap.invalidateSize(), 150);
     };
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') { const w = document.getElementById('event-map-wrap'); if (w.classList.contains('fullscreen')) evtMapFullscreen(); }});
+
+    window.evtMapExitFullscreen = function() {
+        const overlay = document.getElementById('map-fullscreen-overlay');
+        const picker  = document.getElementById('event-map-picker');
+        const toolbar = document.getElementById('map-float-toolbar');
+        const wrap    = document.getElementById('event-map-wrap');
+        overlay.classList.remove('active');
+        wrap.insertBefore(picker, wrap.firstChild);
+        wrap.appendChild(toolbar);
+        document.body.style.overflow = '';
+        setTimeout(() => evtMap.invalidateSize(), 150);
+    };
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { const o = document.getElementById('map-fullscreen-overlay'); if (o.classList.contains('active')) evtMapExitFullscreen(); }});
 
     // Satellite toggle
     let evtSatOn = false;
@@ -2787,4 +2805,11 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
+{{-- Map fullscreen overlay --}}
+<div id="map-fullscreen-overlay">
+    <div id="map-fullscreen-topbar">
+        <span style="color:#fff;font-size:13px;font-weight:bold;flex:1;">🗺 Event Map — Fullscreen Mode</span>
+        <button type="button" onclick="evtMapExitFullscreen()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.3);color:#fff;padding:.3rem .9rem;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;">✕ Exit Fullscreen</button>
+    </div>
+</div>
 @endsection
