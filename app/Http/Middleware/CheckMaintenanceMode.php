@@ -41,7 +41,14 @@ class CheckMaintenanceMode
             return $next($request);
         }
 
-        $message = Setting::get('maintenance_message', 'Liverpool RAYNET Members Portal is currently undergoing maintenance. Please check back soon.');
+        $isSupportMode = filter_var(Setting::get('maintenance_support_mode', false), FILTER_VALIDATE_BOOLEAN);
+        $message = Setting::get('maintenance_message', 'The site is currently undergoing maintenance. Please check back soon.');
+
+        if ($isSupportMode) {
+            return response()->view('maintenance-support', [
+                'message' => $message,
+            ], 503);
+        }
 
         return response()->view('maintenance', [
             'message' => $message,

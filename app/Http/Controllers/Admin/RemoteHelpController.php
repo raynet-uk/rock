@@ -55,6 +55,12 @@ class RemoteHelpController extends Controller
             }
         } catch (\Throwable $e) {}
 
+        // Disable support maintenance mode when code is revoked
+        if (\App\Models\Setting::get('maintenance_support_mode', '0') === '1') {
+            \App\Models\Setting::set('maintenance_mode', '0');
+            \App\Models\Setting::set('maintenance_support_mode', '0');
+        }
+
         $token->update(['used' => true]);
         return back()->with('status', 'Access code revoked.');
     }
@@ -113,6 +119,11 @@ class RemoteHelpController extends Controller
                 'remote_help_from'    => $from,
             ]);
 
+            // Enable support maintenance mode
+            \App\Models\Setting::set('maintenance_mode', '1');
+            \App\Models\Setting::set('maintenance_support_mode', '1');
+            \App\Models\Setting::set('maintenance_message', 'A RAYNET support technician is currently performing maintenance on this site. Normal service will resume shortly.');
+
             return redirect()->route('admin.dashboard')
                 ->with('remote_help_active', true);
         }
@@ -128,6 +139,8 @@ class RemoteHelpController extends Controller
     public static function checkExpiry(): void
     {
         if (session('remote_help_expires') && now()->timestamp > session('remote_help_expires')) {
+            \App\Models\Setting::set('maintenance_mode', '0');
+            \App\Models\Setting::set('maintenance_support_mode', '0');
             Auth::logout();
             session()->flush();
         }
