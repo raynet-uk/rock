@@ -215,7 +215,7 @@ class ModuleController extends Controller
     public function browseRegistry()
     {
         $registryUrl = config('raynet_modules.registry_url',
-            'https://raw.githubusercontent.com/raynet-uk/raynet-cms-modules/main/registry.json');
+            'https://raw.githubusercontent.com/raynet-uk/rock-modules/main/registry.json');
 
         $ctx = stream_context_create(['http' => ['timeout' => 8, 'header' => "User-Agent: ROCK-CMS\r\n"]]);
         $json = @file_get_contents($registryUrl, false, $ctx);
