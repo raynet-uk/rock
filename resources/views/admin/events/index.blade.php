@@ -526,6 +526,10 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
     background: var(--white);
 }
 .poi-row:last-child { border-bottom: none; }
+.poi-row-header { display:flex;align-items:center;gap:.5rem;padding:.55rem .85rem;cursor:pointer;user-select:none; }
+.poi-row-header:hover { background:#f8f9fb; }
+.poi-row.open .poi-row-chevron { transform:rotate(180deg); }
+.poi-row.open .poi-row-body { display:block !important; }
 .poi-row-top { display:flex;align-items:center;gap:.4rem;flex-wrap:wrap; }
 .poi-row-bottom { display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-top:.15rem; }
 .poi-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; border: 1px solid rgba(0,0,0,.15); }
@@ -2684,19 +2688,54 @@ function renderPoiList() {
     list.innerHTML = evtPois.map(poi => {
         const pt = POI_TYPES[poi.type] || POI_TYPES.custom;
         const typeOptions = Object.entries(POI_TYPES).map(([k, v]) => `<option value="${k}" ${poi.type === k ? 'selected' : ''}>${v.emoji} ${v.label}</option>`).join('');
+        const memberOptions = (window.EVT_MEMBERS||[]).map(m => `<option value="${m.id}" data-callsign="${escHtml(m.callsign)}" ${poi.user_id==m.id?'selected':''}>${m.callsign?escHtml(m.callsign)+' — ':''}${escHtml(m.name)}</option>`).join('');
+        const assignedMember = poi.user_id ? (window.EVT_MEMBERS||[]).find(m=>m.id==poi.user_id) : null;
+        const headerSub = assignedMember ? ` (${escHtml(assignedMember.callsign||assignedMember.name)})` : '';
         return `<div class="poi-row" id="poi-row-${poi.id}">
-            <div class="poi-dot" style="background:${poi.colour || pt.colour};"></div>
-            <select class="poi-type-select" onchange="updatePoiType('${poi.id}',this.value)">${typeOptions}</select>
-            <input type="text" class="poi-name-input" value="${escHtml(poi.name)}" placeholder="${pt.label} name…" oninput="updatePoiField('${poi.id}','name',this.value)">
-            <select class="poi-callsign-select" onchange="updatePoiField('${poi.id}','callsign',this.options[this.selectedIndex].dataset.callsign||'');updatePoiField('${poi.id}','user_id',this.value||null);" title="Assign member" style="font-size:11px;border:1px solid var(--grey-mid);border-radius:3px;padding:2px 4px;max-width:130px;font-family:var(--font);">
-                <option value="">— Assign member —</option>
-                ${window.EVT_MEMBERS ? window.EVT_MEMBERS.map(m => `<option value="${m.id}" data-callsign="${m.callsign}" ${poi.user_id==m.id?'selected':''}>${m.callsign ? m.callsign+' — ' : ''}${m.name}</option>`).join('') : ''}
-            </select>
-            <input type="text" class="poi-desc-input" value="${escHtml(poi.description)}" placeholder="Description…" oninput="updatePoiField('${poi.id}','description',this.value)">
-            <input type="text" class="poi-grid-input" value="${escHtml(poi.grid_ref || '')}" placeholder="Grid ref…" style="width:80px;font-weight:bold;letter-spacing:.04em;font-size:11px;" oninput="updatePoiField('${poi.id}','grid_ref',this.value)" title="6-figure OS grid reference">
-            <input type="text" class="poi-w3w-input" value="${escHtml(poi.w3w || '')}" placeholder="///word.word.word" style="width:110px;color:#e65c00;font-size:11px;" oninput="updatePoiField('${poi.id}','w3w',this.value)" title="What3Words address">
-            <button type="button" class="poi-locate" title="Fly to" onclick="flyToPoi('${poi.id}')">⌖</button>
-            <button type="button" class="poi-del" title="Remove POI" onclick="removePoi('${poi.id}')">✕</button>
+            <div class="poi-row-header" onclick="togglePoiRow('${poi.id}')">
+                <div class="poi-dot" style="background:${poi.colour||pt.colour};flex-shrink:0;width:10px;height:10px;border-radius:50%;border:1px solid rgba(0,0,0,.15);"></div>
+                <span style="flex:1;font-size:12px;font-weight:bold;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" class="poi-row-label">${escHtml(poi.name||pt.label)}${headerSub}</span>
+                <span style="font-size:10px;color:var(--text-muted);flex-shrink:0;">${pt.emoji} ${pt.label}</span>
+                <span class="poi-row-chevron" style="font-size:10px;color:var(--text-muted);transition:transform .15s;flex-shrink:0;margin-left:4px;">▼</span>
+            </div>
+            <div class="poi-row-body" style="display:none;padding:.6rem .85rem .85rem;border-top:1px solid #f0f1f3;background:#fafbfc;">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;">
+                    <div style="display:flex;flex-direction:column;gap:2px;">
+                        <div style="font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);">Type</div>
+                        <select class="poi-type-select" style="width:100%;" onchange="updatePoiType('${poi.id}',this.value);renderPoiList();">${typeOptions}</select>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:2px;">
+                        <div style="font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);">Name</div>
+                        <input type="text" class="poi-name-input" style="width:100%;" value="${escHtml(poi.name)}" placeholder="${pt.label} name…" oninput="updatePoiField('${poi.id}','name',this.value);this.closest('.poi-row').querySelector('.poi-row-label').textContent=this.value||'${pt.label}';">
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:2px;">
+                        <div style="font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);">Assign Member</div>
+                        <select class="poi-callsign-select" style="width:100%;" onchange="updatePoiField('${poi.id}','callsign',this.options[this.selectedIndex].dataset.callsign||'');updatePoiField('${poi.id}','user_id',this.value||null);">
+                            <option value="">— None —</option>
+                            ${memberOptions}
+                        </select>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:2px;">
+                        <div style="font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);">Description</div>
+                        <input type="text" class="poi-desc-input" style="width:100%;" value="${escHtml(poi.description)}" placeholder="Optional notes…" oninput="updatePoiField('${poi.id}','description',this.value)">
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:2px;">
+                        <div style="font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);">OS Grid Ref</div>
+                        <input type="text" class="poi-grid-input" style="width:100%;font-weight:bold;letter-spacing:.04em;" value="${escHtml(poi.grid_ref||'')}" placeholder="e.g. SJ385908" oninput="updatePoiField('${poi.id}','grid_ref',this.value)">
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:2px;">
+                        <div style="font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);">What3Words</div>
+                        <div style="display:flex;gap:4px;">
+                            <input type="text" class="poi-w3w-input" style="flex:1;color:#e65c00;" value="${escHtml(poi.w3w||'')}" placeholder="///word.word.word" oninput="updatePoiField('${poi.id}','w3w',this.value)">
+                            <button type="button" onclick="lookupPoiW3w('${poi.id}')" style="padding:.3rem .5rem;background:#fff3e0;border:1px solid #e65c00;color:#e65c00;font-size:10px;font-weight:bold;cursor:pointer;border-radius:3px;white-space:nowrap;">/// W3W</button>
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:.4rem;margin-top:.6rem;">
+                    <button type="button" onclick="flyToPoi('${poi.id}')" style="padding:.35rem .75rem;background:#003366;color:#fff;border:none;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;">⌖ Fly To</button>
+                    <button type="button" onclick="removePoi('${poi.id}')" style="padding:.35rem .75rem;background:#fdf0f2;color:#C8102E;border:1px solid rgba(200,16,46,.2);border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;">✕ Remove</button>
+                </div>
+            </div>
         </div>`;
     }).join('');
 }
