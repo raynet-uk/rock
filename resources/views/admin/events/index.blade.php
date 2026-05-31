@@ -461,6 +461,9 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
 .map-tool-btn.tool-clear:hover  { background: var(--red-faint); border-color: var(--red); }
 .map-tool-btn.tool-active { outline: 2px solid currentColor; outline-offset: 1px; }
 #event-map-picker { height: 320px; width: 100%; }
+.mft-btn{padding:3px 7px;font-size:11px;font-weight:bold;background:#fff;border:1.5px solid #dde2e8;border-radius:5px;cursor:pointer;white-space:nowrap;color:#001f40;transition:all .12s;font-family:inherit;}
+.mft-btn:hover{background:#e8eef5;border-color:#003366;}
+.mft-btn.active{background:#003366;color:#fff;border-color:#003366;}
 #map-fullscreen-overlay { display:none;position:fixed;inset:0;z-index:99999;background:#000;flex-direction:column; }
 #map-fullscreen-overlay.active { display:flex; }
 #map-fullscreen-overlay #event-map-picker { flex:1;height:calc(100vh - 44px) !important;width:100vw !important; }
@@ -851,15 +854,24 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
                     <div id="event-map-wrap" style="position:relative;">
                         <div id="event-map-picker"></div>
                         {{-- Floating toolbar --}}
-                        <div id="map-float-toolbar" style="position:absolute;top:10px;right:10px;z-index:1000;display:flex;flex-direction:column;gap:4px;">
-                            <button type="button" onclick="evtMapFullscreen()" title="Fullscreen"
-                                    style="width:32px;height:32px;background:#fff;border:2px solid rgba(0,0,0,.25);border-radius:4px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 5px rgba(0,0,0,.2);">⛶</button>
-                            <button type="button" onclick="evtMapSatToggle()" title="Satellite/Street" id="map-sat-btn"
-                                    style="width:32px;height:32px;background:#fff;border:2px solid rgba(0,0,0,.25);border-radius:4px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 5px rgba(0,0,0,.2);">🛰</button>
-                            <button type="button" onclick="evtMapLocate()" title="My Location"
-                                    style="width:32px;height:32px;background:#fff;border:2px solid rgba(0,0,0,.25);border-radius:4px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 5px rgba(0,0,0,.2);">📍</button>
-                            <button type="button" onclick="evtMapClearAll()" title="Clear all"
-                                    style="width:32px;height:32px;background:#fff;border:2px solid rgba(0,0,0,.25);border-radius:4px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 5px rgba(0,0,0,.2);">🗑</button>
+                        <div id="map-float-toolbar" style="position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:1000;display:flex;flex-direction:row;gap:3px;background:rgba(255,255,255,.96);border:1.5px solid rgba(0,0,0,.18);border-radius:8px;padding:4px 6px;box-shadow:0 2px 12px rgba(0,0,0,.2);flex-wrap:wrap;max-width:calc(100% - 20px);align-items:center;">
+                            <span style="font-size:10px;font-weight:bold;color:#6b7f96;letter-spacing:.06em;padding:0 4px 0 2px;white-space:nowrap;">📍 Map Tools</span>
+                            <div style="width:1px;height:20px;background:#dde2e8;margin:0 2px;"></div>
+                            <button type="button" onclick="setMapTool(evtCurrentTool==='pin'?null:'pin')" title="Place Pin" class="mft-btn" id="mft-pin">📍 Pin</button>
+                            <button type="button" onclick="setMapTool(evtCurrentTool==='polygon'?null:'polygon')" title="Draw Polygon" class="mft-btn" id="mft-polygon">✏ Polygon</button>
+                            <button type="button" onclick="setMapTool(evtCurrentTool==='route'?null:'route')" title="Draw Route" class="mft-btn" id="mft-route">〰 Route</button>
+                            <button type="button" onclick="setMapTool(evtCurrentTool==='poi'?null:'poi')" title="Add POI" class="mft-btn" id="mft-poi">🚩 POI</button>
+                            <div style="width:1px;height:20px;background:#dde2e8;margin:0 2px;"></div>
+                            <button type="button" onclick="toggleEventSat()" title="Satellite" class="mft-btn" id="mft-sat">🛰 Sat</button>
+                            <button type="button" onclick="toggleOsGrid()" title="OS Grid" class="mft-btn" id="mft-grid">⊞ OS</button>
+                            <button type="button" onclick="setMapTool(evtCurrentTool==='measure'?null:'measure')" title="Measure" class="mft-btn" id="mft-measure">📏 Measure</button>
+                            <button type="button" onclick="toggleW3wMode()" title="What3Words" class="mft-btn" id="mft-w3w">/// W3W</button>
+                            <button type="button" onclick="fetchEventWeather()" title="Weather Forecast" class="mft-btn" id="mft-weather">🌬 Forecast</button>
+                            <div style="width:1px;height:20px;background:#dde2e8;margin:0 2px;"></div>
+                            <button type="button" onclick="evtMapLocate()" title="My Location" class="mft-btn">🎯 Locate</button>
+                            <button type="button" onclick="evtMapClearAll()" title="Clear All" class="mft-btn" style="color:#C8102E;">✕ Clear</button>
+                            <div style="width:1px;height:20px;background:#dde2e8;margin:0 2px;"></div>
+                            <button type="button" onclick="evtMapFullscreen()" title="Fullscreen" class="mft-btn" id="mft-fullscreen">⛶ Full</button>
                         </div>
                     </div>
                     <div class="map-coord-row">
@@ -1711,7 +1723,18 @@ function initEventMap() {
     // Fullscreen — teleport map into overlay
     const mapOriginalParent = document.getElementById('event-map-picker').parentElement;
 
-    window.evtMapFullscreen = function() {
+    // Track active tool for button state
+var evtCurrentTool = null;
+var _origSetMapTool = typeof setMapTool === 'function' ? setMapTool : null;
+
+function updateMftButtons() {
+    ['pin','polygon','route','poi','measure'].forEach(function(t) {
+        var btn = document.getElementById('mft-' + t);
+        if (btn) btn.classList.toggle('active', evtCurrentTool === t);
+    });
+}
+
+window.evtMapFullscreen = function() {
         const overlay = document.getElementById('map-fullscreen-overlay');
         const picker  = document.getElementById('event-map-picker');
         const toolbar = document.getElementById('map-float-toolbar');
@@ -1985,6 +2008,8 @@ function setEvtCoords(lat, lng) {
 }
 
 function setMapTool(tool) {
+    evtCurrentTool = tool;
+    updateMftButtons();
     evtTool = tool;
     document.getElementById('tool-pin-btn').classList.toggle('tool-active',     tool === 'pin');
     document.getElementById('tool-poly-btn').classList.toggle('tool-active',    tool === 'polygon');
@@ -2034,6 +2059,8 @@ function toggleEventSat() {
     if (evtSatOn) { evtTileStreet.remove(); evtTileSat.addTo(evtMap); }
     else          { evtTileSat.remove(); evtTileStreet.addTo(evtMap); }
     document.getElementById('evt-sat-btn').textContent = evtSatOn ? '🗺 Street' : '🛰 Satellite';
+    var mftSat = document.getElementById('mft-sat');
+    if (mftSat) mftSat.classList.toggle('active', evtSatOn);
 }
 
 async function mapLocationSearch() {
