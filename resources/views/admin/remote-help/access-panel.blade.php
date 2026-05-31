@@ -48,14 +48,14 @@ body{background:var(--grey);font-family:Arial,sans-serif;font-size:14px;color:va
 
     {{-- Pending Sessions --}}
     <div style="margin-top:1.5rem;">
-        <div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.15em;color:rgba(255,255,255,.4);margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem;">
+        <div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.15em;color:#6b7f96;margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem;">
             <span style="width:6px;height:6px;border-radius:50%;background:#7effa0;display:inline-block;animation:pulse 2s infinite;"></span>
             Sites Requesting Support
             <span id="pending-count" style="background:rgba(126,255,160,.15);border:1px solid rgba(126,255,160,.25);color:#7effa0;font-size:9px;padding:.1rem .4rem;border-radius:999px;">0</span>
         </div>
         <div id="pending-sessions" style="display:flex;flex-direction:column;gap:.5rem;">
-            <div id="pending-empty" style="font-size:13px;color:rgba(255,255,255,.3);font-style:italic;padding:.5rem 0;">
-                No sites are currently requesting support.
+            <div id="pending-empty" style="font-size:13px;color:rgba(255,255,255,.35);font-style:italic;padding:.75rem 1rem;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.1);border-radius:6px;text-align:center;">
+                📡 No sites are currently requesting support — when a ROCK site generates a code it will appear here automatically.
             </div>
         </div>
     </div>
@@ -63,16 +63,16 @@ body{background:var(--grey);font-family:Arial,sans-serif;font-size:14px;color:va
 
 <style>
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
-.session-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:.85rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;cursor:pointer;transition:all .15s;}
-.session-card:hover{background:rgba(255,255,255,.1);border-color:rgba(126,255,160,.3);}
+.session-card{background:#fff;border:1px solid #dde2e8;border-radius:6px;padding:.85rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;transition:all .15s;}
+.session-card:hover{background:#f8f9fb;border-color:#003366;}
 .session-card-left{display:flex;flex-direction:column;gap:.2rem;}
-.session-card-name{font-size:13px;font-weight:bold;color:#fff;}
-.session-card-url{font-size:11px;color:rgba(255,255,255,.4);font-family:monospace;}
-.session-card-meta{font-size:10px;color:rgba(255,255,255,.35);}
+.session-card-name{font-size:13px;font-weight:bold;color:#001f40;}
+.session-card-url{font-size:11px;color:#6b7f96;font-family:monospace;}
+.session-card-meta{font-size:10px;color:#9aa3ae;}
 .session-card-right{display:flex;align-items:center;gap:.5rem;}
 .session-card-code{font-family:monospace;font-size:13px;font-weight:bold;color:#ffd700;background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.2);padding:.25rem .6rem;border-radius:4px;}
-.session-dismiss{background:none;border:none;color:rgba(255,255,255,.3);cursor:pointer;font-size:1rem;padding:.2rem;line-height:1;}
-.session-dismiss:hover{color:rgba(255,255,255,.7);}
+.session-dismiss{background:none;border:none;color:#9aa3ae;cursor:pointer;font-size:1rem;padding:.2rem;line-height:1;}
+.session-dismiss:hover{color:#C8102E;}
 .session-connect-btn{background:#1a6b3c;border:1px solid rgba(126,255,160,.3);color:#7effa0;font-size:11px;font-weight:bold;padding:.3rem .7rem;border-radius:4px;cursor:pointer;font-family:inherit;transition:all .15s;}
 .session-connect-btn:hover{background:#1f8049;}
 </style>
@@ -109,11 +109,10 @@ function loadPendingSessions() {
                     <div class="session-card-left">
                         <div class="session-card-name">${s.group_name || s.site_name || 'Unknown Group'}</div>
                         <div class="session-card-url">${s.site_url}</div>
-                        <div class="session-card-meta">Code expires in ~${expiresIn} min · Generated just now</div>
+                        <div class="session-card-meta">⏱ Code expires in ~${expiresIn} min</div>
                     </div>
                     <div class="session-card-right">
-                        <div class="session-card-code">${s.code}</div>
-                        <button class="session-connect-btn" onclick="prefillSession('${s.site_url}','${s.code}',${s.id})">Connect →</button>
+                        <button class="session-connect-btn" onclick="prefillSession('${s.site_url}','${s.code}',${s.id})">🔗 Connect →</button>
                         <button class="session-dismiss" onclick="dismissSession(${s.id})" title="Dismiss">✕</button>
                     </div>
                 `;

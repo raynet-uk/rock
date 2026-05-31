@@ -22,6 +22,21 @@ class RemoteHelpController extends Controller
         $request->validate(['hours' => ['required','integer','min:1','max:24']]);
         $user  = auth()->user();
         $token = RemoteHelpToken::generate($user->name, $user->email, $request->hours);
+        // Notify ROCK provider that a code was generated
+        try {
+            $notifyUrl = config('raynet.remote_help_provider_url',
+                'https://raynet-liverpool.net/admin/remote-help/notify');
+            if (!config('raynet.remote_help_provider')) {
+                \Illuminate\Support\Facades\Http::timeout(5)->post($notifyUrl, [
+                    'site_url'   => config('app.url'),
+                    'site_name'  => \App\Models\Setting::get('site_name', config('app.name')),
+                    'group_name' => \App\Models\Setting::get('group_name', ''),
+                    'code'       => $token->code,
+                    'expires_at' => $token->expires_at->toISOString(),
+                ]);
+            }
+        } catch (\Throwable $e) {}
+
         return back()->with('generated_code', $token->code)
                      ->with('generated_expires', $token->expires_at->format('j M Y H:i'));
     }
@@ -161,4 +176,68 @@ class RemoteHelpController extends Controller
             ],
         ]);
     }
+
+    // ── Receive notification from remote site that a code was generated ────────
+    public function receiveNotification(\Illuminate\Http\Request $request): \Illuminate\Http\JsonResponse
+    {
+        $request->validate([
+            'site_url'   => ['required', 'url', 'max:255'],
+            'site_name'  => ['nullable', 'string', 'max:100'],
+            'group_name' => ['nullable', 'string', 'max:100'],
+            'code'       => ['required', 'string', 'max:20'],
+            'expires_at' => ['required', 'date'],
+        ]);
+
+        \Illuminate\Support\Facades\DB::table('remote_help_notifications')
+            ->where('expires_at', '<', now())
+            ->orWhere('dismissed', true)
+            ->delete();
+
+        \Illuminate\Support\Facades\DB::table('remote_help_notifications')->insert([
+            'site_url'   => rtrim($request->input('site_url'), '/'),
+            'site_name'  => $request->input('site_name'),
+            'group_name' => $request->input('group_name'),
+            'code'       => strtoupper($request->input('code')),
+            'expires_at' => \Carbon\Carbon::parse($request->input('expires_at'))->format('Y-m-d H:i:s'),
+            'dismissed'  => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return response()->json(['success' => true]);
+    }
+
+    // ── Return pending sessions for the access panel ──────────────────────────
+    public function pendingSessions(): \Illuminate\Http\JsonResponse
+    {
+        abort_unless(auth()->check() && auth()->user()->is_admin, 403);
+
+        $sessions = \Illuminate\Support\Facades\DB::table('remote_help_notifications')
+            ->where('dismissed', false)
+            ->where('expires_at', '>', now())
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn($s) => [
+                'id'         => $s->id,
+                'site_url'   => $s->site_url,
+                'site_name'  => $s->site_name,
+                'group_name' => $s->group_name,
+                'code'       => $s->code,
+                'expires_at' => $s->expires_at,
+                'created_at' => $s->created_at,
+            ]);
+
+        return response()->json(['sessions' => $sessions]);
+    }
+
+    // ── Dismiss a pending session notification ────────────────────────────────
+    public function dismissSession(\Illuminate\Http\Request $request): \Illuminate\Http\JsonResponse
+    {
+        abort_unless(auth()->check() && auth()->user()->is_admin, 403);
+        \Illuminate\Support\Facades\DB::table('remote_help_notifications')
+            ->where('id', $request->input('id'))
+            ->update(['dismissed' => true]);
+        return response()->json(['success' => true]);
+    }
+
 }
