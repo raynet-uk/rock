@@ -86,7 +86,7 @@ body{background:#f2f4f7;font-family:Arial,sans-serif;font-size:13px;min-height:1
                 </div>
                 <div class="access-chip">
                     <strong>Duration</strong>
-                    ~{{ now()->diffInMinutes($token->expires_at) }} min remaining
+                    ~{{ floor(now()->diffInMinutes($token->expires_at) / 60) }}h {{ now()->diffInMinutes($token->expires_at) % 60 }}min remaining
                 </div>
             </div>
 
