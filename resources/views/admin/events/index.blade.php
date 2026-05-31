@@ -494,6 +494,7 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
 }
 
 /* ─── ADDITIONAL MAP TOOL STATES ─── */
+.poi-callsign-select { min-width:100px; }
 .map-tool-btn.tool-measure { color: #00897b; border-color: rgba(0,137,123,.3); background: #e0f2f1; }
 .map-tool-btn.tool-measure:hover { background: #b2dfdb; border-color: #00897b; }
 .map-tool-btn.tool-w3w { color: #e65c00; border-color: rgba(230,92,0,.3); background: #fff3e0; }
@@ -2603,7 +2604,7 @@ var poiMarkers = {};
 function makePoi(lat, lng) {
     return {
         id:          'poi-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-        type:        'entrance', name: '', description: '', grid_ref: '', w3w: '',
+        type:        'entrance', name: '', description: '', grid_ref: '', w3w: '', callsign: '', user_id: null,
         lat:         parseFloat(lat.toFixed(7)), lng: parseFloat(lng.toFixed(7)),
         colour:      POI_TYPES.entrance.colour,
     };
@@ -2686,7 +2687,11 @@ function renderPoiList() {
             <div class="poi-dot" style="background:${poi.colour || pt.colour};"></div>
             <select class="poi-type-select" onchange="updatePoiType('${poi.id}',this.value)">${typeOptions}</select>
             <input type="text" class="poi-name-input" value="${escHtml(poi.name)}" placeholder="${pt.label} name…" oninput="updatePoiField('${poi.id}','name',this.value)">
-            <input type="text" class="poi-desc-input" value="${escHtml(poi.description)}" placeholder="Description (optional)…" oninput="updatePoiField('${poi.id}','description',this.value)">
+            <select class="poi-callsign-select" onchange="updatePoiField('${poi.id}','callsign',this.options[this.selectedIndex].dataset.callsign||'');updatePoiField('${poi.id}','user_id',this.value||null);" title="Assign member" style="font-size:11px;border:1px solid var(--grey-mid);border-radius:3px;padding:2px 4px;max-width:130px;font-family:var(--font);">
+                <option value="">— Assign member —</option>
+                ${window.EVT_MEMBERS ? window.EVT_MEMBERS.map(m => `<option value="${m.id}" data-callsign="${m.callsign}" ${poi.user_id==m.id?'selected':''}>${m.callsign ? m.callsign+' — ' : ''}${m.name}</option>`).join('') : ''}
+            </select>
+            <input type="text" class="poi-desc-input" value="${escHtml(poi.description)}" placeholder="Description…" oninput="updatePoiField('${poi.id}','description',this.value)">
             <input type="text" class="poi-grid-input" value="${escHtml(poi.grid_ref || '')}" placeholder="Grid ref…" style="width:80px;font-weight:bold;letter-spacing:.04em;font-size:11px;" oninput="updatePoiField('${poi.id}','grid_ref',this.value)" title="6-figure OS grid reference">
             <input type="text" class="poi-w3w-input" value="${escHtml(poi.w3w || '')}" placeholder="///word.word.word" style="width:110px;color:#e65c00;font-size:11px;" oninput="updatePoiField('${poi.id}','w3w',this.value)" title="What3Words address">
             <button type="button" class="poi-locate" title="Fly to" onclick="flyToPoi('${poi.id}')">⌖</button>
