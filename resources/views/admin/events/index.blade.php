@@ -461,24 +461,18 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
 .map-tool-btn.tool-clear:hover  { background: var(--red-faint); border-color: var(--red); }
 .map-tool-btn.tool-active { outline: 2px solid currentColor; outline-offset: 1px; }
 #event-map-picker { height: 320px; width: 100%; }
+#event-map-wrap:-webkit-full-screen { width:100vw;height:100vh; }
+#event-map-wrap:-webkit-full-screen #event-map-picker { height:calc(100vh - 44px)!important;width:100vw!important; }
+#event-map-wrap:fullscreen { width:100vw;height:100vh; }
+#event-map-wrap:fullscreen #event-map-picker { height:calc(100vh - 44px)!important;width:100vw!important; }
+#map-fs-bar { display:none;position:absolute;top:0;left:0;right:0;z-index:1000;background:rgba(0,31,64,.93);height:44px;align-items:center;padding:0 .75rem;gap:4px;flex-wrap:wrap; }
+#event-map-wrap:fullscreen #map-fs-bar { display:flex!important; }
+#event-map-wrap:-webkit-full-screen #map-fs-bar { display:flex!important; }
 .mft-btn{padding:3px 7px;font-size:11px;font-weight:bold;background:#fff;border:1.5px solid #dde2e8;border-radius:5px;cursor:pointer;white-space:nowrap;color:#001f40;transition:all .12s;font-family:inherit;}
 .mft-btn:hover{background:#e8eef5;border-color:#003366;}
 .mft-btn.active{background:#003366;color:#fff;border-color:#003366;}
 /* Fullscreen map */
-.map-picker-section.map-fs{position:fixed!important;inset:0!important;z-index:99999!important;background:#fff;display:flex;flex-direction:column;padding:0!important;margin:0!important;}
-.map-picker-section.map-fs .map-picker-header{position:relative;z-index:2;background:#001f40;padding:.5rem .75rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;flex-shrink:0;}
-.map-picker-section.map-fs .map-picker-label{color:#fff!important;}
-.map-picker-section.map-fs .map-picker-tools{display:flex!important;flex-wrap:wrap;gap:3px;flex:1;}
-.map-picker-section.map-fs .map-tool-btn{font-size:11px!important;}
-.map-picker-section.map-fs #event-map-wrap{flex:1;position:relative;}
-.map-picker-section.map-fs #event-map-picker{height:100%!important;width:100%!important;}
-.map-picker-section.map-fs .map-coord-row,.map-picker-section.map-fs .map-search-row,.map-picker-section.map-fs .map-summary-bar{display:none!important;}
-body.map-fs-active{overflow:hidden!important;}
-#btn-fullscreen-map{display:inline-flex;align-items:center;}
-#map-fullscreen-overlay { display:none;position:fixed;inset:0;z-index:99999;background:#000;flex-direction:column; }
-#map-fullscreen-overlay.active { display:flex; }
-#map-fullscreen-overlay #event-map-picker { position:absolute;top:40px;left:0;right:0;bottom:0;height:calc(100vh - 40px) !important;width:100vw !important; }
-#map-fullscreen-topbar { height:44px;background:#001f40;display:flex;align-items:center;padding:0 1rem;gap:.5rem;flex-shrink:0; }
+
 .map-coord-row {
     display: flex; gap: .5rem; padding: .5rem .85rem;
     border-top: 1px solid var(--grey-mid); flex-wrap: wrap;
@@ -847,7 +841,7 @@ body.map-fs-active{overflow:hidden!important;}
                                     style="color:#2e7d32;border-color:rgba(46,125,50,.3);"
                                     onclick="fetchEventWeather()">🌬 Forecast</button>
                             <button type="button" class="map-tool-btn"
-                                    onclick="document.querySelector('.map-picker-section').classList.contains('map-fs')?evtMapExitFullscreen():evtMapFullscreen()"
+                                    onclick="evtMapToggleFullscreen()"
                                     id="btn-fullscreen-map"
                                     style="margin-left:4px;background:#003366;color:#fff;border-color:#003366;">⛶ Fullscreen</button>
                         </div>
@@ -1730,30 +1724,25 @@ function updateMftButtons() {
     });
 }
 
-window.evtMapFullscreen = function() {
-        const overlay = document.getElementById('map-fullscreen-overlay');
-        const picker  = document.getElementById('event-map-picker');
-        const toolbar = document.getElementById('map-float-toolbar');
-        overlay.classList.add('active');
-        overlay.insertBefore(picker, overlay.querySelector('#map-fullscreen-topbar').nextSibling);
-        overlay.querySelector('#map-fullscreen-topbar').appendChild(toolbar);
-        document.body.style.overflow = 'hidden';
-        setTimeout(() => evtMap.invalidateSize(), 150);
-    };
 
-    window.evtMapExitFullscreen = function() {
-        const overlay = document.getElementById('map-fullscreen-overlay');
-        const picker  = document.getElementById('event-map-picker');
-        const toolbar = document.getElementById('map-float-toolbar');
-        const wrap    = document.getElementById('event-map-wrap');
-        overlay.classList.remove('active');
-        wrap.insertBefore(picker, wrap.firstChild);
-        wrap.appendChild(toolbar);
-        document.body.style.overflow = '';
-        setTimeout(() => evtMap.invalidateSize(), 150);
-    };
 
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') { const o = document.getElementById('map-fullscreen-overlay'); if (o.classList.contains('active')) evtMapExitFullscreen(); }});
+    // Native Fullscreen API
+    window.evtMapToggleFullscreen = function() {
+        const wrap = document.getElementById('event-map-wrap');
+        const btn  = document.getElementById('btn-fullscreen-map');
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+            (wrap.requestFullscreen || wrap.webkitRequestFullscreen).call(wrap);
+        } else {
+            (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+        }
+    };
+    document.addEventListener('fullscreenchange', () => {
+        setTimeout(() => evtMap.invalidateSize({animate:false}), 200);
+    });
+    document.addEventListener('webkitfullscreenchange', () => {
+        setTimeout(() => evtMap.invalidateSize({animate:false}), 200);
+    });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.fullscreenElement) evtMapToggleFullscreen(); });
 
     // Satellite toggle
     let evtSatOn = false;
