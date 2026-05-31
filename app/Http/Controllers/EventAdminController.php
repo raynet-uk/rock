@@ -140,7 +140,7 @@ class EventAdminController extends Controller
         $event->event_pois         = $this->parsePois($request->input('event_pois'));
         $event->save();
 
-        return redirect()->route('admin.events')->with('status', 'Event updated.');
+        return redirect()->route('admin.events', ['edit' => $id])->with('status', 'Event updated.');
     }
 
     // -------------------------------------------------------------------------
