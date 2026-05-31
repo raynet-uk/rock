@@ -383,7 +383,7 @@
     $yearEnd    = $yearStart->copy()->addYear()->subDay();
     $yearLabel  = $yearStart->format('M Y') . ' – ' . $yearEnd->format('M Y');
 
-    $allUsers   = \App\Models\User::all();
+    $allUsers   = \App\Models\User::role(['admin','committee','member','super-admin'])->get();
     $totalActiveThisYear = $allUsers->where('attended_event_this_year', true)->count();
     $totalVolHours       = $allUsers->sum('volunteering_hours_this_year');
     $totalAttendances    = $allUsers->sum('events_attended_this_year');
