@@ -34,7 +34,7 @@ body{background:var(--grey);font-family:Arial,sans-serif;font-size:14px;color:va
             @csrf
             <div class="field">
                 <label>Site URL</label>
-                <input type="url" name="site_url" placeholder="https://raynet-grampian.net" required>
+                <input type="url" name="site_url" value="https://" placeholder="https://raynet-grampian.net" required>
             </div>
             <div class="field">
                 <label>Support Code</label>
@@ -45,5 +45,108 @@ body{background:var(--grey);font-family:Arial,sans-serif;font-size:14px;color:va
             <button type="submit" class="btn">Connect to Remote Site →</button>
         </form>
     </div>
+
+    {{-- Pending Sessions --}}
+    <div style="margin-top:1.5rem;">
+        <div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.15em;color:rgba(255,255,255,.4);margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem;">
+            <span style="width:6px;height:6px;border-radius:50%;background:#7effa0;display:inline-block;animation:pulse 2s infinite;"></span>
+            Sites Requesting Support
+            <span id="pending-count" style="background:rgba(126,255,160,.15);border:1px solid rgba(126,255,160,.25);color:#7effa0;font-size:9px;padding:.1rem .4rem;border-radius:999px;">0</span>
+        </div>
+        <div id="pending-sessions" style="display:flex;flex-direction:column;gap:.5rem;">
+            <div id="pending-empty" style="font-size:13px;color:rgba(255,255,255,.3);font-style:italic;padding:.5rem 0;">
+                No sites are currently requesting support.
+            </div>
+        </div>
+    </div>
 </div>
+
+<style>
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.session-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:.85rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;cursor:pointer;transition:all .15s;}
+.session-card:hover{background:rgba(255,255,255,.1);border-color:rgba(126,255,160,.3);}
+.session-card-left{display:flex;flex-direction:column;gap:.2rem;}
+.session-card-name{font-size:13px;font-weight:bold;color:#fff;}
+.session-card-url{font-size:11px;color:rgba(255,255,255,.4);font-family:monospace;}
+.session-card-meta{font-size:10px;color:rgba(255,255,255,.35);}
+.session-card-right{display:flex;align-items:center;gap:.5rem;}
+.session-card-code{font-family:monospace;font-size:13px;font-weight:bold;color:#ffd700;background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.2);padding:.25rem .6rem;border-radius:4px;}
+.session-dismiss{background:none;border:none;color:rgba(255,255,255,.3);cursor:pointer;font-size:1rem;padding:.2rem;line-height:1;}
+.session-dismiss:hover{color:rgba(255,255,255,.7);}
+.session-connect-btn{background:#1a6b3c;border:1px solid rgba(126,255,160,.3);color:#7effa0;font-size:11px;font-weight:bold;padding:.3rem .7rem;border-radius:4px;cursor:pointer;font-family:inherit;transition:all .15s;}
+.session-connect-btn:hover{background:#1f8049;}
+</style>
+
+<script>
+const CSRF = document.querySelector('meta[name=csrf-token]')?.content || '';
+
+function loadPendingSessions() {
+    fetch('{{ route("admin.remote-help.pending-sessions") }}', {
+        headers: {'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}
+    })
+    .then(r => r.json())
+    .then(data => {
+        const sessions = data.sessions || [];
+        const container = document.getElementById('pending-sessions');
+        const empty = document.getElementById('pending-empty');
+        const count = document.getElementById('pending-count');
+
+        count.textContent = sessions.length;
+
+        // Remove old cards
+        container.querySelectorAll('.session-card').forEach(c => c.remove());
+
+        if (sessions.length === 0) {
+            empty.style.display = 'block';
+        } else {
+            empty.style.display = 'none';
+            sessions.forEach(s => {
+                const card = document.createElement('div');
+                card.className = 'session-card';
+                card.id = 'session-' + s.id;
+                const expiresIn = Math.max(0, Math.round((new Date(s.expires_at) - Date.now()) / 60000));
+                card.innerHTML = `
+                    <div class="session-card-left">
+                        <div class="session-card-name">${s.group_name || s.site_name || 'Unknown Group'}</div>
+                        <div class="session-card-url">${s.site_url}</div>
+                        <div class="session-card-meta">Code expires in ~${expiresIn} min · Generated just now</div>
+                    </div>
+                    <div class="session-card-right">
+                        <div class="session-card-code">${s.code}</div>
+                        <button class="session-connect-btn" onclick="prefillSession('${s.site_url}','${s.code}',${s.id})">Connect →</button>
+                        <button class="session-dismiss" onclick="dismissSession(${s.id})" title="Dismiss">✕</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+    })
+    .catch(() => {});
+}
+
+function prefillSession(url, code, id) {
+    document.querySelector('input[name=site_url]').value = url;
+    document.querySelector('input[name=code]').value = code;
+    document.querySelector('input[name=site_url]').scrollIntoView({behavior:'smooth'});
+    // Highlight the form briefly
+    document.querySelector('.card').style.boxShadow = '0 0 0 3px rgba(126,255,160,.4)';
+    setTimeout(() => document.querySelector('.card').style.boxShadow = '', 1500);
+}
+
+function dismissSession(id) {
+    fetch('{{ route("admin.remote-help.dismiss-session") }}', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','X-CSRF-TOKEN':CSRF,'Accept':'application/json'},
+        body: JSON.stringify({id})
+    }).then(() => {
+        const card = document.getElementById('session-' + id);
+        if (card) card.remove();
+        loadPendingSessions();
+    });
+}
+
+// Poll every 10 seconds
+loadPendingSessions();
+setInterval(loadPendingSessions, 10000);
+</script>
 @endsection
