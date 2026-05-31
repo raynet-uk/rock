@@ -1954,6 +1954,11 @@ function placeEvtPin(lat, lng, updateFields) {
         `);
     }, { maxWidth: 240 });
 
+    evtMarker.on('drag', function (e) {
+        const p = e.target.getLatLng();
+        document.getElementById('event-lat').value = p.lat.toFixed(6);
+        document.getElementById('event-lng').value = p.lng.toFixed(6);
+    });
     evtMarker.on('dragend', function (e) {
         const p = e.target.getLatLng();
         setEvtCoords(p.lat, p.lng);
