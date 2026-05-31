@@ -1672,6 +1672,9 @@ function confirmDelete(form, title) {
 })();
 </script>
 
+<script>
+window._EVT_MEMBERS_DATA = {!! json_encode(\App\Models\User::orderBy("name")->get(["id","name","callsign"])->map(function($u){ return ["id"=>$u->id,"name"=>$u->name,"callsign"=>$u->callsign??""];  })->values()) !!};
+</script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
