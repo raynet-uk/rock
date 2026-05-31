@@ -1993,8 +1993,6 @@ function setEvtCoords(lat, lng) {
 }
 
 function setMapTool(tool) {
-    evtCurrentTool = tool;
-    updateMftButtons();
     evtTool = tool;
     document.getElementById('tool-pin-btn').classList.toggle('tool-active',     tool === 'pin');
     document.getElementById('tool-poly-btn').classList.toggle('tool-active',    tool === 'polygon');
