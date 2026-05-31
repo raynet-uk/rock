@@ -466,7 +466,7 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
 .mft-btn.active{background:#003366;color:#fff;border-color:#003366;}
 #map-fullscreen-overlay { display:none;position:fixed;inset:0;z-index:99999;background:#000;flex-direction:column; }
 #map-fullscreen-overlay.active { display:flex; }
-#map-fullscreen-overlay #event-map-picker { flex:1;height:calc(100vh - 44px) !important;width:100vw !important; }
+#map-fullscreen-overlay #event-map-picker { flex:1;height:calc(100vh - 88px) !important;width:100vw !important; }
 #map-fullscreen-topbar { height:44px;background:#001f40;display:flex;align-items:center;padding:0 1rem;gap:.5rem;flex-shrink:0; }
 .map-coord-row {
     display: flex; gap: .5rem; padding: .5rem .85rem;
@@ -807,7 +807,7 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
                 <div class="form-field full map-picker-section">
                     <div class="map-picker-header">
                         <span class="map-picker-label">📍 Location Map — pin, polygon &amp; POIs</span>
-                        <div class="map-picker-tools">
+                        <div class="map-picker-tools" id="map-picker-tools">
                             <button type="button" class="map-tool-btn tool-pin tool-active" id="tool-pin-btn"
                                     onclick="setMapTool('pin')">📍 Place Pin</button>
                             <button type="button" class="map-tool-btn tool-poly" id="tool-poly-btn"
@@ -835,6 +835,9 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
                             <button type="button" class="map-tool-btn" id="tool-weather-btn"
                                     style="color:#2e7d32;border-color:rgba(46,125,50,.3);"
                                     onclick="fetchEventWeather()">🌬 Forecast</button>
+                            <button type="button" class="map-tool-btn"
+                                    onclick="evtMapFullscreen()" id="btn-fullscreen-map"
+                                    style="margin-left:4px;background:#003366;color:#fff;border-color:#003366;">⛶ Fullscreen</button>
                         </div>
                     </div>
                     <div style="display:flex;gap:.5rem;padding:.5rem .6rem;background:var(--grey);border-top:1px solid var(--grey-mid);border-bottom:1px solid var(--grey-mid);">
@@ -853,26 +856,7 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
                     </div>
                     <div id="event-map-wrap" style="position:relative;">
                         <div id="event-map-picker"></div>
-                        {{-- Floating toolbar --}}
-                        <div id="map-float-toolbar" style="position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:1000;display:flex;flex-direction:row;gap:3px;background:rgba(255,255,255,.96);border:1.5px solid rgba(0,0,0,.18);border-radius:8px;padding:4px 6px;box-shadow:0 2px 12px rgba(0,0,0,.2);flex-wrap:wrap;max-width:calc(100% - 20px);align-items:center;">
-                            <span style="font-size:10px;font-weight:bold;color:#6b7f96;letter-spacing:.06em;padding:0 4px 0 2px;white-space:nowrap;">📍 Map Tools</span>
-                            <div style="width:1px;height:20px;background:#dde2e8;margin:0 2px;"></div>
-                            <button type="button" onclick="setMapTool('pin')" title="Place Pin" class="mft-btn" id="mft-pin">📍 Pin</button>
-                            <button type="button" onclick="setMapTool('polygon')" title="Draw Polygon" class="mft-btn" id="mft-polygon">✏ Polygon</button>
-                            <button type="button" onclick="setMapTool('route')" title="Draw Route" class="mft-btn" id="mft-route">〰 Route</button>
-                            <button type="button" onclick="setMapTool('poi')" title="Add POI" class="mft-btn" id="mft-poi">🚩 POI</button>
-                            <div style="width:1px;height:20px;background:#dde2e8;margin:0 2px;"></div>
-                            <button type="button" onclick="toggleEventSat()" title="Satellite" class="mft-btn" id="mft-sat">🛰 Sat</button>
-                            <button type="button" onclick="toggleOsGrid()" title="OS Grid" class="mft-btn" id="mft-grid">⊞ OS</button>
-                            <button type="button" onclick="setMapTool('measure')" title="Measure" class="mft-btn" id="mft-measure">📏 Measure</button>
-                            <button type="button" onclick="toggleW3wMode()" title="What3Words" class="mft-btn" id="mft-w3w">/// W3W</button>
-                            <button type="button" onclick="fetchEventWeather()" title="Weather Forecast" class="mft-btn" id="mft-weather">🌬 Forecast</button>
-                            <div style="width:1px;height:20px;background:#dde2e8;margin:0 2px;"></div>
-                            <button type="button" onclick="evtMapLocate()" title="My Location" class="mft-btn">🎯 Locate</button>
-                            <button type="button" onclick="evtMapClearAll()" title="Clear All" class="mft-btn" style="color:#C8102E;">✕ Clear</button>
-                            <div style="width:1px;height:20px;background:#dde2e8;margin:0 2px;"></div>
-                            <button type="button" onclick="evtMapFullscreen()" title="Fullscreen" class="mft-btn" id="mft-fullscreen">⛶ Full</button>
-                        </div>
+
                     </div>
                     <div class="map-coord-row">
                         <div class="map-coord-field">
@@ -2834,9 +2818,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
 {{-- Map fullscreen overlay --}}
 <div id="map-fullscreen-overlay">
-    <div id="map-fullscreen-topbar">
-        <span style="color:#fff;font-size:13px;font-weight:bold;flex:1;">🗺 Event Map — Fullscreen Mode</span>
-        <button type="button" onclick="evtMapExitFullscreen()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.3);color:#fff;padding:.3rem .9rem;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;">✕ Exit Fullscreen</button>
+    <div id="map-fullscreen-topbar" style="display:flex;flex-direction:column;">
+        <div style="height:40px;background:#001f40;display:flex;align-items:center;padding:0 1rem;gap:.5rem;">
+            <span style="color:#fff;font-size:13px;font-weight:bold;flex:1;">🗺 Event Map — Fullscreen Mode</span>
+            <button type="button" onclick="evtMapExitFullscreen()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.3);color:#fff;padding:.3rem .9rem;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;">✕ Exit Fullscreen</button>
+        </div>
+        <div id="map-fullscreen-toolbar-slot" style="background:#f2f4f7;border-bottom:1px solid #dde2e8;padding:4px 8px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;"></div>
     </div>
 </div>
 @endsection
