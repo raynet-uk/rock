@@ -2713,7 +2713,7 @@ function renderPoiList() {
                     </div>
                     <div style="display:flex;flex-direction:column;gap:2px;">
                         <div style="font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);">Assign Member</div>
-                        <select class="poi-callsign-select" style="width:100%;" onchange="updatePoiField('${poi.id}','callsign',this.options[this.selectedIndex].dataset.callsign||'');updatePoiField('${poi.id}','user_id',this.value||null);">
+                        <select class="poi-callsign-select" style="width:100%;" onchange="assignPoiMember('${poi.id}',this);">
                             <option value="">— None —</option>
                             ${memberOptions}
                         </select>
@@ -2754,6 +2754,16 @@ function poiPopupFieldChange(id, field, value) {
 }
 
 function poiPopupTypeChange(id, type, selectEl) { updatePoiType(id, type); }
+
+function assignPoiMember(id, sel) {
+    const val = sel.value;
+    const callsign = sel.options[sel.selectedIndex].dataset.callsign || '';
+    const idx = evtPois.findIndex(x => x.id === id);
+    if (idx === -1) return;
+    evtPois[idx].user_id  = val ? parseInt(val, 10) : null;
+    evtPois[idx].callsign = callsign;
+    savePois();
+}
 
 function updatePoiField(id, field, value) {
     const idx = evtPois.findIndex(x => x.id === id);
