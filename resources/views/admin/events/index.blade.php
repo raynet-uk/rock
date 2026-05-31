@@ -466,7 +466,7 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
 .mft-btn.active{background:#003366;color:#fff;border-color:#003366;}
 #map-fullscreen-overlay { display:none;position:fixed;inset:0;z-index:99999;background:#000;flex-direction:column; }
 #map-fullscreen-overlay.active { display:flex; }
-#map-fullscreen-overlay #event-map-picker { flex:1;height:calc(100vh - 88px) !important;width:100vw !important; }
+#map-fullscreen-overlay #event-map-picker { position:absolute;top:40px;left:0;right:0;bottom:0;height:calc(100vh - 40px) !important;width:100vw !important; }
 #map-fullscreen-topbar { height:44px;background:#001f40;display:flex;align-items:center;padding:0 1rem;gap:.5rem;flex-shrink:0; }
 .map-coord-row {
     display: flex; gap: .5rem; padding: .5rem .85rem;
@@ -2818,12 +2818,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
 {{-- Map fullscreen overlay --}}
 <div id="map-fullscreen-overlay">
-    <div id="map-fullscreen-topbar" style="display:flex;flex-direction:column;">
-        <div style="height:40px;background:#001f40;display:flex;align-items:center;padding:0 1rem;gap:.5rem;">
-            <span style="color:#fff;font-size:13px;font-weight:bold;flex:1;">🗺 Event Map — Fullscreen Mode</span>
-            <button type="button" onclick="evtMapExitFullscreen()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.3);color:#fff;padding:.3rem .9rem;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;">✕ Exit Fullscreen</button>
-        </div>
-        <div id="map-fullscreen-toolbar-slot" style="background:#f2f4f7;border-bottom:1px solid #dde2e8;padding:4px 8px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;"></div>
+    <div id="map-fs-exit-bar" style="position:absolute;top:0;left:0;right:0;height:40px;background:rgba(0,31,64,.92);z-index:10001;display:flex;align-items:center;padding:0 1rem;gap:.5rem;backdrop-filter:blur(4px);">
+        <span style="color:#fff;font-size:13px;font-weight:bold;flex:1;">🗺 Event Map — Fullscreen</span>
+        <button type="button" onclick="evtMapExitFullscreen()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:.3rem .9rem;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;">✕ Exit Fullscreen</button>
     </div>
+    <div id="map-fs-toolbar-float" style="position:absolute;top:50px;left:50%;transform:translateX(-50%);z-index:10001;background:rgba(255,255,255,.97);border:1.5px solid rgba(0,0,0,.15);border-radius:8px;padding:4px 8px;box-shadow:0 2px 16px rgba(0,0,0,.25);display:flex;align-items:center;gap:3px;flex-wrap:wrap;"></div>
 </div>
 @endsection
