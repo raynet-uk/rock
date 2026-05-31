@@ -631,13 +631,15 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
 
     {{-- ─── ADD / EDIT FORM ─── --}}
     <div class="form-card fade-in fade-in-d2">
-        <div class="form-head">
+        <div class="form-head" id="form-card-toggle"
+             style="cursor:pointer;user-select:none;"
+             onclick="@if(!isset($editingEvent))toggleEventForm()@endif">
             <div>
                 <div class="form-head-title">{{ isset($editingEvent) ? '✏  Edit Event' : '+  Add Event' }}</div>
                 @if (isset($editingEvent))
                     <div class="form-head-sub">Editing: {{ $editingEvent->title }}</div>
                 @else
-                    <div class="form-head-sub">New events appear on the calendar and members' hub immediately.</div>
+                    <div class="form-head-sub" id="form-toggle-sub">New events appear on the calendar and members' hub immediately.</div>
                 @endif
             </div>
             @if (isset($editingEvent))
@@ -645,6 +647,8 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
                    style="font-size:11px;font-weight:bold;color:var(--red);text-decoration:none;text-transform:uppercase;letter-spacing:.06em;">
                    ✕ Cancel
                 </a>
+            @else
+                <span id="form-toggle-icon" style="font-size:1.1rem;color:var(--grey-dark);transition:transform .2s;">▼</span>
             @endif
         </div>
 
@@ -657,6 +661,7 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
             @csrf
             @if (isset($editingEvent)) @method('PUT') @endif
 
+            <div id="event-form-body">
             <div class="form-body">
                 <div class="form-field">
                     <label>Title *</label>
@@ -925,6 +930,26 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
                 </div>
 
             </div>{{-- /form-body --}}
+            </div>{{-- /event-form-body --}}
+<script>
+@if(!isset($editingEvent))
+(function(){
+    var wrap = document.getElementById('event-form-body');
+    var icon = document.getElementById('form-toggle-icon');
+    var sub  = document.getElementById('form-toggle-sub');
+    if (!wrap) return;
+    wrap.style.display = 'none';
+    if (icon) icon.style.transform = 'rotate(-90deg)';
+    if (sub)  sub.textContent = 'Click to expand and add a new event.';
+    window.toggleEventForm = function() {
+        var open = wrap.style.display !== 'none';
+        wrap.style.display = open ? 'none' : '';
+        if (icon) icon.style.transform = open ? 'rotate(-90deg)' : 'rotate(0deg)';
+        if (sub)  sub.textContent = open ? 'Click to expand and add a new event.' : "New events appear on the calendar and members' hub immediately.";
+    };
+})();
+@endif
+</script>
 
             <div class="form-footer">
                 <button type="submit" class="{{ isset($editingEvent) ? 'btn btn-primary' : 'btn btn-green' }}">
