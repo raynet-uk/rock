@@ -497,7 +497,7 @@ document.querySelectorAll('.sb-subitem.active').forEach(el=>{
   // Fetch and store offline token while online
   function fetchToken() {
     if (!navigator.onLine) return;
-    fetch('/admin/net-control/offline-token', {cache:'no-store'})
+    fetch('/admin/net-control/offline-token', {cache:'no-store', headers:{'X-Requested-With':'XMLHttpRequest'}})
     .then(function(r){ return r.ok ? r.json() : null; })
     .then(function(d){
       if (!d || !d.token) return;
