@@ -461,6 +461,9 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
 .map-tool-btn.tool-clear:hover  { background: var(--red-faint); border-color: var(--red); }
 .map-tool-btn.tool-active { outline: 2px solid currentColor; outline-offset: 1px; }
 #event-map-picker { height: 320px; width: 100%; }
+#event-map-wrap.fullscreen { position: fixed !important; inset: 0 !important; z-index: 9999 !important; background: #000; }
+#event-map-wrap.fullscreen #event-map-picker { height: 100vh !important; width: 100vw !important; }
+#event-map-wrap.fullscreen #map-float-toolbar { top: 10px; right: 10px; }
 .map-coord-row {
     display: flex; gap: .5rem; padding: .5rem .85rem;
     border-top: 1px solid var(--grey-mid); flex-wrap: wrap;
@@ -844,7 +847,20 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
                             Go
                         </button>
                     </div>
-                    <div id="event-map-picker"></div>
+                    <div id="event-map-wrap" style="position:relative;">
+                        <div id="event-map-picker"></div>
+                        {{-- Floating toolbar --}}
+                        <div id="map-float-toolbar" style="position:absolute;top:10px;right:10px;z-index:1000;display:flex;flex-direction:column;gap:4px;">
+                            <button type="button" onclick="evtMapFullscreen()" title="Fullscreen"
+                                    style="width:32px;height:32px;background:#fff;border:2px solid rgba(0,0,0,.25);border-radius:4px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 5px rgba(0,0,0,.2);">⛶</button>
+                            <button type="button" onclick="evtMapSatToggle()" title="Satellite/Street" id="map-sat-btn"
+                                    style="width:32px;height:32px;background:#fff;border:2px solid rgba(0,0,0,.25);border-radius:4px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 5px rgba(0,0,0,.2);">🛰</button>
+                            <button type="button" onclick="evtMapLocate()" title="My Location"
+                                    style="width:32px;height:32px;background:#fff;border:2px solid rgba(0,0,0,.25);border-radius:4px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 5px rgba(0,0,0,.2);">📍</button>
+                            <button type="button" onclick="evtMapClearAll()" title="Clear all"
+                                    style="width:32px;height:32px;background:#fff;border:2px solid rgba(0,0,0,.25);border-radius:4px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 5px rgba(0,0,0,.2);">🗑</button>
+                        </div>
+                    </div>
                     <div class="map-coord-row">
                         <div class="map-coord-field">
                             <label>Lat (pin)</label>
@@ -1689,7 +1705,51 @@ function initEventMap() {
     const existLng = parseFloat(document.getElementById('event-lng').value) || EVT_DEFAULT.lng;
     const hasPin   = !!document.getElementById('event-lat').value;
 
-    evtMap = L.map('event-map-picker', { center: [existLat, existLng], zoom: hasPin ? 15 : 12 });
+    evtMap = L.map('event-map-picker', { center: [existLat, existLng], zoom: hasPin ? 15 : 12, zoomControl: true });
+
+    // Fullscreen
+    window.evtMapFullscreen = function() {
+        const wrap = document.getElementById('event-map-wrap');
+        wrap.classList.toggle('fullscreen');
+        setTimeout(() => evtMap.invalidateSize(), 100);
+        const btn = document.querySelector('#map-float-toolbar button[title="Fullscreen"]');
+        btn.textContent = wrap.classList.contains('fullscreen') ? '✕' : '⛶';
+        btn.title = wrap.classList.contains('fullscreen') ? 'Exit Fullscreen' : 'Fullscreen';
+    };
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { const w = document.getElementById('event-map-wrap'); if (w.classList.contains('fullscreen')) evtMapFullscreen(); }});
+
+    // Satellite toggle
+    let evtSatOn = false;
+    window.evtMapSatToggle = function() {
+        evtSatOn = !evtSatOn;
+        if (evtSatOn) { evtTileStreet.remove(); evtTileSat.addTo(evtMap); }
+        else { evtTileSat.remove(); evtTileStreet.addTo(evtMap); }
+        document.getElementById('map-sat-btn').style.background = evtSatOn ? '#003366' : '#fff';
+        document.getElementById('map-sat-btn').style.color = evtSatOn ? '#fff' : '';
+    };
+
+    // Locate
+    window.evtMapLocate = function() {
+        if (!navigator.geolocation) return alert('Geolocation not supported');
+        navigator.geolocation.getCurrentPosition(p => {
+            evtMap.setView([p.coords.latitude, p.coords.longitude], 15);
+        }, () => alert('Could not get location'));
+    };
+
+    // Clear all
+    window.evtMapClearAll = function() {
+        if (!confirm('Clear pin, polygon, route and POIs?')) return;
+        if (evtPin) { evtMap.removeLayer(evtPin); evtPin = null; }
+        evtDrawn.clearLayers();
+        document.getElementById('event-lat').value = '';
+        document.getElementById('event-lng').value = '';
+        document.getElementById('event-polygon').value = '';
+        document.getElementById('event-route').value = '';
+        document.getElementById('event-pois').value = '[]';
+        document.getElementById('disp-evt-lat').value = '';
+        document.getElementById('disp-evt-lng').value = '';
+        if (typeof refreshPoiList === 'function') refreshPoiList();
+    };
 
     evtTileStreet = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors', maxZoom: 19
