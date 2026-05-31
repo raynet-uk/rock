@@ -2772,7 +2772,12 @@ function updatePoiType(id, type) {
 
 function togglePoiRow(id) {
     const row = document.getElementById('poi-row-' + id);
-    if (row) row.classList.toggle('open');
+    if (!row) return;
+    const body = row.querySelector('.poi-row-body');
+    const chevron = row.querySelector('.poi-row-chevron');
+    const isOpen = body.style.display === 'block';
+    body.style.display = isOpen ? 'none' : 'block';
+    if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
 }
 
 function removePoi(id) {
