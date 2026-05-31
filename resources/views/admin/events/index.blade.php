@@ -2648,6 +2648,24 @@ function placePinOnMap(poi) {
     marker.on('click', function(e) {
         if (evtTool === 'poi') { L.DomEvent.stopPropagation(e); evtMap.fire('click', { latlng: e.latlng, originalEvent: e.originalEvent }); }
     });
+    marker.on('drag', function(e) {
+        const p = e.target.getLatLng();
+        const idx = evtPois.findIndex(x => x.id === poi.id);
+        if (idx !== -1) { evtPois[idx].lat = p.lat; evtPois[idx].lng = p.lng; poi.lat = p.lat; poi.lng = p.lng; }
+    });
+    marker.on('dragend', function(e) {
+        const p = e.target.getLatLng();
+        const idx = evtPois.findIndex(x => x.id === poi.id);
+        if (idx !== -1) {
+            evtPois[idx].lat = p.lat;
+            evtPois[idx].lng = p.lng;
+            evtPois[idx].grid_ref = latLngToOsgb(p.lat, p.lng);
+            poi.lat = p.lat; poi.lng = p.lng;
+            poi.grid_ref = evtPois[idx].grid_ref;
+        }
+        savePois();
+        renderPoiList();
+    });
     marker.addTo(evtMap);
     poiMarkers[poi.id] = marker;
 }
