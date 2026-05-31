@@ -9,6 +9,7 @@ protected function schedule(Schedule $schedule): void
         ->runInBackground();               // optional
     
     $schedule->command('rsgb:refresh-region3')->everyMinute();
+    $schedule->command('maintenance:auto-disable')->everyMinute();
     $schedule->command('resources:fetch-emails')->everyMinute();
     $schedule->command('raynet:heartbeat')->hourly();
     $schedule->command('raynet:push-report')->hourly();
