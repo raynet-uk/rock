@@ -906,7 +906,7 @@ body { background: var(--grey); color: var(--text); font-family: var(--font); fo
                         <select name="role">
                             <option value="">— Not set —</option>
                             @foreach (['Operator', 'Net Controller', 'Group Controller', 'Deputy Controller', 'Liaison Officer', 'Trainee'] as $r)
-                                <option value="{{ $r }}" {{ old('role', $user->role) == $r ? 'selected' : '' }}>{{ $r }}</option>
+                                <option value="{{ $r }}" {{ old('role', $user->operator_title) == $r ? 'selected' : '' }}>{{ $r }}</option>
                             @endforeach
                         </select>
                     </div>
