@@ -877,6 +877,21 @@ Route::prefix('admin')->group(function () {
             return back()->with('status', 'RSVP removed.');
         })->name('admin.events.rsvp.destroy');
 
+        // ── CONTROLLER DASHBOARD ────────────────────────────────────────────────
+        Route::prefix('admin/controller')->name('admin.controller.')->middleware(['auth','admin'])->group(function() {
+            Route::get ('/',                [\App\Http\Controllers\Admin\ControllerDashboardController::class, 'index'])       ->name('index');
+            Route::get ('/tiers',           [\App\Http\Controllers\Admin\ControllerDashboardController::class, 'tiers'])       ->name('tiers');
+            Route::post('/tiers',           [\App\Http\Controllers\Admin\ControllerDashboardController::class, 'storeTier'])   ->name('tiers.store');
+            Route::delete('/tiers/{id}',    [\App\Http\Controllers\Admin\ControllerDashboardController::class, 'deleteTier'])  ->name('tiers.delete');
+            Route::get ('/alerts',          [\App\Http\Controllers\Admin\ControllerDashboardController::class, 'alerts'])      ->name('alerts');
+            Route::post('/alerts',          [\App\Http\Controllers\Admin\ControllerDashboardController::class, 'raiseAlert'])  ->name('alerts.raise');
+            Route::post('/alerts/{id}/close',[\App\Http\Controllers\Admin\ControllerDashboardController::class, 'closeAlert']) ->name('alerts.close');
+            Route::post('/alerts/response/{id}',[\App\Http\Controllers\Admin\ControllerDashboardController::class, 'markResponse'])->name('alerts.respond');
+            Route::get ('/alerts/{id}/summary',[\App\Http\Controllers\Admin\ControllerDashboardController::class, 'alertSummary'])->name('alerts.summary');
+            Route::get ('/annual-return',   [\App\Http\Controllers\Admin\ControllerDashboardController::class, 'annualReturn'])->name('annual-return');
+        });
+        Route::get('/alert-respond/{token}', [\App\Http\Controllers\Admin\ControllerDashboardController::class, 'tokenRespond'])->name('controller.token-respond');
+
         // ── SUPER ADMIN PANEL ──────────────────────────────────────────────
         Route::middleware('super.admin')
             ->prefix('super')
