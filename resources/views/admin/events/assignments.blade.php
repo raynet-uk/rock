@@ -2030,8 +2030,8 @@ function doGridLookup(val) {
         if (lngEl) lngEl.value = lng.toFixed(6);
         // Ensure map is initialised
         function placeGridMarker() {
-            if (!theMap) return;
-            if (_gridMarker) theMap.removeLayer(_gridMarker);
+            if (!pickerMap) { setTimeout(placeGridMarker, 300); return; }
+            if (_gridMarker) pickerMap.removeLayer(_gridMarker);
             _gridMarker = L.marker([lat, lng], {
                 icon: L.divIcon({
                     className: '',
@@ -2040,24 +2040,18 @@ function doGridLookup(val) {
                 }),
                 draggable: true,
                 title: val
-            }).addTo(theMap);
+            }).addTo(pickerMap);
             _gridMarker.on('dragend', function(e) {
                 const p = e.target.getLatLng();
                 if (latEl) latEl.value = p.lat.toFixed(6);
                 if (lngEl) lngEl.value = p.lng.toFixed(6);
             });
             setTimeout(function() {
-                theMap.invalidateSize();
-                theMap.setView([lat, lng], 16);
-            }, 150);
+                pickerMap.invalidateSize();
+                pickerMap.setView([lat, lng], 16);
+            }, 100);
         }
-        if (!theMap) {
-            switchTab('map');
-            setTimeout(placeGridMarker, 400);
-        } else {
-            switchTab('map');
-            setTimeout(placeGridMarker, 100);
-        }
+        placeGridMarker();
     })
     .catch(function() {});
 }
