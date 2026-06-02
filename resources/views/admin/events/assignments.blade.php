@@ -2010,9 +2010,9 @@ var _gridTimer = null;
 var _gridMarker = null;
 function scheduleGridLookup(val) {
     clearTimeout(_gridTimer);
-    val = val.replace(/\s/g,'');
-    if (val.length < 6 || !/^[A-Za-z]{2}\d+$/.test(val)) return;
-    _gridTimer = setTimeout(function() { doGridLookup(val); }, 700);
+    var clean = val.replace(/\s/g,'');
+    if (clean.length < 6) return;
+    _gridTimer = setTimeout(function() { doGridLookup(clean); }, 800);
 }
 function doGridLookup(val) {
     const latEl = document.getElementById('modal-lat');
