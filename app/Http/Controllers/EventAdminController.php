@@ -540,6 +540,10 @@ class EventAdminController extends Controller
                 'lng'         => round((float)$poi['lng'], 7),
                 'colour'      => preg_match('/^#[0-9a-fA-F]{6}$/', $poi['colour'] ?? '')
                                     ? $poi['colour'] : '#C8102E',
+                'grid_ref'    => substr((string)($poi['grid_ref']    ?? ''), 0, 20),
+                'w3w'         => substr((string)($poi['w3w']         ?? ''), 0, 100),
+                'callsign'    => substr((string)($poi['callsign']    ?? ''), 0, 20),
+                'user_id'     => isset($poi['user_id']) && is_numeric($poi['user_id']) ? (int)$poi['user_id'] : null,
             ];
         }
 
