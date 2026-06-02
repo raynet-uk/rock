@@ -2650,16 +2650,38 @@ function placePinOnMap(poi) {
             <input type="text" id="pop-w3w-${poi.id}" value="${escHtml(poi.w3w)}" placeholder="word.word.word" style="flex:1;border:1px solid #dde2e8;padding:4px 6px;font-size:12px;font-family:Arial,sans-serif;outline:none;color:#e65c00;font-weight:bold;" oninput="poiPopupFieldChange('${poi.id}','w3w',this.value)">
             <button type="button" onclick="lookupPoiW3w('${poi.id}')" style="padding:4px 7px;background:#fff3e0;border:1px solid #e65c00;color:#e65c00;font-size:10px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;white-space:nowrap;">/// Lookup</button></div></div>
             <div style="margin-bottom:6px;"><div style="font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:.08em;color:#6b7f96;margin-bottom:4px;">Assigned Members</div>
-            <div id="pop-members-${poi.id}" style="display:flex;flex-wrap:wrap;gap:2px;margin-bottom:4px;">${(poi.members||[]).map(m=>'<span style="display:inline-flex;align-items:center;gap:2px;background:#e8eef5;border:1px solid #c5d5e8;border-radius:999px;padding:2px 6px;font-size:10px;font-weight:bold;color:#003366;">'+escHtml(m.callsign||m.name)+'<button type=\'button\' onclick=\'popRemovePoiMember(\"${poi.id}\",'+m.user_id+')\' style=\'background:none;border:none;cursor:pointer;color:#C8102E;font-size:11px;padding:0 0 0 2px;\'>✕</button></span>').join('')}</div>
-            <select id="pop-member-sel-${poi.id}" onchange="popAddPoiMember('${poi.id}',this)" style="width:100%;border:1px solid #dde2e8;padding:4px 6px;font-size:11px;font-family:Arial,sans-serif;outline:none;background:#fff;">
-                <option value="">+ Add member…</option>
-                ${(window.EVT_MEMBERS||[]).map(m=>`<option value="${m.id}" data-callsign="${escHtml(m.callsign)}">${m.callsign?escHtml(m.callsign)+' — ':''}${escHtml(m.name)}</option>`).join('')}
-            </select></div>
+            <div id="pop-members-${poi.id}" style="display:flex;flex-wrap:wrap;gap:2px;margin-bottom:4px;"></div>
+            <select id="pop-member-sel-${poi.id}" onchange="popAddPoiMember(this)" style="width:100%;border:1px solid #dde2e8;padding:4px 6px;font-size:11px;font-family:Arial,sans-serif;outline:none;background:#fff;"><option value="">+ Add member...</option></select></div>
             <button type="button" onclick="removePoi('${poi.id}');evtMap.closePopup();" style="display:block;width:100%;padding:5px 10px;background:#fdf0f2;border:1px solid #C8102E;color:#C8102E;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.04em;font-family:Arial,sans-serif;cursor:pointer;text-align:left;">✕ Delete POI</button>
         </div>`;
     }
 
-    marker.bindPopup(buildPoiPopupContent, { maxWidth: 240 });
+    marker.bindPopup(buildPoiPopupContent, { maxWidth: 260 });
+    marker.on('popupopen', function() {
+        // Populate members list
+        const membersDiv = document.getElementById('pop-members-' + poi.id);
+        if (membersDiv) {
+            membersDiv.innerHTML = (poi.members||[]).map(function(m) {
+                return '<span style="display:inline-flex;align-items:center;gap:2px;background:#e8eef5;border:1px solid #c5d5e8;border-radius:999px;padding:2px 6px;font-size:10px;font-weight:bold;color:#003366;">'
+                    + escHtml(m.callsign||m.name)
+                    + '<button type="button" onclick="popRemovePoiMember(' + JSON.stringify(poi.id) + ',' + m.user_id + ')" style="background:none;border:none;cursor:pointer;color:#C8102E;font-size:11px;padding:0 0 0 2px;">x</button>'
+                    + '</span>';
+            }).join('');
+        }
+        // Populate member select
+        const sel = document.getElementById('pop-member-sel-' + poi.id);
+        if (sel && sel.options.length < 2) {
+            (window.EVT_MEMBERS||[]).forEach(function(m) {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.dataset.callsign = m.callsign;
+                opt.dataset.poiid = poi.id;
+                opt.textContent = (m.callsign ? m.callsign + ' - ' : '') + m.name;
+                sel.appendChild(opt);
+            });
+            sel.onchange = function() { popAddPoiMember(poi.id, this); };
+        }
+    });
     marker.on('click', function(e) {
         if (evtTool === 'poi') { L.DomEvent.stopPropagation(e); evtMap.fire('click', { latlng: e.latlng, originalEvent: e.originalEvent }); }
     });
@@ -2764,7 +2786,7 @@ function poiPopupFieldChange(id, field, value) {
 
 function poiPopupTypeChange(id, type, selectEl) { updatePoiType(id, type); }
 
-function popAddPoiMember(poiId, sel) {
+function popAddPoiMember(poiId, sel) { if (typeof poiId !== 'string') { sel = poiId; poiId = sel.dataset.poiid; }
     if (!sel.value) return;
     const val = parseInt(sel.value, 10);
     const callsign = sel.options[sel.selectedIndex].dataset.callsign || '';
