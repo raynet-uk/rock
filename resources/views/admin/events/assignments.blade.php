@@ -2021,30 +2021,43 @@ function doGridLookup(val) {
         headers: { 'Accept': 'application/json', 'User-Agent': 'RAYNET-ROCK/1.0' }
     })
     .then(r => r.json())
-    .then(data => {
+    .then(function(data) {
         if (!data || !data.length) return;
         const lat = parseFloat(data[0].lat);
         const lng = parseFloat(data[0].lon);
         if (isNaN(lat) || isNaN(lng)) return;
         if (latEl) latEl.value = lat.toFixed(6);
         if (lngEl) lngEl.value = lng.toFixed(6);
-        if (!theMap) return;
-        if (_gridMarker) theMap.removeLayer(_gridMarker);
-        _gridMarker = L.marker([lat, lng], {
-            icon: L.divIcon({
-                className: '',
-                html: '<div style="width:22px;height:22px;background:#003366;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.5);"></div>',
-                iconSize: [22,22], iconAnchor: [11,11]
-            }),
-            draggable: true,
-            title: val
-        }).addTo(theMap);
-        _gridMarker.on('dragend', function(e) {
-            const p = e.target.getLatLng();
-            if (latEl) latEl.value = p.lat.toFixed(6);
-            if (lngEl) lngEl.value = p.lng.toFixed(6);
-        });
-        theMap.setView([lat, lng], 16);
+        // Ensure map is initialised
+        function placeGridMarker() {
+            if (!theMap) return;
+            if (_gridMarker) theMap.removeLayer(_gridMarker);
+            _gridMarker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    className: '',
+                    html: '<div style="width:22px;height:22px;background:#003366;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.5);"></div>',
+                    iconSize: [22,22], iconAnchor: [11,11]
+                }),
+                draggable: true,
+                title: val
+            }).addTo(theMap);
+            _gridMarker.on('dragend', function(e) {
+                const p = e.target.getLatLng();
+                if (latEl) latEl.value = p.lat.toFixed(6);
+                if (lngEl) lngEl.value = p.lng.toFixed(6);
+            });
+            setTimeout(function() {
+                theMap.invalidateSize();
+                theMap.setView([lat, lng], 16);
+            }, 150);
+        }
+        if (!theMap) {
+            switchTab('map');
+            setTimeout(placeGridMarker, 400);
+        } else {
+            switchTab('map');
+            setTimeout(placeGridMarker, 100);
+        }
     })
     .catch(function() {});
 }
