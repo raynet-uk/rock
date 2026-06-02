@@ -828,6 +828,10 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
                             <button type="button" id="route-finish-btn"
                                     style="display:none;color:#fff;background:#7c3aed;border-color:#7c3aed;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.04em;padding:.25rem .65rem;border:1px solid;cursor:pointer;font-family:var(--font);"
                                     onclick="finishRoute()">✓ Finish Route</button>
+                            <label title="Import GPX file" style="display:inline-flex;align-items:center;gap:4px;padding:.25rem .65rem;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.04em;border:1px solid rgba(124,58,237,.3);color:#7c3aed;background:#f5f3ff;cursor:pointer;font-family:var(--font);">
+                                📁 GPX
+                                <input type="file" id="gpx-upload" accept=".gpx" style="display:none;" onchange="importGpxFile(this)">
+                            </label>
                             <button type="button" class="map-tool-btn" id="tool-poi-btn"
                                     style="color:var(--red);border-color:rgba(200,16,46,.3);"
                                     onclick="setMapTool('poi')">🚩 Add POI</button>
@@ -2046,6 +2050,53 @@ function setMapTool(tool) {
     } else {
         try { evtMap.removeControl(evtDrawCtrl); } catch (e) {}
     }
+}
+
+function importGpxFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const parser = new DOMParser();
+            const xml = parser.parseFromString(e.target.result, 'application/xml');
+            const coords = [];
+
+            // Try trkpt first (tracks), then rtept (routes), then wpt (waypoints)
+            const trkpts = xml.querySelectorAll('trkpt');
+            const rtepts = xml.querySelectorAll('rtept');
+            const pts = trkpts.length ? trkpts : rtepts;
+
+            pts.forEach(function(pt) {
+                const lat = parseFloat(pt.getAttribute('lat'));
+                const lon = parseFloat(pt.getAttribute('lon'));
+                if (!isNaN(lat) && !isNaN(lon)) coords.push([lat, lon]);
+            });
+
+            if (coords.length < 2) {
+                alert('No valid track points found in GPX file.');
+                input.value = '';
+                return;
+            }
+
+            // Create polyline layer
+            const layer = L.polyline(coords, { color: '#7c3aed', weight: 4, opacity: .85 });
+            const newId   = 'r-' + Date.now();
+            const newName = file.name.replace('.gpx','') || ('Route ' + (evtRouteLayers.length + 1));
+            evtDrawn.addLayer(layer);
+            layer.addTo(evtMap);
+            evtRouteLayers.push({ id: newId, name: newName, layer });
+            bindRoutePopup(newId);
+            saveRoutes();
+            updateRouteStatus();
+            evtMap.fitBounds(layer.getBounds(), { padding: [30, 30] });
+            input.value = '';
+        } catch(err) {
+            alert('Error reading GPX file: ' + err.message);
+            input.value = '';
+        }
+    };
+    reader.readAsText(file);
 }
 
 function finishRoute() {
