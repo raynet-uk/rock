@@ -2612,7 +2612,7 @@ window.EVT_MEMBERS = window._EVT_MEMBERS_DATA || [];
 function makePoi(lat, lng) {
     return {
         id:          'poi-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-        type:        'entrance', name: '', description: '', grid_ref: '', w3w: '', members: [],
+        type:        'entrance', name: '', description: '', grid_ref: '', w3w: '', callsign: '', user_id: null,
         lat:         parseFloat(lat.toFixed(7)), lng: parseFloat(lng.toFixed(7)),
         colour:      POI_TYPES.entrance.colour,
     };
@@ -2649,39 +2649,11 @@ function placePinOnMap(poi) {
             <div style="display:flex;gap:4px;">
             <input type="text" id="pop-w3w-${poi.id}" value="${escHtml(poi.w3w)}" placeholder="word.word.word" style="flex:1;border:1px solid #dde2e8;padding:4px 6px;font-size:12px;font-family:Arial,sans-serif;outline:none;color:#e65c00;font-weight:bold;" oninput="poiPopupFieldChange('${poi.id}','w3w',this.value)">
             <button type="button" onclick="lookupPoiW3w('${poi.id}')" style="padding:4px 7px;background:#fff3e0;border:1px solid #e65c00;color:#e65c00;font-size:10px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;white-space:nowrap;">/// Lookup</button></div></div>
-            <div style="margin-bottom:6px;"><div style="font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:.08em;color:#6b7f96;margin-bottom:4px;">Assigned Members</div>
-            <div id="pop-members-${poi.id}" style="display:flex;flex-wrap:wrap;gap:2px;margin-bottom:4px;"></div>
-            <select id="pop-member-sel-${poi.id}" onchange="popAddPoiMember(this)" style="width:100%;border:1px solid #dde2e8;padding:4px 6px;font-size:11px;font-family:Arial,sans-serif;outline:none;background:#fff;"><option value="">+ Add member...</option></select></div>
             <button type="button" onclick="removePoi('${poi.id}');evtMap.closePopup();" style="display:block;width:100%;padding:5px 10px;background:#fdf0f2;border:1px solid #C8102E;color:#C8102E;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.04em;font-family:Arial,sans-serif;cursor:pointer;text-align:left;">✕ Delete POI</button>
         </div>`;
     }
 
-    marker.bindPopup(buildPoiPopupContent, { maxWidth: 260 });
-    marker.on('popupopen', function() {
-        // Populate members list
-        const membersDiv = document.getElementById('pop-members-' + poi.id);
-        if (membersDiv) {
-            membersDiv.innerHTML = (poi.members||[]).map(function(m) {
-                return '<span style="display:inline-flex;align-items:center;gap:2px;background:#e8eef5;border:1px solid #c5d5e8;border-radius:999px;padding:2px 6px;font-size:10px;font-weight:bold;color:#003366;">'
-                    + escHtml(m.callsign||m.name)
-                    + '<button type="button" onclick="popRemovePoiMember(' + JSON.stringify(poi.id) + ',' + m.user_id + ')" style="background:none;border:none;cursor:pointer;color:#C8102E;font-size:11px;padding:0 0 0 2px;">x</button>'
-                    + '</span>';
-            }).join('');
-        }
-        // Populate member select
-        const sel = document.getElementById('pop-member-sel-' + poi.id);
-        if (sel && sel.options.length < 2) {
-            (window.EVT_MEMBERS||[]).forEach(function(m) {
-                const opt = document.createElement('option');
-                opt.value = m.id;
-                opt.dataset.callsign = m.callsign;
-                opt.dataset.poiid = poi.id;
-                opt.textContent = (m.callsign ? m.callsign + ' - ' : '') + m.name;
-                sel.appendChild(opt);
-            });
-            sel.onchange = function() { popAddPoiMember(poi.id, this); };
-        }
-    });
+    marker.bindPopup(buildPoiPopupContent, { maxWidth: 240 });
     marker.on('click', function(e) {
         if (evtTool === 'poi') { L.DomEvent.stopPropagation(e); evtMap.fire('click', { latlng: e.latlng, originalEvent: e.originalEvent }); }
     });
@@ -2740,12 +2712,9 @@ function renderPoiList() {
                         <input type="text" class="poi-name-input" style="width:100%;" value="${escHtml(poi.name)}" placeholder="${pt.label} name…" oninput="updatePoiField('${poi.id}','name',this.value);this.closest('.poi-row').querySelector('.poi-row-label').textContent=this.value||'${pt.label}';">
                     </div>
                     <div style="display:flex;flex-direction:column;gap:2px;">
-                        <div style="font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);">Assigned Members</div>
-                        <div id="poi-members-${poi.id}" style="display:flex;flex-wrap:wrap;gap:2px;min-height:22px;margin-bottom:3px;">
-                            ${(poi.members||[]).map(m => '<span style="display:inline-flex;align-items:center;gap:3px;background:#e8eef5;border:1px solid #c5d5e8;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:bold;color:#003366;margin:2px;">'+escHtml(m.callsign||m.name)+'<button type=\'button\' onclick=\'removePoiMember(\"${poi.id}\",'+m.user_id+')\'  style=\'background:none;border:none;cursor:pointer;color:#C8102E;font-size:12px;line-height:1;padding:0 0 0 3px;\'>✕</button></span>').join('')}
-                        </div>
-                        <select class="poi-callsign-select" style="width:100%;" onchange="addPoiMember('${poi.id}',this);">
-                            <option value="">+ Add member…</option>
+                        <div style="font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);">Assign Member</div>
+                        <select class="poi-callsign-select" style="width:100%;" onchange="assignPoiMember('${poi.id}',this);">
+                            <option value="">— None —</option>
                             ${memberOptions}
                         </select>
                     </div>
@@ -2786,73 +2755,14 @@ function poiPopupFieldChange(id, field, value) {
 
 function poiPopupTypeChange(id, type, selectEl) { updatePoiType(id, type); }
 
-function popAddPoiMember(poiId, sel) { if (typeof poiId !== 'string') { sel = poiId; poiId = sel.dataset.poiid; }
-    if (!sel.value) return;
-    const val = parseInt(sel.value, 10);
+function assignPoiMember(id, sel) {
+    const val = sel.value;
     const callsign = sel.options[sel.selectedIndex].dataset.callsign || '';
-    const name = sel.options[sel.selectedIndex].textContent.trim();
-    const idx = evtPois.findIndex(x => x.id === poiId);
-    if (idx === -1) return;
-    if (!evtPois[idx].members) evtPois[idx].members = [];
-    if (evtPois[idx].members.find(m => m.user_id === val)) { sel.value = ''; return; }
-    evtPois[idx].members.push({ user_id: val, callsign, name });
-    sel.value = '';
-    savePois();
-    // Re-render popup member tags
-    const container = document.getElementById('pop-members-' + poiId);
-    if (container) renderPoiMemberTags(poiId, evtPois[idx].members, 'pop-members-');
-    renderPoiMemberTags(poiId, evtPois[idx].members);
-}
-
-function popRemovePoiMember(poiId, userId) {
-    const idx = evtPois.findIndex(x => x.id === poiId);
-    if (idx === -1) return;
-    evtPois[idx].members = (evtPois[idx].members || []).filter(m => m.user_id !== userId);
-    savePois();
-    const container = document.getElementById('pop-members-' + poiId);
-    if (container) {
-        container.innerHTML = (evtPois[idx].members || []).map(m =>
-            '<span style="display:inline-flex;align-items:center;gap:2px;background:#e8eef5;border:1px solid #c5d5e8;border-radius:999px;padding:2px 6px;font-size:10px;font-weight:bold;color:#003366;">'
-            + escHtml(m.callsign || m.name)
-            + '<button type="button" onclick="popRemovePoiMember('' + poiId + '',' + m.user_id + ')" style="background:none;border:none;cursor:pointer;color:#C8102E;font-size:11px;padding:0 0 0 2px;">✕</button>'
-            + '</span>'
-        ).join('');
-    }
-    renderPoiMemberTags(poiId, evtPois[idx].members);
-}
-
-function addPoiMember(id, sel) {
-    if (!sel.value) return;
-    const val = parseInt(sel.value, 10);
-    const callsign = sel.options[sel.selectedIndex].dataset.callsign || '';
-    const name = sel.options[sel.selectedIndex].textContent.trim();
     const idx = evtPois.findIndex(x => x.id === id);
     if (idx === -1) return;
-    if (!evtPois[idx].members) evtPois[idx].members = [];
-    if (evtPois[idx].members.find(m => m.user_id === val)) { sel.value = ''; return; }
-    evtPois[idx].members.push({ user_id: val, callsign, name });
-    sel.value = '';
+    evtPois[idx].user_id  = val ? parseInt(val, 10) : null;
+    evtPois[idx].callsign = callsign;
     savePois();
-    renderPoiMemberTags(id, evtPois[idx].members);
-}
-
-function removePoiMember(poiId, userId) {
-    const idx = evtPois.findIndex(x => x.id === poiId);
-    if (idx === -1) return;
-    evtPois[idx].members = (evtPois[idx].members || []).filter(m => m.user_id !== userId);
-    savePois();
-    renderPoiMemberTags(poiId, evtPois[idx].members);
-}
-
-function renderPoiMemberTags(poiId, members) {
-    const container = document.getElementById('poi-members-' + poiId);
-    if (!container) return;
-    container.innerHTML = (members || []).map(m =>
-        '<span style="display:inline-flex;align-items:center;gap:3px;background:#e8eef5;border:1px solid #c5d5e8;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:bold;color:#003366;margin:2px;">'
-        + escHtml(m.callsign || m.name)
-        + '<button type="button" onclick="removePoiMember(\'' + poiId + '\',' + m.user_id + ')" style="background:none;border:none;cursor:pointer;color:#C8102E;font-size:12px;line-height:1;padding:0 0 0 3px;">✕</button>'
-        + '</span>'
-    ).join('');
 }
 
 function updatePoiField(id, field, value) {
