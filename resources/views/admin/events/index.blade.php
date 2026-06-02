@@ -2836,6 +2836,25 @@ function togglePoiRow(id) {
     if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
 }
 
+function listRenderMembers(pid) {
+    var idx = evtPois.findIndex(function(x){ return x.id === pid; });
+    var members = idx !== -1 ? (evtPois[idx].members || []) : [];
+    var container = document.getElementById('poi-members-' + pid);
+    if (!container) return;
+    container.innerHTML = '';
+    members.forEach(function(m) {
+        var span = document.createElement('span');
+        span.style.cssText = 'display:inline-flex;align-items:center;gap:2px;background:#e8eef5;border:1px solid #c5d5e8;border-radius:999px;padding:2px 6px;font-size:10px;font-weight:bold;color:#003366;margin:1px;';
+        span.textContent = m.callsign || m.name;
+        var btn = document.createElement('button');
+        btn.type = 'button'; btn.textContent = 'x';
+        btn.style.cssText = 'background:none;border:none;cursor:pointer;color:#C8102E;font-size:11px;padding:0 0 0 3px;';
+        btn.onclick = (function(uid){ return function(){ listRemovePoiMember(pid, uid); }; })(m.user_id);
+        span.appendChild(btn);
+        container.appendChild(span);
+    });
+}
+
 function listAddPoiMember(pid, sel) {
     if (!sel.value) return;
     var uid = parseInt(sel.value, 10);
@@ -2848,7 +2867,7 @@ function listAddPoiMember(pid, sel) {
     evtPois[idx].members.push({ user_id: uid, callsign: cs, name: nm });
     sel.value = '';
     savePois();
-    renderPoiList();
+    listRenderMembers(pid);
 }
 
 function listRemovePoiMember(pid, uid) {
@@ -2856,7 +2875,7 @@ function listRemovePoiMember(pid, uid) {
     if (idx === -1) return;
     evtPois[idx].members = (evtPois[idx].members||[]).filter(function(m){ return m.user_id !== uid; });
     savePois();
-    renderPoiList();
+    listRenderMembers(pid);
 }
 
 function poiRenderPopupMembers(pid, container) {
