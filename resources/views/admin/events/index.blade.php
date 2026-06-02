@@ -2612,7 +2612,7 @@ window.EVT_MEMBERS = window._EVT_MEMBERS_DATA || [];
 function makePoi(lat, lng) {
     return {
         id:          'poi-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-        type:        'entrance', name: '', description: '', grid_ref: '', w3w: '', callsign: '', user_id: null,
+        type:        'entrance', name: '', description: '', grid_ref: '', w3w: '', members: [],
         lat:         parseFloat(lat.toFixed(7)), lng: parseFloat(lng.toFixed(7)),
         colour:      POI_TYPES.entrance.colour,
     };
@@ -2649,11 +2649,53 @@ function placePinOnMap(poi) {
             <div style="display:flex;gap:4px;">
             <input type="text" id="pop-w3w-${poi.id}" value="${escHtml(poi.w3w)}" placeholder="word.word.word" style="flex:1;border:1px solid #dde2e8;padding:4px 6px;font-size:12px;font-family:Arial,sans-serif;outline:none;color:#e65c00;font-weight:bold;" oninput="poiPopupFieldChange('${poi.id}','w3w',this.value)">
             <button type="button" onclick="lookupPoiW3w('${poi.id}')" style="padding:4px 7px;background:#fff3e0;border:1px solid #e65c00;color:#e65c00;font-size:10px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;white-space:nowrap;">/// Lookup</button></div></div>
+            <div style="margin-bottom:6px;">
+            <div style="font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:.08em;color:#6b7f96;margin-bottom:4px;">Assigned Members</div>
+            <div id="pop-members-${poi.id}"></div>
+            <select id="pop-add-${poi.id}" style="width:100%;border:1px solid #dde2e8;padding:4px 6px;font-size:11px;font-family:Arial,sans-serif;outline:none;background:#fff;margin-top:3px;"></select>
+            </div>
             <button type="button" onclick="removePoi('${poi.id}');evtMap.closePopup();" style="display:block;width:100%;padding:5px 10px;background:#fdf0f2;border:1px solid #C8102E;color:#C8102E;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.04em;font-family:Arial,sans-serif;cursor:pointer;text-align:left;">✕ Delete POI</button>
         </div>`;
     }
 
-    marker.bindPopup(buildPoiPopupContent, { maxWidth: 240 });
+    marker.bindPopup(buildPoiPopupContent, { maxWidth: 260 });
+    marker.on('popupopen', function() {
+        var pid = poi.id;
+        // Render current members
+        var md = document.getElementById('pop-members-' + pid);
+        if (md) poiRenderPopupMembers(pid, md);
+        // Build member select
+        var sel = document.getElementById('pop-add-' + pid);
+        if (sel && sel.options.length === 0) {
+            var defOpt = document.createElement('option');
+            defOpt.value = ''; defOpt.textContent = '+ Add member...';
+            sel.appendChild(defOpt);
+            (window.EVT_MEMBERS || []).forEach(function(m) {
+                var opt = document.createElement('option');
+                opt.value = m.id;
+                opt.setAttribute('data-cs', m.callsign || '');
+                opt.setAttribute('data-nm', m.name || '');
+                opt.textContent = (m.callsign ? m.callsign + ' - ' : '') + m.name;
+                sel.appendChild(opt);
+            });
+            sel.onchange = function() {
+                if (!this.value) return;
+                var uid = parseInt(this.value, 10);
+                var cs = this.options[this.selectedIndex].getAttribute('data-cs');
+                var nm = this.options[this.selectedIndex].getAttribute('data-nm');
+                var idx = evtPois.findIndex(function(x){ return x.id === pid; });
+                if (idx === -1) { this.value = ''; return; }
+                if (!evtPois[idx].members) evtPois[idx].members = [];
+                if (evtPois[idx].members.find(function(m){ return m.user_id === uid; })) { this.value = ''; return; }
+                evtPois[idx].members.push({ user_id: uid, callsign: cs, name: nm });
+                this.value = '';
+                savePois();
+                var md2 = document.getElementById('pop-members-' + pid);
+                if (md2) poiRenderPopupMembers(pid, md2);
+                renderPoiList();
+            };
+        }
+    });
     marker.on('click', function(e) {
         if (evtTool === 'poi') { L.DomEvent.stopPropagation(e); evtMap.fire('click', { latlng: e.latlng, originalEvent: e.originalEvent }); }
     });
@@ -2713,8 +2755,9 @@ function renderPoiList() {
                     </div>
                     <div style="display:flex;flex-direction:column;gap:2px;">
                         <div style="font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);">Assign Member</div>
-                        <select class="poi-callsign-select" style="width:100%;" onchange="assignPoiMember('${poi.id}',this);">
-                            <option value="">— None —</option>
+                        <div id="poi-members-${poi.id}" style="display:flex;flex-wrap:wrap;gap:2px;margin-bottom:4px;min-height:18px;">${(poi.members||[]).map(function(m){return '<span style="display:inline-flex;align-items:center;gap:2px;background:#e8eef5;border:1px solid #c5d5e8;border-radius:999px;padding:2px 6px;font-size:10px;font-weight:bold;color:#003366;margin:1px;">'+escHtml(m.callsign||m.name)+'<button type=\'button\' onclick=\'listRemovePoiMember(\"'+poi.id+'\",'+m.user_id+')\' style=\'background:none;border:none;cursor:pointer;color:#C8102E;font-size:11px;padding:0 0 0 2px;\'>x</button></span>';}).join('')}</div>
+                        <select class="poi-callsign-select" style="width:100%;" onchange="listAddPoiMember('${poi.id}',this);">
+                            <option value="">+ Add member...</option>
                             ${memberOptions}
                         </select>
                     </div>
@@ -2791,6 +2834,56 @@ function togglePoiRow(id) {
     const isOpen = body.style.display === 'block';
     body.style.display = isOpen ? 'none' : 'block';
     if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+}
+
+function listAddPoiMember(pid, sel) {
+    if (!sel.value) return;
+    var uid = parseInt(sel.value, 10);
+    var cs = sel.options[sel.selectedIndex].getAttribute('data-callsign') || '';
+    var nm = sel.options[sel.selectedIndex].textContent.trim();
+    var idx = evtPois.findIndex(function(x){ return x.id === pid; });
+    if (idx === -1) { sel.value=''; return; }
+    if (!evtPois[idx].members) evtPois[idx].members = [];
+    if (evtPois[idx].members.find(function(m){ return m.user_id === uid; })) { sel.value=''; return; }
+    evtPois[idx].members.push({ user_id: uid, callsign: cs, name: nm });
+    sel.value = '';
+    savePois();
+    renderPoiList();
+}
+
+function listRemovePoiMember(pid, uid) {
+    var idx = evtPois.findIndex(function(x){ return x.id === pid; });
+    if (idx === -1) return;
+    evtPois[idx].members = (evtPois[idx].members||[]).filter(function(m){ return m.user_id !== uid; });
+    savePois();
+    renderPoiList();
+}
+
+function poiRenderPopupMembers(pid, container) {
+    var idx = evtPois.findIndex(function(x){ return x.id === pid; });
+    var members = idx !== -1 ? (evtPois[idx].members || []) : [];
+    container.innerHTML = '';
+    members.forEach(function(m) {
+        var span = document.createElement('span');
+        span.style.cssText = 'display:inline-flex;align-items:center;gap:2px;background:#e8eef5;border:1px solid #c5d5e8;border-radius:999px;padding:2px 6px;font-size:10px;font-weight:bold;color:#003366;margin:1px;';
+        span.textContent = m.callsign || m.name;
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = 'x';
+        btn.style.cssText = 'background:none;border:none;cursor:pointer;color:#C8102E;font-size:11px;padding:0 0 0 2px;';
+        btn.onclick = (function(uid) { return function() {
+            var i = evtPois.findIndex(function(x){ return x.id === pid; });
+            if (i !== -1) {
+                evtPois[i].members = (evtPois[i].members||[]).filter(function(m){ return m.user_id !== uid; });
+                savePois();
+                var md = document.getElementById('pop-members-' + pid);
+                if (md) poiRenderPopupMembers(pid, md);
+                renderPoiList();
+            }
+        }; })(m.user_id);
+        span.appendChild(btn);
+        container.appendChild(span);
+    });
 }
 
 function removePoi(id) {
