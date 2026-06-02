@@ -544,6 +544,13 @@ class EventAdminController extends Controller
                 'w3w'         => substr((string)($poi['w3w']         ?? ''), 0, 100),
                 'callsign'    => substr((string)($poi['callsign']    ?? ''), 0, 20),
                 'user_id'     => isset($poi['user_id']) && is_numeric($poi['user_id']) ? (int)$poi['user_id'] : null,
+                'members'     => array_map(function($m) {
+                    return [
+                        'user_id'  => isset($m['user_id']) && is_numeric($m['user_id']) ? (int)$m['user_id'] : null,
+                        'callsign' => substr((string)($m['callsign'] ?? ''), 0, 20),
+                        'name'     => substr((string)($m['name']     ?? ''), 0, 100),
+                    ];
+                }, is_array($poi['members'] ?? null) ? $poi['members'] : []),
             ];
         }
 

@@ -2612,7 +2612,7 @@ window.EVT_MEMBERS = window._EVT_MEMBERS_DATA || [];
 function makePoi(lat, lng) {
     return {
         id:          'poi-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-        type:        'entrance', name: '', description: '', grid_ref: '', w3w: '', callsign: '', user_id: null,
+        type:        'entrance', name: '', description: '', grid_ref: '', w3w: '', members: [],
         lat:         parseFloat(lat.toFixed(7)), lng: parseFloat(lng.toFixed(7)),
         colour:      POI_TYPES.entrance.colour,
     };
@@ -2712,9 +2712,12 @@ function renderPoiList() {
                         <input type="text" class="poi-name-input" style="width:100%;" value="${escHtml(poi.name)}" placeholder="${pt.label} name…" oninput="updatePoiField('${poi.id}','name',this.value);this.closest('.poi-row').querySelector('.poi-row-label').textContent=this.value||'${pt.label}';">
                     </div>
                     <div style="display:flex;flex-direction:column;gap:2px;">
-                        <div style="font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);">Assign Member</div>
-                        <select class="poi-callsign-select" style="width:100%;" onchange="assignPoiMember('${poi.id}',this);">
-                            <option value="">— None —</option>
+                        <div style="font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);">Assigned Members</div>
+                        <div id="poi-members-${poi.id}" style="display:flex;flex-wrap:wrap;gap:2px;min-height:22px;margin-bottom:3px;">
+                            ${(poi.members||[]).map(m => '<span style="display:inline-flex;align-items:center;gap:3px;background:#e8eef5;border:1px solid #c5d5e8;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:bold;color:#003366;margin:2px;">'+escHtml(m.callsign||m.name)+'<button type=\'button\' onclick=\'removePoiMember(\"${poi.id}\",'+m.user_id+')\'  style=\'background:none;border:none;cursor:pointer;color:#C8102E;font-size:12px;line-height:1;padding:0 0 0 3px;\'>✕</button></span>').join('')}
+                        </div>
+                        <select class="poi-callsign-select" style="width:100%;" onchange="addPoiMember('${poi.id}',this);">
+                            <option value="">+ Add member…</option>
                             ${memberOptions}
                         </select>
                     </div>
@@ -2755,14 +2758,38 @@ function poiPopupFieldChange(id, field, value) {
 
 function poiPopupTypeChange(id, type, selectEl) { updatePoiType(id, type); }
 
-function assignPoiMember(id, sel) {
-    const val = sel.value;
+function addPoiMember(id, sel) {
+    if (!sel.value) return;
+    const val = parseInt(sel.value, 10);
     const callsign = sel.options[sel.selectedIndex].dataset.callsign || '';
+    const name = sel.options[sel.selectedIndex].textContent.trim();
     const idx = evtPois.findIndex(x => x.id === id);
     if (idx === -1) return;
-    evtPois[idx].user_id  = val ? parseInt(val, 10) : null;
-    evtPois[idx].callsign = callsign;
+    if (!evtPois[idx].members) evtPois[idx].members = [];
+    if (evtPois[idx].members.find(m => m.user_id === val)) { sel.value = ''; return; }
+    evtPois[idx].members.push({ user_id: val, callsign, name });
+    sel.value = '';
     savePois();
+    renderPoiMemberTags(id, evtPois[idx].members);
+}
+
+function removePoiMember(poiId, userId) {
+    const idx = evtPois.findIndex(x => x.id === poiId);
+    if (idx === -1) return;
+    evtPois[idx].members = (evtPois[idx].members || []).filter(m => m.user_id !== userId);
+    savePois();
+    renderPoiMemberTags(poiId, evtPois[idx].members);
+}
+
+function renderPoiMemberTags(poiId, members) {
+    const container = document.getElementById('poi-members-' + poiId);
+    if (!container) return;
+    container.innerHTML = (members || []).map(m =>
+        '<span style="display:inline-flex;align-items:center;gap:3px;background:#e8eef5;border:1px solid #c5d5e8;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:bold;color:#003366;margin:2px;">'
+        + escHtml(m.callsign || m.name)
+        + '<button type="button" onclick="removePoiMember(\'' + poiId + '\',' + m.user_id + ')" style="background:none;border:none;cursor:pointer;color:#C8102E;font-size:12px;line-height:1;padding:0 0 0 3px;">✕</button>'
+        + '</span>'
+    ).join('');
 }
 
 function updatePoiField(id, field, value) {
