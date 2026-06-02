@@ -501,8 +501,12 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
 .map-tool-btn.tool-w3w:hover { background: #ffe0b2; border-color: #e65c00; }
 
 /* ─── ELEVATION CHART ─── */
-#elevation-panel { display:none; border-top:1px solid var(--grey-mid); background:#fafbfc; padding:.7rem .85rem; }
+#elevation-panel { display:none; border-top:1px solid var(--grey-mid); background:#fafbfc; }
 #elevation-panel.visible { display:block; }
+.elevation-head { padding:.5rem .85rem; }
+.elevation-body { padding:0 .85rem .7rem; display:block; }
+.elevation-body.collapsed { display:none; }
+#elev-chart-wrap { position:relative; }
 .elevation-head { font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin-bottom:.5rem;display:flex;align-items:center;justify-content:space-between; }
 #elev-chart { width:100%; height:90px; display:block; }
 
@@ -935,11 +939,17 @@ td.td-actions { text-align: right; white-space: nowrap; padding-right: .9rem; }
 
                     {{-- Elevation profile panel --}}
                     <div id="elevation-panel">
-                        <div class="elevation-head">
-                            <span>⛰ Elevation Profile</span>
+                        <div class="elevation-head" onclick="toggleElevPanel()" style="cursor:pointer;">
+                            <span>⛰ Elevation Profile <span class="elev-chevron" style="font-size:9px;color:var(--text-muted);">▼</span></span>
                             <span id="elev-stats" style="font-size:11px;color:var(--text-muted);font-weight:normal;"></span>
                         </div>
-                        <svg id="elev-chart" viewBox="0 0 600 90" preserveAspectRatio="none"></svg>
+                        <div class="elevation-body" id="elevation-body">
+                            <div id="elev-chart-wrap">
+                                <svg id="elev-chart" viewBox="0 0 600 90" preserveAspectRatio="none" style="width:100%;height:90px;display:block;"></svg>
+                                <div id="elev-operators" style="position:absolute;top:0;left:0;right:0;height:90px;pointer-events:none;"></div>
+                            </div>
+                            <div id="elev-legend" style="display:flex;flex-wrap:wrap;gap:.3rem .75rem;margin-top:.4rem;font-size:10px;color:var(--text-muted);"></div>
+                        </div>
                     </div>
 
                     {{-- Weather forecast badge --}}
@@ -2355,6 +2365,18 @@ function wCode2Label(c) { return _wLabels[Math.min(c, 99)] || (c <= 3 ? 'Partly 
 function wCode2Icon(c)  { return c === 0 ? '☀️' : c <= 3 ? '⛅' : c <= 9 ? '🌫' : c <= 39 ? '🌦' : c <= 49 ? '🌨' : c <= 69 ? '🌧' : c <= 79 ? '❄️' : c <= 94 ? '🌦' : '⛈'; }
 function deg2compass(d) { return ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(d / 45) % 8]; }
 
+function toggleElevPanel() {
+    const body = document.getElementById('elevation-body');
+    const chevron = document.querySelector('.elevation-head .elev-chevron');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    if (chevron) chevron.textContent = body.classList.contains('collapsed') ? '▶' : '▼';
+}
+
+// Store elevation data so it survives saves
+var _elevData = null;
+var _elevCoords = null;
+
 function fetchElevationForRoute() {
     if (evtRouteLayers.length === 0) return;
     const geo = evtRouteLayers[0].layer.toGeoJSON().geometry;
@@ -2399,6 +2421,90 @@ function renderElevChart(elevs, coords) {
         <text x="${W-pR}" y="${H-5}" font-size="8" fill="#6b7f96" font-family="Arial" text-anchor="end">${(td/1000).toFixed(1)}km</text>
         <text x="${pL}" y="${pT+8}" font-size="8" fill="#6b7f96" font-family="Arial">${maxE}m</text>`;
     document.getElementById('elevation-panel').classList.add('visible');
+    _elevData   = elevs;
+    _elevCoords = coords;
+    fetchOperatorsForElev(coords, elevs);
+}
+
+function fetchOperatorsForElev(coords, elevs) {
+    // Get event ID from URL
+    const match = window.location.search.match(/edit=(\d+)/);
+    if (!match) return;
+    const eventId = match[1];
+    fetch('/admin/events/' + eventId + '/assignments/positions', {
+        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '' }
+    })
+    .then(r => r.ok ? r.json() : [])
+    .then(operators => renderOperatorsOnElev(operators, coords, elevs))
+    .catch(() => {});
+}
+
+function renderOperatorsOnElev(operators, coords, elevs) {
+    const wrap = document.getElementById('elev-operators');
+    const legend = document.getElementById('elev-legend');
+    if (!wrap || !operators || !operators.length) return;
+    wrap.innerHTML = '';
+    if (legend) legend.innerHTML = '';
+
+    const n = coords.length;
+    // Compute cumulative distances along route
+    const cumDist = [0];
+    for (let i = 1; i < n; i++) {
+        const dx = (coords[i][1] - coords[i-1][1]) * Math.cos(coords[i][0] * Math.PI/180) * 111320;
+        const dy = (coords[i][0] - coords[i-1][0]) * 111320;
+        cumDist.push(cumDist[i-1] + Math.sqrt(dx*dx + dy*dy));
+    }
+    const totalDist = cumDist[n-1];
+    if (totalDist === 0) return;
+
+    const colours = ['#C8102E','#003366','#1a6b3c','#92400e','#5b21b6','#0369a1','#be185d'];
+    let colIdx = 0;
+
+    operators.forEach(function(op) {
+        if (!op.lat || !op.lng) return;
+        // Find closest point on route
+        let bestI = 0, bestDist = Infinity;
+        coords.forEach(function(c, i) {
+            const dx = (op.lng - c[1]) * Math.cos(c[0] * Math.PI/180) * 111320;
+            const dy = (op.lat - c[0]) * 111320;
+            const d = Math.sqrt(dx*dx + dy*dy);
+            if (d < bestDist) { bestDist = d; bestI = i; }
+        });
+
+        // Only show if reasonably close to route (within 2km)
+        if (bestDist > 2000) return;
+
+        const pct = cumDist[bestI] / totalDist;
+        const elev = elevs[bestI] || elevs[Math.min(bestI, elevs.length-1)];
+        const minE = Math.min(...elevs), maxE = Math.max(...elevs);
+        const elevPct = maxE > minE ? (elev - minE) / (maxE - minE) : 0.5;
+
+        const x = pct * 100;
+        const y = (1 - elevPct) * 90;
+        const col = colours[colIdx % colours.length];
+        colIdx++;
+
+        const label = op.callsign || op.name.split(' ')[0];
+
+        // Create marker
+        const div = document.createElement('div');
+        div.style.cssText = 'position:absolute;transform:translateX(-50%);pointer-events:auto;cursor:default;';
+        div.style.left = x + '%';
+        div.style.top = Math.max(0, y - 28) + 'px';
+        div.title = (op.callsign || op.name) + (op.location_name ? ' — ' + op.location_name : '') + (op.role ? ' (' + op.role + ')' : '');
+        div.innerHTML = '<div style="background:' + col + ';color:#fff;font-size:8px;font-weight:bold;padding:1px 4px;border-radius:3px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.3);">' + label + '</div>'
+            + '<div style="width:1px;height:' + (y - Math.max(0,y-22)) + 'px;background:' + col + ';margin:0 auto;opacity:.6;"></div>';
+        wrap.appendChild(div);
+
+        // Legend
+        if (legend) {
+            const li = document.createElement('span');
+            li.style.cssText = 'display:inline-flex;align-items:center;gap:3px;';
+            li.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + col + ';"></span>'
+                + '<span>' + (op.callsign||op.name) + (op.location_name ? ' ('+op.location_name+')' : '') + '</span>';
+            legend.appendChild(li);
+        }
+    });
 }
 
 function savePolygon() {

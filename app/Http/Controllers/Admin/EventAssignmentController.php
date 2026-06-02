@@ -150,6 +150,26 @@ class EventAssignmentController extends Controller
 
     // ── Attendance status (AJAX poll for team map pulse animations) ───────────
 
+    public function positions(Event $event): JsonResponse
+    {
+        $data = EventAssignment::with('user')
+            ->where('event_id', $event->id)
+            ->whereNotNull('lat')->whereNotNull('lng')
+            ->whereIn('status', ['confirmed','standby','pending'])
+            ->get()
+            ->map(fn($a) => [
+                'id'            => $a->id,
+                'callsign'      => $a->callsign ?: ($a->user->callsign ?? ''),
+                'name'          => $a->user->name ?? '',
+                'role'          => $a->role ?? '',
+                'location_name' => $a->location_name ?? '',
+                'lat'           => (float) $a->lat,
+                'lng'           => (float) $a->lng,
+                'status'        => $a->status,
+            ]);
+        return response()->json($data);
+    }
+
     public function attendanceStatus(Event $event): JsonResponse
     {
         $data = EventAssignment::where('event_id', $event->id)

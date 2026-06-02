@@ -1094,7 +1094,8 @@ Route::middleware('admin')->group(function () {
     Route::delete('/admin/assignments/{assignment}',                 [EventAssignmentController::class, 'destroy'])         ->name('admin.events.assignments.destroy');
     Route::post('/admin/events/{event}/assignments/bulk-status',     [EventAssignmentController::class, 'bulkStatus'])      ->name('admin.events.assignments.bulk-status');
     Route::post('/admin/events/{event}/assignments/bulk-fill',      [EventAssignmentController::class, 'bulkFill'])       ->name('admin.events.assignments.bulk-fill');
-    Route::get('/admin/events/{event}/assignments/attendance-status',[EventAssignmentController::class, 'attendanceStatus'])->name('admin.events.assignments.attendance-status');
+    Route::get('/admin/events/{event}/assignments/positions', [\App\Http\Controllers\Admin\EventAssignmentController::class, 'positions'])->name('admin.events.assignments.positions');
+        Route::get('/admin/events/{event}/assignments/attendance-status',[EventAssignmentController::class, 'attendanceStatus'])->name('admin.events.assignments.attendance-status');
     Route::post('/admin/assignments/{assignment}/reset-attendance',  [EventAssignmentController::class, 'resetAttendance']) ->name('admin.events.assignments.reset-attendance');
     Route::post('/admin/events/{event}/duplicate-crew',              [EventAssignmentController::class, 'duplicateTeam'])   ->name('admin.events.duplicate-team');
 
