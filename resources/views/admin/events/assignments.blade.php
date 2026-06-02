@@ -1704,7 +1704,7 @@ body{background:var(--grey);color:var(--text);font-family:var(--font);font-size:
                 @endif
                 <div class="frow">
                     <div class="ff"><label>Location Name</label><input type="text" name="location_name" id="modal-locname" placeholder="Checkpoint Alpha"></div>
-                    <div class="ff"><label>OS Grid Reference</label><input type="text" name="grid_ref" id="modal-grid" placeholder="SJ394905"></div>
+                    <div class="ff"><label>OS Grid Reference</label><input type="text" name="grid_ref" id="modal-grid" placeholder="SJ394905" oninput="scheduleGridLookup(this.value)" style="font-weight:bold;letter-spacing:.04em;"></div>
                 </div>
 
                 {{-- Pin picker map --}}
@@ -2006,6 +2006,101 @@ function renderCoverageHeat() {
 
 /* ══ MAP ══ */
 var mapInitialised = false;
+// OSGB Grid Ref → LatLng converter
+function osgbToLatLng(gridRef) {
+    gridRef = gridRef.toUpperCase().replace(/\s/g,'');
+    if (gridRef.length < 6) return null;
+    const letters = 'ABCDEFGHJKLMNOPQRSTUVWXYZ';
+    const l1 = letters.indexOf(gridRef[0]);
+    const l2 = letters.indexOf(gridRef[1]);
+    if (l1 < 0 || l2 < 0) return null;
+    // Convert to numeric easting/northing
+    let e = ((l1 - (l1 >= 19 ? 1 : 0)) % 5) * 500000;
+    let n = (19 - Math.floor((l1 - (l1 >= 19 ? 1 : 0)) / 5) * 5) * 500000;
+    e += (l2 % 5) * 100000 - 500000;
+    n += (4 - Math.floor(l2 / 5)) * 100000;
+    const digits = gridRef.slice(2);
+    const half = Math.floor(digits.length / 2);
+    if (half < 2) return null;
+    const eStr = digits.slice(0, half).padEnd(5, '0');
+    const nStr = digits.slice(half).padEnd(5, '0');
+    e += parseInt(eStr, 10);
+    n += parseInt(nStr, 10);
+    // OSGB36 to WGS84
+    const a = 6377563.396, b = 6356256.910;
+    const F0 = 0.9996012717, N0 = -100000, E0 = 400000;
+    const phi0 = 49 * Math.PI/180, lam0 = -2 * Math.PI/180;
+    const e2 = 1 - (b*b)/(a*a), n0 = (a-b)/(a+b);
+    let M = 0, phi = phi0;
+    for (let i = 0; i < 15; i++) {
+        M = b*F0*((1+n0+5/4*n0*n0+5/4*n0*n0*n0)*(phi-phi0)
+            -(3*n0+3*n0*n0+21/8*n0*n0*n0)*Math.sin(phi-phi0)*Math.cos(phi+phi0)
+            +(15/8*n0*n0+15/8*n0*n0*n0)*Math.sin(2*(phi-phi0))*Math.cos(2*(phi+phi0))
+            -(35/24*n0*n0*n0)*Math.sin(3*(phi-phi0))*Math.cos(3*(phi+phi0)));
+        phi = (n-N0-M)/(a*F0/Math.sqrt(1-e2*Math.sin(phi)*Math.sin(phi)))+phi;
+    }
+    const nu = a*F0/Math.sqrt(1-e2*Math.sin(phi)*Math.sin(phi));
+    const rho = a*F0*(1-e2)/Math.pow(1-e2*Math.sin(phi)*Math.sin(phi),1.5);
+    const eta2 = nu/rho-1;
+    const tan = Math.tan(phi), cos = Math.cos(phi), sec = 1/cos;
+    const VII  = tan/(2*rho*nu);
+    const VIII = tan/(24*rho*nu*nu*nu)*(5+3*tan*tan+eta2-9*tan*tan*eta2);
+    const IX   = tan/(720*rho*Math.pow(nu,5))*(61+90*tan*tan+45*Math.pow(tan,4));
+    const X    = sec/nu;
+    const XI   = sec/(6*nu*nu*nu)*(nu/rho+2*tan*tan);
+    const XII  = sec/(120*Math.pow(nu,5))*(5+28*tan*tan+24*Math.pow(tan,4));
+    const XIIA = sec/(5040*Math.pow(nu,7))*(61+662*tan*tan+1320*Math.pow(tan,4)+720*Math.pow(tan,6));
+    const dE = e-E0;
+    const latRad = phi - VII*dE*dE + VIII*Math.pow(dE,4) - IX*Math.pow(dE,6);
+    const lngRad = lam0 + X*dE - XI*Math.pow(dE,3) + XII*Math.pow(dE,5) - XIIA*Math.pow(dE,7);
+    // Helmert transform OSGB36 → WGS84
+    const sinPhi=Math.sin(latRad), cosPhi=Math.cos(latRad), sinLam=Math.sin(lngRad), cosLam=Math.cos(lngRad);
+    const nuH = 6377563.396/Math.sqrt(1-0.00667054*sinPhi*sinPhi);
+    const x1=(nuH+0)*cosPhi*cosLam, y1=(nuH+0)*cosPhi*sinLam, z1=(0.99332946*nuH+0)*sinPhi;
+    const x2=x1+446.448+(-0.23*z1-(-0.84)*y1)*4.84814e-6;
+    const y2=y1-125.157+( (-0.23)*x1-( 0.96)*z1)*4.84814e-6;
+    const z2=z1+542.060+((-0.84)*y1-( 0.96)*x1)*4.84814e-6;
+    const a2=6378137, e22=0.00669438;
+    let phiW=Math.atan2(z2,Math.sqrt(x2*x2+y2*y2)*(1-e22));
+    for(let i=0;i<10;i++){const nuW=a2/Math.sqrt(1-e22*Math.sin(phiW)*Math.sin(phiW));phiW=Math.atan2(z2+e22*nuW*Math.sin(phiW),Math.sqrt(x2*x2+y2*y2));}
+    return { lat: phiW*180/Math.PI, lng: Math.atan2(y2,x2)*180/Math.PI };
+}
+
+var _gridTimer = null;
+var _gridMarker = null;
+function scheduleGridLookup(val) {
+    clearTimeout(_gridTimer);
+    if (val.replace(/\s/g,'').length < 6) return;
+    _gridTimer = setTimeout(function() { doGridLookup(val); }, 600);
+}
+function doGridLookup(val) {
+    const result = osgbToLatLng(val);
+    if (!result) return;
+    const lat = result.lat, lng = result.lng;
+    // Update lat/lng inputs
+    const latEl = document.getElementById('modal-lat');
+    const lngEl = document.getElementById('modal-lng');
+    if (latEl) latEl.value = lat.toFixed(6);
+    if (lngEl) lngEl.value = lng.toFixed(6);
+    // Place/move marker on map
+    if (!theMap) return;
+    if (_gridMarker) { theMap.removeLayer(_gridMarker); }
+    _gridMarker = L.marker([lat, lng], {
+        icon: L.divIcon({
+            className: '',
+            html: '<div style="width:20px;height:20px;background:#003366;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.5);"></div>',
+            iconSize: [20,20], iconAnchor: [10,10]
+        }),
+        draggable: true
+    }).addTo(theMap);
+    _gridMarker.on('dragend', function(e) {
+        const p = e.target.getLatLng();
+        if (latEl) latEl.value = p.lat.toFixed(6);
+        if (lngEl) lngEl.value = p.lng.toFixed(6);
+    });
+    theMap.setView([lat, lng], 15);
+}
+
 var theMap, tileStreet, tileSat, satelliteOn = false;
 var markers = {}, circles = {}, circlesVisible = false, gpxLayer = null;
 var eventPolygonLayer = null, eventMaskLayer = null;
