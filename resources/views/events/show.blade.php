@@ -993,4 +993,136 @@ function setRsvp(status){
 }
 </script>
 
+@if($hasRoute)
+<script>
+(function() {
+    var routeData = {!! $jsRoute !!};
+    if (!routeData) return;
+    var allCoords = [];
+    if (Array.isArray(routeData)) {
+        routeData.forEach(function(seg) {
+            var geom = seg.geometry || seg;
+            if (geom && geom.coordinates) {
+                geom.coordinates.forEach(function(c) { allCoords.push([c[1], c[0]]); });
+            }
+        });
+    }
+    if (allCoords.length < 2) {
+        var el = document.getElementById('pub-elev-loading');
+        if (el) el.textContent = 'No route data.';
+        return;
+    }
+    var step = Math.max(1, Math.floor(allCoords.length / 40));
+    var sample = [];
+    for (var i = 0; i < allCoords.length; i += step) sample.push(allCoords[i]);
+    if (sample[sample.length-1] !== allCoords[allCoords.length-1]) sample.push(allCoords[allCoords.length-1]);
+
+    var lats = sample.map(function(c){ return parseFloat(c[0]).toFixed(5); }).join(',');
+    var lngs = sample.map(function(c){ return parseFloat(c[1]).toFixed(5); }).join(',');
+    fetch('https://api.open-meteo.com/v1/elevation?latitude=' + lats + '&longitude=' + lngs)
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        var el = document.getElementById('pub-elev-loading');
+        if (!d || !d.elevation || d.elevation.length < 2) {
+            if (el) el.textContent = 'Elevation data unavailable.';
+            return;
+        }
+        if (el) el.style.display = 'none';
+        renderPubElevChart(d.elevation, sample);
+    })
+    .catch(function() {
+        var el = document.getElementById('pub-elev-loading');
+        if (el) el.textContent = 'Elevation data unavailable.';
+    });
+})();
+
+function togglePubElev() {
+    var body = document.getElementById('pub-elev-body');
+    var chev = document.getElementById('pub-elev-chevron');
+    if (!body) return;
+    var hidden = body.style.display === 'none';
+    body.style.display = hidden ? 'block' : 'none';
+    if (chev) chev.textContent = hidden ? '▼' : '▶';
+}
+
+function renderPubElevChart(elevs, coords) {
+    var canvas = document.getElementById('pub-elev-chart');
+    if (!canvas) return;
+    canvas.width  = canvas.parentElement.offsetWidth || 600;
+    canvas.height = 120;
+    var ctx = canvas.getContext('2d');
+    var W = canvas.width, H = canvas.height;
+    var minE = Math.min.apply(null, elevs), maxE = Math.max.apply(null, elevs);
+    var range = maxE - minE || 1;
+    var pad = {top:12, right:10, bottom:24, left:40};
+    var iW = W - pad.left - pad.right, iH = H - pad.top - pad.bottom;
+
+    var grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + iH);
+    grad.addColorStop(0, 'rgba(124,58,237,.4)');
+    grad.addColorStop(1, 'rgba(124,58,237,.04)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    elevs.forEach(function(e, i) {
+        var x = pad.left + (i / (elevs.length-1)) * iW;
+        var y = pad.top + iH - ((e - minE) / range) * iH;
+        if (i === 0) { ctx.moveTo(x, pad.top + iH); ctx.lineTo(x, y); }
+        else ctx.lineTo(x, y);
+    });
+    ctx.lineTo(pad.left + iW, pad.top + iH);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = '#7c3aed';
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    elevs.forEach(function(e, i) {
+        var x = pad.left + (i / (elevs.length-1)) * iW;
+        var y = pad.top + iH - ((e - minE) / range) * iH;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    ctx.fillStyle = '#9aa3ae';
+    ctx.font = '9px Arial';
+    ctx.textAlign = 'right';
+    [0, 0.5, 1].forEach(function(t) {
+        var ev = minE + t * range;
+        var y = pad.top + iH - t * iH;
+        ctx.fillText(Math.round(ev) + 'm', pad.left - 3, y + 3);
+        ctx.strokeStyle = 'rgba(0,0,0,.07)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + iW, y); ctx.stroke();
+    });
+
+    var cumDist = [0];
+    for (var i = 1; i < coords.length; i++) {
+        var dx = (coords[i][1]-coords[i-1][1]) * Math.cos(coords[i][0]*Math.PI/180) * 111320;
+        var dy = (coords[i][0]-coords[i-1][0]) * 111320;
+        cumDist.push(cumDist[i-1] + Math.sqrt(dx*dx+dy*dy));
+    }
+    var totalKm = cumDist[cumDist.length-1] / 1000;
+    ctx.fillStyle = '#9aa3ae';
+    ctx.font = '9px Arial';
+    ctx.textAlign = 'center';
+    [0, 0.25, 0.5, 0.75, 1].forEach(function(t) {
+        ctx.fillText((t*totalKm).toFixed(1)+'km', pad.left + t*iW, H - 6);
+    });
+
+    var gain = 0, loss = 0;
+    for (var i = 1; i < elevs.length; i++) {
+        var d = elevs[i] - elevs[i-1];
+        if (d > 0) gain += d; else loss += Math.abs(d);
+    }
+    var statsEl = document.getElementById('pub-elev-stats');
+    if (statsEl) statsEl.innerHTML =
+        '<span><strong>📏</strong> ' + totalKm.toFixed(2) + ' km</span>' +
+        '<span><strong>⬆</strong> ' + Math.round(gain) + ' m ascent</span>' +
+        '<span><strong>⬇</strong> ' + Math.round(loss) + ' m descent</span>' +
+        '<span><strong>🏔</strong> ' + Math.round(maxE) + ' m high</span>' +
+        '<span><strong>🏞</strong> ' + Math.round(minE) + ' m low</span>';
+}
+</script>
+@endif
+
 @endsection
