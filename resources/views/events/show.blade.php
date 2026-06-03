@@ -675,7 +675,7 @@ a:hover { text-decoration: underline; }
 (function(){
     var HAS_PIN={{ $hasPin?'true':'false' }},HAS_POLY={{ $hasPolygon?'true':'false' }},HAS_ROUTE={{ $hasRoute?'true':'false' }},HAS_POIS={{ $hasPois?'true':'false' }};
     var PIN_LAT={{ $jsLat }},PIN_LNG={{ $jsLng }};
-    var POLYGON_GEO={!! $jsPolygon !!},POLY_NAME="{{ $jsPolyName }}",ROUTE_DATA={!! $jsRoute !!},POIS_DATA={!! $jsPois !!};
+    var POLYGON_GEO={!! $jsPolygon !!},POLY_NAME="{{ $jsPolyName }}",ROUTE_DATA={!! $jsRoute !!},POIS_DATA={!! $jsPois !!},USER_AUTHED={{ auth()->check() ? 'true' : 'false' }};
     var POI_TYPES={entrance:{label:'Entrance',emoji:'🚪',colour:'#1a6b3c'},exit:{label:'Exit',emoji:'🚪',colour:'#C8102E'},car_park:{label:'Car Park',emoji:'🅿',colour:'#003366'},medical:{label:'Medical',emoji:'🩺',colour:'#dc2626'},control:{label:'Control',emoji:'📡',colour:'#7c3aed'},hazard:{label:'Hazard',emoji:'⚠',colour:'#d97706'},info:{label:'Info',emoji:'ℹ',colour:'#0284c7'},custom:{label:'Custom',emoji:'🚩',colour:'#C8102E'}};
     var poiMap={},animPaths=[],streetLayer,satLayer,satOn=false,gridModeActive=false,maidenheadLayer=null;
 
@@ -756,7 +756,7 @@ a:hover { text-decoration: underline; }
         window._rnGrid=grid;
     }
 
-    if(HAS_POIS&&Array.isArray(POIS_DATA)){
+    if(HAS_POIS&&Array.isArray(POIS_DATA)&&USER_AUTHED){
         POIS_DATA.forEach(function(poi){
             if(!poi.lat||!poi.lng)return;
             var pt=POI_TYPES[poi.type]||POI_TYPES.custom,col=poi.colour||pt.colour;
@@ -773,7 +773,7 @@ a:hover { text-decoration: underline; }
         });
     }
 
-    if(HAS_POLY||HAS_ROUTE||(HAS_POIS&&POIS_DATA&&POIS_DATA.length)){
+    if(HAS_POLY||HAS_ROUTE||(HAS_POIS&&POIS_DATA&&POIS_DATA.length&&USER_AUTHED)){
         try{var b=bounds.getBounds();if(b.isValid())map.fitBounds(b,{padding:[24,24],maxZoom:17});}catch(e){}
     }
     map.once('focus click',function(){map.scrollWheelZoom.enable();});
