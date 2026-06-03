@@ -709,6 +709,7 @@ a:hover { text-decoration: underline; }
     function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
     var map=L.map('rn-event-map',{center:[HAS_PIN?PIN_LAT:53.4084,HAS_PIN?PIN_LNG:-2.9916],zoom:HAS_PIN?15:12,scrollWheelZoom:false});
+    window._rnEventMap = map;
     streetLayer=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap contributors',maxZoom:19}).addTo(map);
     satLayer=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'© Esri',maxZoom:19});
     var bounds=L.featureGroup().addTo(map);
