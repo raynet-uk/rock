@@ -399,6 +399,7 @@ a:hover { text-decoration: underline; }
             </div>
             @endif
 
+            @auth
             @if($hasPois && count($poisDecoded))
             <div class="rn-poi-strip">
                 <div class="rn-poi-strip-hd">Points of Interest</div>
@@ -413,7 +414,31 @@ a:hover { text-decoration: underline; }
                 </div>
             </div>
             @endif
+            @else
+            @if($hasPois && count($poisDecoded))
+            <div class="rn-poi-strip" style="background:#f8f9fb;">
+                <div class="rn-poi-strip-hd" style="color:#9aa3ae;">🔒 Points of Interest — visible to logged-in members only</div>
+            </div>
+            @endif
+            @endauth
         </div>
+
+        {{-- Elevation Profile --}}
+        @if($hasRoute)
+        <div id="pub-elev-panel" style="border:1px solid var(--border);border-top:none;background:#fff;margin-bottom:1rem;">
+            <div style="padding:.6rem .85rem;background:#f8f9fb;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="togglePubElev()">
+                <span style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.12em;color:#4b5563;">⛰ Elevation Profile</span>
+                <span id="pub-elev-chevron" style="font-size:10px;color:#9aa3ae;">▼</span>
+            </div>
+            <div id="pub-elev-body" style="padding:.75rem .85rem;">
+                <div style="position:relative;">
+                    <canvas id="pub-elev-chart" style="width:100%;height:120px;display:block;"></canvas>
+                    <div id="pub-elev-loading" style="text-align:center;font-size:12px;color:#9aa3ae;padding:.5rem;">Loading elevation data…</div>
+                </div>
+                <div id="pub-elev-stats" style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-top:.5rem;font-size:11px;color:#6b7f96;"></div>
+            </div>
+        </div>
+        @endif
 
         {{-- Documents --}}
         @auth
